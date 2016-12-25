@@ -37,7 +37,7 @@ public class Household implements IHouseOwner, Serializable {
     public int                  id; // Only used for identifying households within the class MicroDataRecorder
     public Id<Household>        householdId;// the unique household ID
     public double               monthlyEmploymentIncome;
-    public double               monthlyTravelCost;// the current travel cost
+    //public double               monthlyTravelCost;// the current travel cost
     public HouseholdBehaviour   behaviour; // Behavioural plugin
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
@@ -76,7 +76,7 @@ public class Household implements IHouseOwner, Serializable {
         monthlyEmploymentIncome = annualIncome()/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.getDesiredBankBalance(this); // Desired bank balance is used as initial value for actual bank balance
         monthlyPropertyIncome = 0.0;
-        monthlyTravelCost = 0.0;
+        //monthlyTravelCost = 0.0;
         isBankrupt =false;
     }
     
@@ -107,7 +107,8 @@ public class Household implements IHouseOwner, Serializable {
     /////////////////////////////////////////////////////////
     
     /**
-     * this method is used to calcualte the travle cost for one household from one region to another in each time step (or month)
+     * this method is used to calcualte the travle cost (cosidering both travel time and fee) for one household 
+     * from one region to another in each time step (or month)
      * @param workplace
      * @param home
      */
@@ -115,24 +116,35 @@ public class Household implements IHouseOwner, Serializable {
     	
     	double travelCost=0;// it is assumed that the travel cost in the region is zero    	
     	if(home!=null && workplace!=null && workplace.getRegionId()!=home.getRegionId()){
-    		Id<Region> workplaceId=workplace.getRegionId();
-    		Id<Region> homeId=home.getRegionId();
-    		Matrix travelTimeMatrix=transport.getTravelTimeMatrix();
     		double travelTime=transport.getTravelTimeMatrix().getData(workplace.getRegionId().toString(),
     				home.getRegionId().toString());// Unit: Hour
     		double travelFee=transport.getTravelFeeMatrix().getData(workplace.getRegionId().toString(),
-    				home.getRegionId().toString());// Unit: GBP
-    		double timeValue=getTimeValue();
+    				home.getRegionId().toString());// Unit: GBP per Day 
+    		double timeValue=getTimeValue(); // GBP/Hour
     		
     		travelCost=((travelTime*timeValue)+travelFee)*config.constants.WORKINGDAYS_IN_MONTH;//it is assumed that there are 20 working days in one month
     	}    	
-    	
     	return travelCost;
     }
     
     /**
-     * 
-     * 
+     * this method is used to calcualte the travle fee for one household from one region to another in each time step (or month)
+     * @param workplace
+     * @param home
+     */
+    public double calculateTravelFeePerStep(Region workplace,Region home, Transport transport){
+    	
+    	double travelCost=0;// it is assumed that the travel cost in the region is zero    	
+    	if(home!=null && workplace!=null && workplace.getRegionId()!=home.getRegionId()){    		
+    		double travelFee=transport.getTravelFeeMatrix().getData(workplace.getRegionId().toString(),
+    				home.getRegionId().toString());// Unit: GBP per Day 		
+    		travelCost=travelFee*config.constants.WORKINGDAYS_IN_MONTH;//it is assumed that there are 20 working days in one month
+    	}    	
+    	return travelCost;
+    }
+    
+    /**
+     * The time value of each househld is calcualted by dividing the monthly income by total number of working hours per month     * 
      */
     public double getTimeValue(){
     	double workHours=config.constants.WORKINGDAYS_IN_MONTH*config.constants.WORKINGHOURS_IN_DAY;//it is assumed that each household member works eight hours per day and 20 days per month
@@ -168,6 +180,8 @@ public class Household implements IHouseOwner, Serializable {
         // --- consume based on disposable income after house payments
         // TODO: What? Does this mean only FTB consume?
         bankBalance += disposableIncome;
+        // TODO: Subtract the Travel Fee (rather than the Travel Cost) from the balance. 
+        bankBalance -=getMonthlyTravelFee(transport);
         // TODO: What is the purpose of this if condition?
         if(isFirstTimeBuyer() || !isInSocialHousing()) bankBalance -= behaviour.getDesiredConsumption(this);
         if(bankBalance < 0.0) { // Behaviour if household is bankrupt
@@ -231,7 +245,6 @@ public class Household implements IHouseOwner, Serializable {
         //geography.remove(presentRegion);// temporarily remove the present region that will be added to the list again after the target region is selected
     	int index=this.rand.nextInt(geography.size());
     	Region targetRegion=geography.get(index);
-    	//geography.add(presentRegion);
     	return targetRegion;
     }
 
@@ -474,10 +487,10 @@ public class Household implements IHouseOwner, Serializable {
      * Subtracting the travel cost from the desired purchase price, resulting in the final price
      */
     private void bidForAHome(Region homeRegion,Transport transport) {
-        double maxMortgage = Model.bank.getMaxMortgage(this, true);
+        double maxMortgage = Model.bank.getMaxMortgage(this, true);       
         double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, homeRegion);
-        double travelCostPerStep=calculateTravelCostPerStep(region,homeRegion,transport);//monthly travel cost        
-        double travelCost=config.BUY_SCALE*config.constants.MONTHS_IN_YEAR* travelCostPerStep;// TODO a random term can be added
+        double travelCostPerStep=calculateTravelFeePerStep(region,homeRegion,transport);//monthly travel fee (not sure if we can use travel cost instead here).       
+        double travelCost=config.BUY_SCALE*config.constants.MONTHS_IN_YEAR* travelCostPerStep;// TODO a random term could be added here
         price = price-travelCost;//Subtracting the travel cost from the desired purchase price, resulting in the final price
         if(behaviour.decideRentOrPurchase(this, homeRegion, price)) {
             if(price > maxMortgage - 1.0) {
@@ -486,7 +499,7 @@ public class Household implements IHouseOwner, Serializable {
             }
             homeRegion.houseSaleMarket.bid(this, price);
         } else {
-            homeRegion.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
+            homeRegion.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome)-travelCost);// subtracting the travel cost from the desired price, resulting the final rent to bid
         }
     }
 
@@ -638,13 +651,19 @@ public class Household implements IHouseOwner, Serializable {
     }    
       
     public double getMonthlyTravelCost(Transport transport){
+    	double monthlyTravelCost=0.0;
     	if(home!=null && region!=null && home.getRegion()!=null){
     		monthlyTravelCost=calculateTravelCostPerStep(region,home.getRegion(), transport);
-    	}
-    	else{
-    		monthlyTravelCost=0.0;
-    	}    	
+    	}    	   	
     	return monthlyTravelCost;
+    }
+    
+    public double getMonthlyTravelFee(Transport transport){
+    	double monthlyTravelFee=0.0;
+    	if(home!=null && region!=null && home.getRegion()!=null){
+    		monthlyTravelFee=calculateTravelFeePerStep(region,home.getRegion(), transport);
+    	}    	   	
+    	return monthlyTravelFee;
     }
     
     /***

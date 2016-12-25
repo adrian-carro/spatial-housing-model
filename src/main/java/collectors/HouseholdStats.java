@@ -42,6 +42,7 @@ public class HouseholdStats extends CollectorBase {
     // Other fields
     private double              sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
     private double              aveMonthlyTravelCost;  //Average monthly travel cost
+    private double              aveMonthlyTravelFee;  //Average monthly travel fee
 
     //------------------------//
     //----- Constructors -----//
@@ -81,6 +82,7 @@ public class HouseholdStats extends CollectorBase {
         nFailedBidTimes = 0.0;
         nCommuter = 0;
         aveMonthlyTravelCost = 0.0;
+        aveMonthlyTravelFee = 0.0;
     }
 
     /**
@@ -106,7 +108,9 @@ public class HouseholdStats extends CollectorBase {
         double sumFailedBidTimes = 0.0;
         nCommuter = 0;
         aveMonthlyTravelCost = 0.0;
+        aveMonthlyTravelFee = 0.0;
         double sumMonthlyTravelCost = 0.0;
+        double sumMonthlyTravelFee = 0.0;
         // Run through regions summing
         for (Region region : geography) {
             nBTL += region.regionalHouseholdStats.getnBTL();
@@ -125,9 +129,11 @@ public class HouseholdStats extends CollectorBase {
             sumFailedBidTimes+=region.regionalHouseholdStats.getnFailedBidTimes();
             nCommuter += region.regionalHouseholdStats.getnCommuter();
             sumMonthlyTravelCost+=region.regionalHouseholdStats.getAveMonthlyTravelCost();
+            sumMonthlyTravelFee+=region.regionalHouseholdStats.getAveMonthlyTravelFee();
         }
         nFailedBidTimes = sumFailedBidTimes*1.0/geography.size();
         aveMonthlyTravelCost = sumMonthlyTravelCost*1.0/geography.size();
+        aveMonthlyTravelFee = sumMonthlyTravelFee*1.0/geography.size();
     }
 
     //----- Getter/setter methods -----//
@@ -180,6 +186,7 @@ public class HouseholdStats extends CollectorBase {
     }    
 
     public double getAveMonthlyTravelCost() { return aveMonthlyTravelCost; }
+    public double getAveMonthlyTravelFee() { return aveMonthlyTravelFee; }
 
 //    // Array with ages of all households
 //    public double [] getAgeDistribution() {

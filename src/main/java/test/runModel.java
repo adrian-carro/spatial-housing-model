@@ -11,7 +11,7 @@ public class runModel {
 	   String outputFolder="./Test/output/";
        Model model=new Model(configFileName,outputFolder);
        model.run();
-       
+
 
 	}
 

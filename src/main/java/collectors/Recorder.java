@@ -100,7 +100,7 @@ public class Recorder {
                     // Number of households of each type
                     + "nNonBTLHomeless, nBTLHomeless, nHomeless, nRenting, nNonOwner, "
                     + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, nFailedBidder,"
-                    + " nFailedBidTimes, nCommuter, aveMonthlyTravelCost, TotalPopulation, "
+                    + " nFailedBidTimes, nCommuter, aveMonthlyTravelCost, aveMonthlyTravelFee, TotalPopulation, "
                     // Numbers of houses of each type
                     + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                     // House sale market data
@@ -124,7 +124,7 @@ public class Recorder {
                         // Number of households of each type
                         + "nNonBTLHomeless, nBTLHomeless, nHomeless, nRenting, nNonOwner, "
                         + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, nFailedBidder,"
-                        + " nFailedBidTimes, nCommuter, aveMonthlyTravelCost, TotalPopulation, "
+                        + " nFailedBidTimes, nCommuter, aveMonthlyTravelCost, aveMonthlyTravelFee, TotalPopulation, "
                         // Numbers of houses of each type
                         + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                         // House sale market data
@@ -193,6 +193,7 @@ public class Recorder {
                 Model.householdStats.getnFailedBidTimes() + ", " +
                 Model.householdStats.getnCommuter() + ", " +
                 Model.householdStats.getAveMonthlyTravelCost() + ", " +
+                Model.householdStats.getAveMonthlyTravelFee() + ", " +
                 Model.demographics.getTotalPopulation() + ", " +
                 // Numbers of houses of each type
                 Model.construction.getHousingStock() + ", " +
@@ -245,6 +246,7 @@ public class Recorder {
                     region.regionalHouseholdStats.getnFailedBidTimes() + ", " +
                     region.regionalHouseholdStats.getnCommuter() + ", " +
                     region.regionalHouseholdStats.getAveMonthlyTravelCost() + ", " +
+                    region.regionalHouseholdStats.getAveMonthlyTravelFee() + ", " +
                     region.households.size() + ", " +
                     // Numbers of houses of each type
                     region.getHousingStock() + ", " +

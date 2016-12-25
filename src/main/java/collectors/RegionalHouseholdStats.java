@@ -47,6 +47,7 @@ public class RegionalHouseholdStats extends CollectorBase {
     // Other fields
     private double  sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
     private double  aveMonthlyTravelCost;  //Average monthly travel cost
+    private double  aveMonthlyTravelFee;  //Average monthly travel fee
 
     //------------------------//
     //----- Constructors -----//
@@ -92,6 +93,7 @@ public class RegionalHouseholdStats extends CollectorBase {
         nFailedBidTimes = 0.0;
         nCommuter = 0;
         aveMonthlyTravelCost = 0.0;
+        aveMonthlyTravelFee = 0.0;
     }
 
     public void record() {
@@ -112,8 +114,11 @@ public class RegionalHouseholdStats extends CollectorBase {
         nFailedBidTimes= 0.0;
         nCommuter = 0;
         aveMonthlyTravelCost = 0.0;
+        aveMonthlyTravelFee = 0.0;
         double sumMonthlyTravelCost = 0.0;
+        double sumMonthlyTravelFee = 0.0;
         int cntVaildMonthlyTravelCost=0;
+        int cntVaildMonthlyTravelFee=0;
         // TODO: Print to screen and check all these numbers!
         // Run through all households counting population in each type and summing their gross incomes
         for (Household h : region.households) {
@@ -167,11 +172,20 @@ public class RegionalHouseholdStats extends CollectorBase {
             	sumMonthlyTravelCost+=monthlyTravelCost;
             	cntVaildMonthlyTravelCost++;
             }
-            
+            // sum the monthly travl fee of each household who need to commute
+            double monthlyTravelFee=h.getMonthlyTravelFee(transport);
+            if(monthlyTravelFee>0){
+            	sumMonthlyTravelFee+=monthlyTravelFee;
+            	cntVaildMonthlyTravelFee++;
+            }           
         }
         // Monthly Travel Cost;
         if(cntVaildMonthlyTravelCost>0){
         	this.aveMonthlyTravelCost=sumMonthlyTravelCost*1.0/cntVaildMonthlyTravelCost;
+        }
+        // Monthly Travel Fee;
+        if(cntVaildMonthlyTravelFee>0){
+        	this.aveMonthlyTravelFee=sumMonthlyTravelFee*1.0/cntVaildMonthlyTravelFee;
         }
         // Failed Bidders
         nFailedBidder=region.getFailedBidderCounter().size();
@@ -240,6 +254,7 @@ public class RegionalHouseholdStats extends CollectorBase {
     }
     
     public double getAveMonthlyTravelCost() { return aveMonthlyTravelCost; }
+    public double getAveMonthlyTravelFee() { return aveMonthlyTravelFee; }
 
 //    // Array with ages of all households
 //    public double [] getAgeDistribution() {

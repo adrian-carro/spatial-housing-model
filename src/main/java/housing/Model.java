@@ -89,6 +89,9 @@ public class Model {
         rand = new MersenneTwister(config.SEED);
         geography = new ArrayList<>();
         transport=new Transport(config);
+        //transport.adjustTransportForTest();//TODO: this is only for test, and must be removed in the real-world scenarios.
+        //transport.printTravelFeeMatrix();
+        //transport.printTravelTimeMatrix();
 
         int cntId=0;
         for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {

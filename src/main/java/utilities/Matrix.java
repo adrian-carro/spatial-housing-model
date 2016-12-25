@@ -25,30 +25,34 @@ public class Matrix {
 		this.matrixData=matrixData;
 	}
 	
-//	/**
-//	 * this method is only for test purpose. 
-//	 * @param rowIndices
-//	 * @param columnIndices
-//	 * @param lowerLimit
-//	 * @param upperLimit
-//	 */
-//	public Matrix(Map<String,Integer> rowIndices,Map<String,Integer> columnIndices, double lowerLimit,double upperLimit){
-//		this.rowIndices=rowIndices;
-//		this.columnIndices=columnIndices;
-//		MersenneTwister rand=Model.rand;
-//		this.matrixData=new double[rowIndices.size()][columnIndices.size()];
-//		for(int i=0;i<rowIndices.size();i++){
-//			for(int j=0;j<columnIndices.size();j++){
-//				double data=lowerLimit+rand.nextDouble()*(upperLimit-lowerLimit);
-//				this.matrixData[i][j]=data;
-//			}
-//		}
-//	}
+
 	
-//	public void printMatrix(){
-//		
+	public void printMatrixOnScreen(){
+		String rowTitles[]=getMatrixTitles(rowIndices);
+		String columnTitles[]=getMatrixTitles(columnIndices);
+		String firstLine="Names"+"\t";
+		for(int i=0;i<rowTitles.length;i++){
+			firstLine+=rowTitles[i]+"\t";
+		}
+		System.out.println(firstLine);
+		for(int i=0;i<columnTitles.length;i++){
+			String line=columnTitles[i]+"\t";
+			for(int j=0;j<rowTitles.length;j++){
+				line+=matrixData[i][j]+"\t";
+			}
+			System.out.println(line);
+		}
+		
+	}
 	
-//	}
+	public String[] getMatrixTitles(Map<String,Integer> indices){
+		String titles[]=new String[indices.size()];
+		for(String title:indices.keySet()){
+			int index=indices.get(title);
+			titles[index]=title;
+		}
+		return titles;
+	}
 	
 //	public static void main(String[] args) {
 //		String inputFile="src/main/resources/travelFee.csv";
@@ -61,7 +65,7 @@ public class Matrix {
 	}
 
 	
-	//TODO
+	
 	public void readTypcialMatrix(String inputFile){
 		
 		this.rowIndices=new HashMap<String,Integer>();
@@ -128,7 +132,9 @@ public class Matrix {
 	}
 	
 	
-
+	public double[][] getMatrixData(){		
+		return this.matrixData;
+	}
 	
 
 }
