@@ -1,8 +1,8 @@
 package housing;
 
-import collectors.Collectors;
-import collectors.MicroDataRecorder;
-import collectors.Recorder;
+import collectors.RegionalHouseholdStats;
+import collectors.RegionalHousingMarketStats;
+import collectors.RegionalRentalMarketStats;
 import org.apache.commons.math3.random.MersenneTwister;
 
 import java.util.ArrayList;
@@ -21,12 +21,17 @@ public class Region {
     //----- Fields -----//
     //------------------//
 
-    public static HouseSaleMarket       houseSaleMarket;
-    public static HouseRentalMarket     houseRentalMarket;
-    public static ArrayList<Household>  households;
+    public ArrayList<Household>     households;
+    public HouseSaleMarket          houseSaleMarket;
+    public HouseRentalMarket        houseRentalMarket;
+    public int                      housingStock;
 
-    private Config                      config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister             rand = Model.rand; // Passes the Model's random number generator to a private field
+    RegionalHouseholdStats          regionalHouseholdStats;
+    RegionalHousingMarketStats      regionalHousingMarketStats;
+    RegionalRentalMarketStats       regionalRentalMarketStats;
+
+    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private MersenneTwister         rand = Model.rand; // Passes the Model's random number generator to a private field
 
     // Temporary stuff
 //    static long startTime;
@@ -43,29 +48,38 @@ public class Region {
      */
     public Region(int expectedPopulation) {
         households = new ArrayList<>(expectedPopulation*2);
-        houseSaleMarket = new HouseSaleMarket();
-        houseRentalMarket = new HouseRentalMarket();
+        houseSaleMarket = new HouseSaleMarket(this);
+        houseRentalMarket = new HouseRentalMarket(this);
+        regionalHouseholdStats = new RegionalHouseholdStats(this);
+        regionalHousingMarketStats = new RegionalHousingMarketStats(this);
+        regionalRentalMarketStats = new RegionalRentalMarketStats(this);
     }
 
     //-------------------//
     //----- Methods -----//
     //-------------------//
 
-    public static void init() {
+    public void init() {
+        households.clear();
         houseSaleMarket.init();
         houseRentalMarket.init();
-        households.clear();
+        regionalHousingMarketStats.init();
+        regionalRentalMarketStats.init();
+        housingStock = 0;
     }
 
-    public static void step() {
+    public void step() {
+        // Updates regional households consumption, housing decisions, and corresponding regional bids and offers
         for(Household h : households) h.step();
-        // TODO: Add regional collector and national collector (or aggregate nationally somehow...)
-        // Stores ownership market bid and offer prices, and their averages, into their respective variables
-        //collectors.housingMarketStats.record();
-        // Clears market and updates the HPI
+        // Stores regional sale market bid and offer prices and averages before bids are matched by clearing the market
+        regionalHousingMarketStats.record();
+        // Clears regional sale market and updates the HPI
         houseSaleMarket.clearMarket();
-        // Stores rental market bid and offer prices, and their averages, into their respective variables
-        //collectors.rentalMarketStats.record();
+        // Stores regional rental market bid and offer prices and averages before bids are matched by clearing the market
+        regionalRentalMarketStats.record();
+        // Clears regional rental market
         houseRentalMarket.clearMarket();
+        // Stores regional household statistics after both regional markets have been cleared
+        regionalHouseholdStats.step();
     }
 }

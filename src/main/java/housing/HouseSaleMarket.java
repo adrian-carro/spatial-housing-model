@@ -13,9 +13,11 @@ import utilities.PriorityQueue2D;
 public class HouseSaleMarket extends HousingMarket {
 	private static final long serialVersionUID = -2878118108039744432L;
 
-	private Config	config = Model.config;	// Passes the Model's configuration parameters object to a private field
+	private Config      config = Model.config; // Passes the Model's configuration parameters object to a private field
+	private Region      region;
 
-	public HouseSaleMarket() {
+	public HouseSaleMarket(Region region) {
+	    this.region = region;
 		offersPY = new PriorityQueue2D<>(new HousingMarketRecord.PYComparator());
 	}
 	
@@ -35,7 +37,7 @@ public class HouseSaleMarket extends HousingMarket {
 		if(buyer == sale.house.owner) return;
 		sale.house.owner.completeHouseSale(sale);
 		buyer.completeHousePurchase(sale);
-		Model.collectors.housingMarketStats.recordSale(purchase, sale);
+        region.regionalHousingMarketStats.recordSale(purchase, sale);
 		sale.house.owner = buyer;
 	}
 
@@ -66,10 +68,8 @@ public class HouseSaleMarket extends HousingMarket {
 		if(bid.getClass() == BtLBuyerRecord.class) { // BTL buyer (yield driven)
 			HouseSaleRecord bestOffer = (HouseSaleRecord)offersPY.peek(bid);
 			if(bestOffer != null) {
-					double minDownpayment = bestOffer.getPrice()*(1.0 - Model.houseRentalMarket.averageSoldGrossYield/(Model.bank.interestCoverageRatio()*config.CENTRAL_BANK_BTL_STRESSED_INTEREST));
-//					if(bestOffer.getExpectedAnnualRent()/(bestOffer.getPrice()-bid.buyer.behaviour.downPayment(bid.buyer, bestOffer.getPrice())) >= Model.bank.interestCoverageRatio()*Model.bank.getBtLStressedMortgageInterestRate()) {
-//						return(bestOffer);
-//					}
+					double minDownpayment = bestOffer.getPrice()*(1.0 - region.houseRentalMarket.averageSoldGrossYield/
+                            (Model.bank.interestCoverageRatio()*config.CENTRAL_BANK_BTL_STRESSED_INTEREST));
 					if(bid.buyer.getBankBalance() >= minDownpayment) {
 						return(bestOffer);
 					}

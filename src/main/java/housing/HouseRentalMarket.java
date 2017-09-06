@@ -9,9 +9,11 @@ package housing;
 public class HouseRentalMarket extends HousingMarket {
 	private static final long serialVersionUID = -3039057421808432696L;
 
-	private Config	config = Model.config;	// Passes the Model's configuration parameters object to a private field
+	private Config      config = Model.config; // Passes the Model's configuration parameters object to a private field
+	private Region      region;
 
-	public HouseRentalMarket() {
+	public HouseRentalMarket(Region region) {
+		this.region = region;
 		for(int i=0; i< config.N_QUALITY; ++i) {
 			monthsOnMarket[i] = 1.0;			
 		}
@@ -27,8 +29,8 @@ public class HouseRentalMarket extends HousingMarket {
 		sale.house.rentalRecord = null;
 		purchase.buyer.completeHouseRental(sale);
 		sale.house.owner.completeHouseLet(sale);
-		Model.collectors.rentalMarketStats.recordSale(purchase, sale);
-		double yield = sale.getPrice()*config.constants.MONTHS_IN_YEAR/Model.houseSaleMarket.getAverageSalePrice(sale.house.getQuality());
+		region.regionalRentalMarketStats.recordSale(purchase, sale);
+		double yield = sale.getPrice()*config.constants.MONTHS_IN_YEAR/region.houseSaleMarket.getAverageSalePrice(sale.house.getQuality());
 		averageSoldGrossYield = averageSoldGrossYield*config.derivedParams.K + (1.0-config.derivedParams.K)*yield;
 		longTermAverageGrossYield = longTermAverageGrossYield*config.derivedParams.KL + (1.0-config.derivedParams.KL)*yield;
 	}
@@ -74,7 +76,7 @@ public class HouseRentalMarket extends HousingMarket {
 	protected void recalculateExpectedGrossYield() {
 //		bestGrossYield = 0.0;
 		for(int q=0; q < config.N_QUALITY; ++q) {
-			expectedGrossYield[q] = getAverageSalePrice(q)*config.constants.MONTHS_IN_YEAR*expectedOccupancy(q)/Model.houseSaleMarket.getAverageSalePrice(q);
+			expectedGrossYield[q] = getAverageSalePrice(q)*config.constants.MONTHS_IN_YEAR*expectedOccupancy(q)/region.houseSaleMarket.getAverageSalePrice(q);
 //			if(expectedGrossYield[q] > bestGrossYield) bestGrossYield = expectedGrossYield[q];
 		}		
 	}
@@ -89,20 +91,6 @@ public class HouseRentalMarket extends HousingMarket {
 	protected void recordMarketStats() {
 		super.recordMarketStats();
 		recalculateExpectedGrossYield();
-
-		/**
-		SimpleRegression regression = new SimpleRegression();
-		int i = 0;
-		for(Double price : averageSalePrice) {
-			regression.addData(referencePrice(i++), price);
-		}
-		double m = regression.getSlope();
-		double c = regression.getIntercept();
-		final double DECAY = 0.99;
-		for(int q=0; q<House.Config.N_QUALITY; ++q) {
-			averageSalePrice[q] = DECAY*averageSalePrice[q] + (1.0-DECAY)*(m*referencePrice(q) + c);
-		}
-		**/
 	}
 
 	

@@ -7,6 +7,8 @@ import java.io.Serializable;
 public class Collectors implements Serializable {
 	private static final long serialVersionUID = -1116526042375828663L;
 
+	// TODO: Review this class in view of the difference between the 2 market collectos and the rest of them (the market
+    // TODO: collectors need to be called before market clearing and the rest after)
 	public Collectors(String outputFolder) {
         creditSupply 	= new CreditSupply(outputFolder);
         coreIndicators 	= new CoreIndicators();

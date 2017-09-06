@@ -125,8 +125,8 @@ public class Model {
 			for (t = 0; t <= config.N_STEPS; t += 1) {
 
                 /*
-		         * Steps model and stores ownership and rental markets bid and offer prices, and their averages, into
-		         * their respective variables
+		         * Steps model and stores sale and rental markets bid and offer prices, and their averages, into their
+		         * respective variables
 		         */
                 modelStep();
 
@@ -177,15 +177,19 @@ public class Model {
 	private static void modelStep() {
         demographics.step();
         construction.step();
+        // Updates households consumption, housing decisions, and corresponding bids and offers
         for(Household h : households) h.step();
-        // Stores ownership market bid and offer prices, and their averages, into their respective variables
+        // Stores sale market bid and offer prices and averages before bids are matched by clearing the market
 		collectors.housingMarketStats.record();
-        // Clears market and updates the HPI
+        // Clears sale market and updates the HPI
 		houseSaleMarket.clearMarket();
-        // Stores rental market bid and offer prices, and their averages, into their respective variables
+        // Stores rental market bid and offer prices and averages before bids are matched by clearing the market
 		collectors.rentalMarketStats.record();
+        // Clears rental market
 		houseRentalMarket.clearMarket();
+		// Updates bank and interest rate for new mortgages
 		bank.step();
+        // Updates central bank policies (currently empty!)
 		centralBank.step(getCoreIndicators());
 	}
 

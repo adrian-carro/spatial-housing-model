@@ -5,9 +5,6 @@ import housing.Model;
 import java.awt.geom.Point2D;
 
 public class RentalMarketStats extends HousingMarketStats {
-//	public double[] getExpectedGrossYieldByQuality() {
-//		return(Model.houseRentalMarket.expectedGrossYield);
-//	}
 
 	private Config config = Model.config;	// Passes the Model's configuration parameters object to a private field
 	
