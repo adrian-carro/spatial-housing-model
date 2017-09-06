@@ -51,8 +51,8 @@ public class Model {
     public static CentralBank		    centralBank;
     public static Bank 				    bank;
     public static Construction		    construction;
-    public static HouseSaleMarket       houseSaleMarkets;
-    public static HouseRentalMarket     houseRentalMarkets;
+    public static HouseSaleMarket       houseSaleMarket;
+    public static HouseRentalMarket     houseRentalMarket;
     public static ArrayList<Household>  households;
     public static MersenneTwister	    rand;
     public static Collectors            collectors;
@@ -66,6 +66,11 @@ public class Model {
     private static Recorder             recorder;
     private static String               configFileName;
     private static String               outputFolder;
+
+    // Temporary stuff
+//    static long startTime;
+//    static long endTime;
+//    static long durationDemo = 0;s
 
     //------------------------//
     //----- Constructors -----//
@@ -89,8 +94,8 @@ public class Model {
         bank = new Bank();
         construction = new Construction();
         households = new ArrayList<>(config.TARGET_POPULATION*2);
-        houseSaleMarkets = new HouseSaleMarket();
-        houseRentalMarkets = new HouseRentalMarket();
+        houseSaleMarket = new HouseSaleMarket();
+        houseRentalMarket = new HouseRentalMarket();
         collectors = new collectors.Collectors(outputFolder);
         nSimulation = 0;
     }
@@ -113,7 +118,7 @@ public class Model {
         // Perform config.N_SIMS simulations
 		for (nSimulation = 1; nSimulation <= config.N_SIMS; nSimulation += 1) {
 
-		    // For each simulation, initialise both houseSaleMarkets and houseRentalMarkets variables (including HPI)
+		    // For each simulation, initialise both houseSaleMarket and houseRentalMarket variables (including HPI)
             init();
 
             // For each simulation, run config.N_STEPS time steps
@@ -149,7 +154,9 @@ public class Model {
         if(config.recordCoreIndicators) recorder.finish();
         if(config.recordMicroData) transactionRecorder.finish();
 
-        //Stop the program when finished.
+        //Stop the program when finished
+//        System.out.println("Demographics: " + durationDemo/(double)1000000000);
+
 		System.exit(0);
 	}
 
@@ -160,25 +167,24 @@ public class Model {
 
 	private static void init() {
 		construction.init();
-		houseSaleMarkets.init();
-		houseRentalMarkets.init();
+		houseSaleMarket.init();
+		houseRentalMarket.init();
 		bank.init();
 		households.clear();
 		collectors.init();
 	}
 
 	private static void modelStep() {
-		demographics.step();
-		construction.step();
-
-		for(Household h : households) h.step();
+        demographics.step();
+        construction.step();
+        for(Household h : households) h.step();
         // Stores ownership market bid and offer prices, and their averages, into their respective variables
 		collectors.housingMarketStats.record();
         // Clears market and updates the HPI
-		houseSaleMarkets.clearMarket();
+		houseSaleMarket.clearMarket();
         // Stores rental market bid and offer prices, and their averages, into their respective variables
 		collectors.rentalMarketStats.record();
-		houseRentalMarkets.clearMarket();
+		houseRentalMarket.clearMarket();
 		bank.step();
 		centralBank.step(getCoreIndicators());
 	}
@@ -187,8 +193,9 @@ public class Model {
      * This method handles command line input arguments to
      * determine the address of the input config file and
      * the folder for outputs
+     *
      * @param args String with the command line arguments
-     **/
+     */
 	private static void handleInputArguments(String[] args) {
 
         // Create Options object

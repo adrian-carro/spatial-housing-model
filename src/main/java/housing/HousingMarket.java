@@ -227,62 +227,6 @@ public abstract class HousingMarket implements Serializable {
             clearMatches(); // Step 2: iterate through offers
         }
         bids.clear();
-        /*
-        // --- create matches
-        HouseSaleRecord offer;
-        for(HouseBuyerRecord bid : bids) {
-            if(bid.getClass() == HouseBuyerRecord.class) { // OO buyer (quality driven)
-                offer = (HouseSaleRecord)offersPQ.peek(bid);
-            } else { // BTL buyer (yield driven)
-                offer = (HouseSaleRecord)offersPY.peek(bid);
-            }
-            if(offer != null && (offer.house.owner != bid.buyer)) {
-                offer.matchWith(bid);
-            }
-        }
-        bids.clear();
-        
-        // --- clear and resolve oversubscribed offers
-        // 
-        GeometricDistribution geomDist;
-        int nBids;
-        double pSuccessfulBid;
-        double salePrice;
-        int winningBid;
-        Iterator<HousingMarketRecord> record = offersPQ.iterator();
-//        System.out.println("starting clearing");
-        while(record.hasNext()) {
-            offer = (HouseSaleRecord)record.next();
-//            System.out.println("Offer quality "+offer.getQuality());
-            nBids = offer.matchedBids.size();
-            if(nBids > 0) {
-                // bid up the price
-                pSuccessfulBid = Math.exp(-nBids*Config.UNDEROFFER);
-                geomDist = new GeometricDistribution(Model.rand, pSuccessfulBid);
-                salePrice = offer.getPrice() * Math.pow(Config.BIDUP, geomDist.sample());
-                // choose a bid above the new price
-                Collections.sort(offer.matchedBids, new HouseBuyerRecord.PComparator()); // highest price last
-                --nBids;
-                if(offer.matchedBids.get(nBids).getPrice() < salePrice) {
-                    salePrice = offer.matchedBids.get(nBids).getPrice();
-                    winningBid = nBids;
-                } else {
-                    while(nBids >=0 && offer.matchedBids.get(nBids).getPrice() > salePrice) {
-                        --nBids;
-                    }
-                    ++nBids;
-                    winningBid = nBids + Model.rand.nextInt(offer.matchedBids.size()-nBids);
-                }
-                record.remove();
-                offersPY.remove(offer);
-                offer.setPrice(salePrice, authority);
-                completeTransaction(offer.matchedBids.get(winningBid), offer);
-                bids.addAll(offer.matchedBids.subList(0, winningBid));
-                bids.addAll(offer.matchedBids.subList(winningBid+1, offer.matchedBids.size()));            
-            }
-        }        
-        bids.clear();
-        */
     }
 
         
