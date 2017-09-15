@@ -17,7 +17,8 @@ public class CreditSupply extends CollectorBase {
 		mortgageCounter = 0;
 		ftbCounter = 0;
 		btlCounter = 0;
-		// TODO: This limit in the number of events taken into account to build statistics is not explained in the paper (affects oo_lti, oo_ltv, btl_ltv, btl_icr, downpayments)
+		// TODO: This limit in the number of events taken into account to build statistics is not explained in the paper
+        // TODO: (affects oo_lti, oo_ltv, btl_ltv, btl_icr, downpayments)
 		setArchiveLength(10000);
 	}
 
@@ -53,12 +54,14 @@ public class CreditSupply extends CollectorBase {
 		double housePrice;
 		if(config.isMortgageDiagnosticsActive()) {
 			housePrice = approval.principal + approval.downPayment;
-			affordability = config.derivedParams.getAffordabilityDecay()*affordability + (1.0-config.derivedParams.getAffordabilityDecay())*approval.monthlyPayment/(h.monthlyEmploymentIncome);
+			affordability = config.derivedParams.getAffordabilityDecay()*affordability +
+                    (1.0-config.derivedParams.getAffordabilityDecay())*approval.monthlyPayment/
+                            (h.monthlyEmploymentIncome);
 			if(approval.principal > 1.0) {
 				if(approval.isBuyToLet) {
 					btl_ltv.addValue(100.0*approval.principal/housePrice);
-//					double icr = Model.houseRentalMarket.getAverageSalePrice(house.getQuality())*12.0/(approval.principal*Model.bank.getBtLStressedMortgageInterestRate());
-					double icr = Model.houseRentalMarket.averageSoldGrossYield*approval.purchasePrice/(approval.principal*config.getCentralBankBTLStressedInterest());
+					double icr = house.region.houseRentalMarket.averageSoldGrossYield*approval.purchasePrice/
+                            (approval.principal*config.getCentralBankBTLStressedInterest());
 					btl_icr.addValue(icr);
 				} else {
 					oo_ltv.addValue(100.0*approval.principal/housePrice);
@@ -123,7 +126,8 @@ public class CreditSupply extends CollectorBase {
 		return archiveLength;
 	}
 	
-	public void writeDistributionToFile(double [] vals, String filename) throws FileNotFoundException, UnsupportedEncodingException {
+	public void writeDistributionToFile(double [] vals, String filename) throws FileNotFoundException,
+            UnsupportedEncodingException {
         PrintWriter dist = new PrintWriter(outputFolderCopy + filename, "UTF-8");
         if(vals.length > 0) {
         	dist.print(vals[0]);

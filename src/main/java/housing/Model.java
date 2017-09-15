@@ -48,21 +48,20 @@ public class Model {
     //------------------//
 
     public static Config                config;
+    public static Demographics		    demographics;
+    public static Construction		    construction;
     public static CentralBank		    centralBank;
     public static Bank 				    bank;
-    public static Construction		    construction;
-    public static HouseSaleMarket       houseSaleMarket;
-    public static HouseRentalMarket     houseRentalMarket;
-    public static ArrayList<Household>  households;
+    public static ArrayList<Region>     geography;
     public static MersenneTwister	    rand;
     public static Collectors            collectors;
     public static MicroDataRecorder     transactionRecorder;
-    public static int	                nSimulation;	// To keep track of the simulation number
-    public static int	                t;              // To keep track of time (in months)
+    public static int	                nSimulation; // To keep track of the simulation number
+    public static int	                t; // To keep track of time (in months)
+    public static int                   nHouseholds; // To keep track of the total number of households
 
     static Government		            government;
 
-    private static Demographics		    demographics;
     private static Recorder             recorder;
     private static String               configFileName;
     private static String               outputFolder;
@@ -70,7 +69,7 @@ public class Model {
     // Temporary stuff
 //    static long startTime;
 //    static long endTime;
-//    static long durationDemo = 0;s
+//    static long durationDemo = 0;
 
     //------------------------//
     //----- Constructors -----//
@@ -86,17 +85,19 @@ public class Model {
         rand = new MersenneTwister(config.SEED);
 
         government = new Government();
-        demographics = new Demographics();
-        recorder = new collectors.Recorder(outputFolder);
-        transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
-
+        demographics = new Demographics(geography);
+        construction = new Construction();
         centralBank = new CentralBank();
         bank = new Bank();
-        construction = new Construction();
-        households = new ArrayList<>(config.TARGET_POPULATION*2);
-        houseSaleMarket = new HouseSaleMarket();
-        houseRentalMarket = new HouseRentalMarket();
+
+        for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {
+            geography.add(new Region(targetPopulation));
+        }
+
+        recorder = new collectors.Recorder(outputFolder);
+        transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
         collectors = new collectors.Collectors(outputFolder);
+
         nSimulation = 0;
     }
 
@@ -167,26 +168,18 @@ public class Model {
 
 	private static void init() {
 		construction.init();
-		houseSaleMarket.init();
-		houseRentalMarket.init();
 		bank.init();
-		households.clear();
+        for(Region r : geography) r.init();
 		collectors.init();
 	}
 
 	private static void modelStep() {
+        // Updates population with births and deaths
         demographics.step();
+        // Updates the number of houses
         construction.step();
-        // Updates households consumption, housing decisions, and corresponding bids and offers
-        for(Household h : households) h.step();
-        // Stores sale market bid and offer prices and averages before bids are matched by clearing the market
-		collectors.housingMarketStats.record();
-        // Clears sale market and updates the HPI
-		houseSaleMarket.clearMarket();
-        // Stores rental market bid and offer prices and averages before bids are matched by clearing the market
-		collectors.rentalMarketStats.record();
-        // Clears rental market
-		houseRentalMarket.clearMarket();
+        // Updates, for each region, its households, market statistics collectors and markets
+        for(Region r : geography) r.step();
 		// Updates bank and interest rate for new mortgages
 		bank.step();
         // Updates central bank policies (currently empty!)

@@ -56,7 +56,7 @@ public class Demographics {
 	 * As first order approx: we use female death rates, assuming singles live at home until marriage,
 	 * there is no divorce and the male always dies first
 	 */
-    // TODO: Clarify that the model was so far killing everybody over 105 only with a 50% chance every month
+    // TODO: Clarify that the model was so far killing everybody over 105 with probability 1 per month
     public static ArrayList<Double[]> probDeathGivenAgeData =
             readProbDeathGivenAge(Model.config.DATA_DEATH_PROB_GIVEN_AGE);
 

@@ -24,6 +24,7 @@ public class Region {
     public ArrayList<Household>     households;
     public HouseSaleMarket          houseSaleMarket;
     public HouseRentalMarket        houseRentalMarket;
+    public int                      targetPopulation;
     public int                      housingStock;
 
     RegionalHouseholdStats          regionalHouseholdStats;
@@ -46,8 +47,9 @@ public class Region {
      * Initialises the region with a sales market, a rental market, and space for storing
      * households
      */
-    public Region(int expectedPopulation) {
-        households = new ArrayList<>(expectedPopulation*2);
+    public Region(int targetPopulation) {
+        this.targetPopulation = targetPopulation;
+        households = new ArrayList<>(targetPopulation*2);
         houseSaleMarket = new HouseSaleMarket(this);
         houseRentalMarket = new HouseRentalMarket(this);
         regionalHouseholdStats = new RegionalHouseholdStats(this);
