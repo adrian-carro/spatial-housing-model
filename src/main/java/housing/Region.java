@@ -21,15 +21,14 @@ public class Region {
     //----- Fields -----//
     //------------------//
 
-    public ArrayList<Household>     households;
-    public HouseSaleMarket          houseSaleMarket;
-    public HouseRentalMarket        houseRentalMarket;
-    public int                      targetPopulation;
-    public int                      housingStock;
-
-    RegionalHouseholdStats          regionalHouseholdStats;
-    RegionalHousingMarketStats      regionalHousingMarketStats;
-    RegionalRentalMarketStats       regionalRentalMarketStats;
+    public ArrayList<Household>         households;
+    public HouseSaleMarket              houseSaleMarket;
+    public HouseRentalMarket            houseRentalMarket;
+    public RegionalHouseholdStats       regionalHouseholdStats;
+    public RegionalHousingMarketStats   regionalHousingMarketStats;
+    public RegionalRentalMarketStats    regionalRentalMarketStats;
+    public int                          targetPopulation;
+    public int                          housingStock;
 
     private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
     private MersenneTwister         rand = Model.rand; // Passes the Model's random number generator to a private field

@@ -98,8 +98,8 @@ public class MicroDataRecorder {
 		this.active = isActive;
 		if(isActive) {
 			try {
-				Model.collectors.housingMarketStats.setActive(true);
-				Model.collectors.rentalMarketStats.setActive(true);
+				Model.housingMarketStats.setActive(true);
+				Model.rentalMarketStats.setActive(true);
 				start();
 			} catch (FileNotFoundException | UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block

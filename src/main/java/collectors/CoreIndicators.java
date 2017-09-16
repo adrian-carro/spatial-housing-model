@@ -28,13 +28,13 @@ public class CoreIndicators extends CollectorBase {
 	@Override
 	public void setActive(boolean active) {
 		super.setActive(active);
-		Model.collectors.creditSupply.setActive(active);
-		Model.collectors.housingMarketStats.setActive(active);
-		Model.collectors.householdStats.setActive(active);
+		Model.creditSupply.setActive(active);
+		Model.housingMarketStats.setActive(active);
+		Model.householdStats.setActive(active);
 	}
 	
 	public double getOwnerOccupierLTIMeanAboveMedian() {
-		return(Model.collectors.creditSupply.oo_lti.apply(new MeanAboveMedian()));
+		return(Model.creditSupply.oo_lti.apply(new MeanAboveMedian()));
 	}
 	public String desOwnerOccupierLTIMeanAboveMedian() {
 		return("Owner-occupier mortage LTI ratio (mean above the median)");
@@ -44,7 +44,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 
 	public double getOwnerOccupierLTVMeanAboveMedian() {
-		return(Model.collectors.creditSupply.oo_ltv.apply(new MeanAboveMedian()));
+		return(Model.creditSupply.oo_ltv.apply(new MeanAboveMedian()));
 	}
 	public String desOwnerOccupierLTVMeanAboveMedian() {
 		return("Owner-occupier mortage LTV ratio (mean above the median)");
@@ -54,7 +54,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 
 	public double getBuyToLetLTVMean() {
-		return(Model.collectors.creditSupply.btl_ltv.getMean());
+		return(Model.creditSupply.btl_ltv.getMean());
 	}
 	public String desBuyToLetLTVMean() {
 		return("Buy-to-let loan-to-value ratio (mean)");
@@ -64,7 +64,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 	
 	public double getHouseholdCreditGrowth() {
-		return(Model.collectors.creditSupply.netCreditGrowth*12.0*100.0);
+		return(Model.creditSupply.netCreditGrowth*12.0*100.0);
 	}
 	public String desHouseholdCreditGrowth() {
 		return("Household credit growth (net, annualised, as a proportion of credit in previous step)");
@@ -74,7 +74,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 	
 	public double getDebtToIncome() {
-		return(100.0*(Model.collectors.creditSupply.totalBTLCredit + Model.collectors.creditSupply.totalOOCredit)/(Model.collectors.householdStats.OOTotalAnnualIncome+Model.collectors.householdStats.BtLTotalAnnualIncome+Model.collectors.householdStats.NonOwnerTotalAnnualIncome));
+		return(100.0*(Model.creditSupply.totalBTLCredit + Model.creditSupply.totalOOCredit)/(Model.collectors.householdStats.OOTotalAnnualIncome+Model.collectors.householdStats.BtLTotalAnnualIncome+Model.collectors.householdStats.NonOwnerTotalAnnualIncome));
 	}
 	public String desDebtToIncome() {
 		return("Household mortgage debt to income ratio (%)");
@@ -87,7 +87,7 @@ public class CoreIndicators extends CollectorBase {
 	 * 
 	 */
 	public double getOODebtToIncome() {
-		return(100.0*Model.collectors.creditSupply.totalOOCredit/Model.collectors.householdStats.OOTotalAnnualIncome);
+		return(100.0*Model.creditSupply.totalOOCredit/Model.householdStats.OOTotalAnnualIncome);
 	}
 	public String desOODebtToIncome() {
 		return("Household debt to income ratio (owner-occupier mortgages only) (%)");
@@ -100,7 +100,7 @@ public class CoreIndicators extends CollectorBase {
 	 * 
 	 */
 	public int getMortgageApprovals() {
-		return((int)(Model.collectors.creditSupply.nApprovedMortgages*config.getUKHouseholds()/Model.households.size()));
+		return((int)(Model.creditSupply.nApprovedMortgages*config.getUKHouseholds()/Model.households.size()));
 	}
 	public String desMortgageApprovals() {
 		return("Number of mortgage approvals per month (scaled for 26.5 million households)");
@@ -111,7 +111,7 @@ public class CoreIndicators extends CollectorBase {
 	
 	
 	public int getHousingTransactions() {
-		return((int)(Model.collectors.housingMarketStats.nSales*config.getUKHouseholds()/Model.households.size()));
+		return((int)(Model.housingMarketStats.nSales*config.getUKHouseholds()/Model.households.size()));
 	}
 	public String desHousingTransactions() {
 		return("Number of houses bought/sold per month (scaled for 26.5 million households)");
@@ -121,7 +121,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 	
 	public int getAdvancesToFTBs() {
-		return((int)(Model.collectors.creditSupply.nFTBMortgages*config.getUKHouseholds()/Model.households.size()));
+		return((int)(Model.creditSupply.nFTBMortgages*config.getUKHouseholds()/Model.households.size()));
 	}
 	public String desAdvancesToFTBs() {
 		return("Number of advances to first-time-buyers (scaled for 26.5 million households)");
@@ -131,7 +131,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 
 	public int getAdvancesToBTL() {
-		return((int)(Model.collectors.creditSupply.nBTLMortgages*config.getUKHouseholds()/Model.households.size()));
+		return((int)(Model.creditSupply.nBTLMortgages*config.getUKHouseholds()/Model.households.size()));
 	}
 	public String desAdvancesToBTL() {
 		return("Number of advances to buy-to-let purchasers (scaled for 26.5 million households)");
@@ -151,7 +151,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 
 	public double getPriceToIncome() {
-		return(Model.houseSaleMarket.housePriceIndex*config.derivedParams.getHPIReference()*(Model.collectors.householdStats.nHouseholds - Model.collectors.householdStats.nRenting - Model.collectors.householdStats.nHomeless)/(Model.collectors.householdStats.OOTotalAnnualIncome+Model.collectors.householdStats.BtLTotalAnnualIncome));
+		return(Model.houseSaleMarket.housePriceIndex*config.derivedParams.getHPIReference()*(Model.householdStats.nHouseholds - Model.householdStats.nRenting - Model.householdStats.nHomeless)/(Model.householdStats.OOTotalAnnualIncome+Model.householdStats.BtLTotalAnnualIncome));
 	}
 	public String desPriceToIncome() {
 		return("House price to household disposable income ratio");
@@ -161,7 +161,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 	
 	public double getRentalYield() {
-		return(100.0*Model.collectors.householdStats.rentalYield);
+		return(100.0*Model.householdStats.rentalYield);
 	}
 	public String desRentalYield() {
 		return("Average gross annual yield on occupied rental properties");
