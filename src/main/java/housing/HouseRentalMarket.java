@@ -52,11 +52,6 @@ public class HouseRentalMarket extends HousingMarket {
 		super.removeOffer(hsr);
 		hsr.house.resetRentalRecord();
 	}
-
-	@Override
-	public double referencePrice(int quality) {
-		return(data.HouseRentalMarket.referencePrice(quality));
-	}
 	
 	/***
 	 * @param quality Quality of the house
