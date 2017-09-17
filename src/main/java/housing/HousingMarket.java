@@ -12,24 +12,38 @@ import org.apache.commons.math3.random.MersenneTwister;
 
 import utilities.PriorityQueue2D;
 
-/**********************************************************
- * Implementation of the mechanism of the house-sale and
- * house-rental markets.
- * 
- * See model description for details.
- * 
- * @author daniel
+/**************************************************************************************************
+ * Class that implements the market mechanism behind both the sale and the rental markets
  *
- *********************************************************/
+ * @author daniel, Adrian Carro
+ *
+ *************************************************************************************************/
 public abstract class HousingMarket implements Serializable {
     private static final long serialVersionUID = -7249221876467520088L;
 
-    private Config    config = Model.config;    // Passes the Model's configuration parameters object to a private field
+    //------------------//
+    //----- Fields -----//
+    //------------------//
 
-    // TODO: Make sure this authority class is actually needed
-    static public class Authority {
-        private Authority() {}
-    }
+    private static Authority                        authority = new Authority();
+
+    public double                                   averageDaysOnMarket;
+    public double                                   housePriceIndex;
+
+    ArrayList<HouseBuyerRecord>                     bids;
+
+    private PriorityQueue2D<HousingMarketRecord>    offersPQ;
+    private DescriptiveStatistics                   HPIRecord;
+    private MersenneTwister                         rand = Model.rand; // Passes the Model's random number generator to a private field
+    private Config                                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private double                                  sumSoldPrice = 0.0;
+    private double                                  sumSoldRefPrice = 0.0;
+    private int                                     nSold = 0;
+    private double                                  averageSalePrice[] = new double[config.N_QUALITY];
+
+    //------------------------//
+    //----- Constructors -----//
+    //------------------------//
 
     public HousingMarket() {
         offersPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); //Priority Queue of (Price, Quality)
@@ -38,10 +52,21 @@ public abstract class HousingMarket implements Serializable {
         // TODO: Check if this integer is too large or small, check speed penalty for using ArrayList as opposed to normal arrays
         bids = new ArrayList<>(config.TARGET_POPULATION/16);
         HPIRecord = new DescriptiveStatistics(config.derivedParams.HPI_RECORD_LENGTH);
-        quarterlyHPI.addValue(1.0);
-        quarterlyHPI.addValue(1.0);        
         init();
     }
+
+    //----------------------//
+    //----- Subclasses -----//
+    //----------------------//
+
+    // TODO: Make sure this authority class is actually needed
+    static public class Authority {
+        private Authority() {}
+    }
+
+    //-------------------//
+    //----- Methods -----//
+    //-------------------//
 
     public double[] getAverageSalePrice() {
         return averageSalePrice;
@@ -245,8 +270,8 @@ public abstract class HousingMarket implements Serializable {
         averageSalePrice[sale.getQuality()] = config.derivedParams.G*averageSalePrice[sale.getQuality()] + (1.0-config.derivedParams.G)*sale.getPrice();
         
 //        housePriceRegression.addData(referencePrice(sale.getQuality()), sale.getPrice());
-        aveSoldRefPrice += referencePrice(sale.getQuality());
-        aveSoldPrice += sale.getPrice();
+        sumSoldRefPrice += referencePrice(sale.getQuality());
+        sumSoldPrice += sale.getPrice();
         nSold += 1;
         
         if(averageSalePrice[sale.getQuality()] < 0.0) {
@@ -287,6 +312,7 @@ public abstract class HousingMarket implements Serializable {
      * @param q the quality of the house
      * @return the average sale price of houses of the given quality
      */
+    // TODO: Change name of this method (getAverageSalePricePerQuality) as it coincides with a different one
     public double getAverageSalePrice(int q) {
         double price = averageSalePrice[q];
         if(price <= 0.0) {
@@ -313,64 +339,22 @@ public abstract class HousingMarket implements Serializable {
     
     protected void recordMarketStats() {
         // --- House Price Index stuff
-        // ---------------------------
-        
-        // ###### TODO: TEST!!!
-        // --- calculate from avergeSalePrice from housePriceRegression
-//        if(housePriceRegression.getN() > 4) {
-        // TODO: Why only when nSold greater than 4? Undeclared in the paper!
+        // TODO: Why only when nSold greater than 4? Undeclared in the paper! Test influence of this value!
         if(nSold > 4) {
-//            housePriceRegression.regress();
-//            double m = housePriceRegression.getSlope();
-            // TODO: Is this a parameter? Could we remove it?
-            double c = 0.0;//housePriceRegression.getIntercept();
-            double m = aveSoldPrice/aveSoldRefPrice;
-            aveSoldPrice = 0.0;
-            aveSoldRefPrice = 0.0;
+            // TODO: Is this a parameter? As it is playing no role, could we remove it?
+            // TODO: Revise if declared in the article!
+            double c = 0.0;
+            housePriceIndex = sumSoldPrice/sumSoldRefPrice;
+            sumSoldPrice = 0.0;
+            sumSoldRefPrice = 0.0;
             nSold = 0;
 
-            housePriceIndex = m;
-//            quarterlyHPI.addValue(m);
+
             for(int q=0; q<config.N_QUALITY; ++q) {
-                averageSalePrice[q] = config.MARKET_AVERAGE_PRICE_DECAY*averageSalePrice[q] + (1.0-config.MARKET_AVERAGE_PRICE_DECAY)*(m*referencePrice(q) + c);
-//                averageSalePrice[q] = referencePrice(q)*quarterlyHPI.getMean();
+                averageSalePrice[q] = config.MARKET_AVERAGE_PRICE_DECAY*averageSalePrice[q]
+                        + (1.0-config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePrice(q) + c);
             }
         }
-//        housePriceRegression.clear();
-        
-        // --- calculate from averageSalePrice array
-//        housePriceIndex = 0.0;
-//        for(Double price : averageSalePrice) {
-//            housePriceIndex += price; // assumes equal distribution of houses over qualities
-//        }
-//        housePriceIndex /= House.Config.N_QUALITY*data.HouseSaleMarket.HPI_REFERENCE;
-        
         HPIRecord.addValue(housePriceIndex);
     }
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //protected Map<House, HouseSaleRecord>     onMarket = new TreeMap<House, HouseSaleRecord>();
-
-    PriorityQueue2D<HousingMarketRecord> offersPQ;
-//    protected HashMap<HouseSaleRecord, ArrayList<HouseBuyerRecord> > matches;
-    ArrayList<HouseBuyerRecord> bids;
-    private static Authority authority = new Authority();
-
-//    protected PriorityQueue<HouseBuyerRecord> buyers = new PriorityQueue<HouseBuyerRecord>();
-    
-    // ---- statistics
-//    SimpleRegression housePriceRegression = new SimpleRegression(); // linear regression of (transaction price,reference price)
-    private MersenneTwister    rand = Model.rand;    // Passes the Model's random number generator to a private field
-    public double aveSoldRefPrice = 0.0;
-    public double aveSoldPrice = 0.0;
-    public int nSold = 0;
-    public double averageDaysOnMarket;
-    protected double averageSalePrice[] = new double[config.N_QUALITY];
-    public DescriptiveStatistics HPIRecord;
-    public DescriptiveStatistics quarterlyHPI = new DescriptiveStatistics(3);
-    public double housePriceIndex;
-    public double dLogPriceMean;
-    public double dLogPriceSD;
 }

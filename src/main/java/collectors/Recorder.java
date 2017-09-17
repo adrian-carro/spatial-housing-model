@@ -131,18 +131,18 @@ public class Recorder {
                 Model.housingMarketStats.getFTBSalesProportion()+", "+
                 Model.housingMarketStats.getHPA()+", "+
                 Model.housingMarketStats.getHPI()+", "+
-                Model.housingMarketStats.getnBuyers()+", "+
-                Model.housingMarketStats.getnSellers()+", "+
-                Model.housingMarketStats.getnSales()+", "+
-                Model.housingMarketStats.getnNewBuild()+", "+
+                Model.housingMarketStats.getNBuyers()+", "+
+                Model.housingMarketStats.getNSellers()+", "+
+                Model.housingMarketStats.getNSales()+", "+
+                Model.housingMarketStats.getNNewBuild()+", "+
                 Model.rentalMarketStats.getAverageBidPrice()+", "+
                 Model.rentalMarketStats.getAverageDaysOnMarket()+", "+
                 Model.rentalMarketStats.getAverageOfferPrice()+", "+
                 Model.rentalMarketStats.getHPA()+", "+
                 Model.rentalMarketStats.getHPI()+", "+
-                Model.rentalMarketStats.getnBuyers()+", "+
-                Model.rentalMarketStats.getnSellers()+", "+
-                Model.rentalMarketStats.getnSales()+", "+
+                Model.rentalMarketStats.getNBuyers()+", "+
+                Model.rentalMarketStats.getNSellers()+", "+
+                Model.rentalMarketStats.getNSales()+", "+
                 Model.rentalMarketStats.getAverageSoldGrossYield()+", "+
                 Model.householdStats.getnActiveBtL()+", "+
                 Model.householdStats.getBTLProportion());
