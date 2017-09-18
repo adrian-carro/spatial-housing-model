@@ -13,13 +13,15 @@ import org.apache.commons.math3.random.MersenneTwister;
 public class HouseholdBehaviour implements Serializable {
 	private static final long serialVersionUID = -7785886649432814279L;
 
-	private Config	config = Model.config;	// Passes the Model's configuration parameters object to a private field
+    public double                   BtLCapGainCoeff; // Sensitivity of BtL investors to capital gain, 0.0 cares only about rental yield, 1.0 cares only about cap gain
 
-	private MersenneTwister	rand = Model.rand;	// Passes the Model's random number generator to a private field
-	public boolean					BTLInvestor;
-	public double 					propensityToSave;
-	public double					desiredBalance;
-	public double 					BtLCapGainCoeff; // Sensitivity of BtL investors to capital gain, 0.0 cares only about rental yield, 1.0 cares only about cap gain
+
+    private Region                  region;
+    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private MersenneTwister	        rand = Model.rand; // Passes the Model's random number generator to a private field
+    private boolean                 BTLInvestor;
+    private double                  propensityToSave;
+    private double                  desiredBalance;
 
     // Size distributions for downpayments of first-time-buyers and owner-occupiers
     public LogNormalDistribution FTB_DOWNPAYMENT = new LogNormalDistribution(rand, config.DOWNPAYMENT_FTB_SCALE,
@@ -39,7 +41,8 @@ public class HouseholdBehaviour implements Serializable {
 	 * @param incomePercentile the fixed income percentile for the household (assumed constant over a lifetime),
 	 *                         used to determine whether the household can be a BTL investor
      ***************************************************/
-	public HouseholdBehaviour(double incomePercentile) {
+	public HouseholdBehaviour(double incomePercentile, Region region) {
+	    this.region = region;
 	    // Propensity to save is computed here so that it is constant for a given agent
         propensityToSave = config.DESIRED_BANK_BALANCE_EPSILON*rand.nextGaussian();
 		BtLCapGainCoeff = 0.0;
@@ -122,11 +125,20 @@ public class HouseholdBehaviour implements Serializable {
 	
 
 	/**
-	 * @return Does an owner-occupier decide to sell house?
+     * This method implements a household's decision to sell their owner-occupied property. On average, households sell
+     * owner-occupied houses every 11 years, due to exogenous reasons not addressed in the model. In order to prevent
+     * an unrealistic build-up of housing stock and unrealistic fluctuations of the interest rate, we modify this
+     * probability by introducing two extra factors, depending, respectively, on the number of houses per capita
+     * currently on the market and its exponential moving average, and on the interest rate and its exponential moving
+     * averages. In this way, the long-term selling probability converges to 1/11.
+     * TODO: This method includes 2 unidentified fudge parameters, DECISION_TO_SELL_HPC and DECISION_TO_SELL_INTEREST,
+     * TODO: which are explicitly explained otherwise in the manuscript. This needs urgent revision!
+     *
+	 * @return True if the owner-occupier decides to sell the house and false otherwise.
 	 */
-	public boolean decideToSellHome(Household me) {
-		// TODO: need to add expenditure
-		// TODO: This if implies BTL agents never sell their homes!
+	public boolean decideToSellHome(int totalPopulation) {
+		// TODO: This if implies BTL agents never sell their homes! In any case, could we make it such that BTL agents
+        // TODO: simply do not enter here?
 		if(isPropertyInvestor()) return(false);
 		return(rand.nextDouble() < config.derivedParams.MONTHLY_P_SELL*(1.0
                 + config.DECISION_TO_SELL_ALPHA*(config.DECISION_TO_SELL_HPC
@@ -192,24 +204,24 @@ public class HouseholdBehaviour implements Serializable {
 	 *  is assumed to be the difference in rental price between the two qualities.
 	 *  @return true if we should buy a house, false if we should rent
 	 */
-	public boolean rentOrPurchaseDecision(Household me) {
-		if(isPropertyInvestor()) return(true);
-
-		double purchasePrice = Math.min(desiredPurchasePrice(me, me.monthlyEmploymentIncome),
-                Model.bank.getMaxMortgage(me, true));
-		MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, purchasePrice,
-                downPayment(me,purchasePrice), true);
-		int newHouseQuality = Model.houseSaleMarket.maxQualityGivenPrice(purchasePrice);
-//		int rentalQuality = Model.houseRentalMarket.maxQualityGivenPrice(desiredRent(me, me.monthlyEmploymentIncome));
-//		if(rentalQuality > newHouseQuality+House.Config.N_QUALITY/8) return(false); // better quality to rent
-		if(newHouseQuality < 0) return(false); // can't afford a house anyway
-		double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR - purchasePrice*HPAExpectation();
-		double costOfRent = Model.houseRentalMarket.getAverageSalePrice(newHouseQuality)*config.constants.MONTHS_IN_YEAR;
-//		System.out.println(FTB_K*(costOfRent + COST_OF_RENTING - costOfHouse));
-		//return(rand.nextDouble() < 1.0/(1.0 + Math.exp(-FTB_K*(costOfRent*(1.0+COST_OF_RENTING) - costOfHouse))));
-		return(rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
-                + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse)));
-	}
+//	public boolean rentOrPurchaseDecision(Household me) {
+//		if(isPropertyInvestor()) return(true);
+//
+//		double purchasePrice = Math.min(desiredPurchasePrice(me, me.monthlyEmploymentIncome),
+//                Model.bank.getMaxMortgage(me, true));
+//		MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, purchasePrice,
+//                downPayment(me,purchasePrice), true);
+//		int newHouseQuality = Model.houseSaleMarket.maxQualityGivenPrice(purchasePrice);
+////		int rentalQuality = Model.houseRentalMarket.maxQualityGivenPrice(desiredRent(me, me.monthlyEmploymentIncome));
+////		if(rentalQuality > newHouseQuality+House.Config.N_QUALITY/8) return(false); // better quality to rent
+//		if(newHouseQuality < 0) return(false); // can't afford a house anyway
+//		double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR - purchasePrice*HPAExpectation();
+//		double costOfRent = Model.houseRentalMarket.getAverageSalePrice(newHouseQuality)*config.constants.MONTHS_IN_YEAR;
+////		System.out.println(FTB_K*(costOfRent + COST_OF_RENTING - costOfHouse));
+//		//return(rand.nextDouble() < 1.0/(1.0 + Math.exp(-FTB_K*(costOfRent*(1.0+COST_OF_RENTING) - costOfHouse))));
+//		return(rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
+//                + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse)));
+//	}
 
     public boolean rentOrPurchaseDecision(Household me, double desiredPurchasePrice) {
         if(isPropertyInvestor()) return(true);
@@ -221,8 +233,10 @@ public class HouseholdBehaviour implements Serializable {
 //		int rentalQuality = Model.houseRentalMarket.maxQualityGivenPrice(desiredRent(me, me.monthlyEmploymentIncome));
 //		if(rentalQuality > newHouseQuality+House.Config.N_QUALITY/8) return(false); // better quality to rent
         if(newHouseQuality < 0) return(false); // can't afford a house anyway
-        double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR - purchasePrice*HPAExpectation();
-        double costOfRent = Model.houseRentalMarket.getAverageSalePrice(newHouseQuality)*config.constants.MONTHS_IN_YEAR;
+        double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR
+				- purchasePrice*HPAExpectation();
+        double costOfRent = Model.houseRentalMarket.getAverageSalePrice(newHouseQuality)
+                *config.constants.MONTHS_IN_YEAR;
 //		System.out.println(FTB_K*(costOfRent + COST_OF_RENTING - costOfHouse));
         //return(rand.nextDouble() < 1.0/(1.0 + Math.exp(-FTB_K*(costOfRent*(1.0+COST_OF_RENTING) - costOfHouse))));
         return(rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
@@ -369,10 +383,12 @@ public class HouseholdBehaviour implements Serializable {
 		return(BTLInvestor = isInvestor);
 	}
 
-	/*** @returns expectation value of HPI in one year's time divided by today's HPI*/
+	/**
+     * @returns expectation value of HPI in one year's time divided by today's HPI
+     */
 	public double HPAExpectation() {
 		// Dampening or multiplier factor, depending on its value being <1 or >1, for the current trend of HPA when
 		// computing expectations as in HPI(t+DT) = HPI(t) + FACTOR*DT*dHPI/dt (double)
-		return(Model.houseSaleMarket.housePriceAppreciation(config.HPA_YEARS_TO_CHECK)*config.HPA_EXPECTATION_FACTOR);
+		return(region.regionalHousingMarketStats.getLongTermHPA()*config.HPA_EXPECTATION_FACTOR);
     }
 }

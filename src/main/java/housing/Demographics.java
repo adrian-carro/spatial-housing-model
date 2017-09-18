@@ -32,7 +32,8 @@ public class Demographics {
     //----- Methods -----//
     //-------------------//
 
-	/***
+
+    /***
 	 * Add newly 'born' households to the model and remove households that 'die'
 	 */
 	public void step() {
@@ -42,7 +43,7 @@ public class Demographics {
             // TODO: Shouldn't this include also new renters? Review the whole method...
             int nBirths = (int)(region.targetPopulation*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR + 0.5);
             while(--nBirths >= 0) {
-                region.households.add(new Household(data.Demographics.pdfHouseholdAgeAtBirth.nextDouble()));
+                region.households.add(new Household(data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(), region));
             }
             // Death: Kill households with a probability dependent on their age and organise inheritance
             double pDeath;

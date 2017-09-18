@@ -32,15 +32,17 @@ public class Household implements IHouseOwner, Serializable {
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
 
+
+    private Region                          region;
+    private House                           home;
+    private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
+    private Config                          config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private MersenneTwister                 rand; // Private field to contain the Model's random number generator
     private double                          age; // Age of the household representative person
     private double                          bankBalance;
     private double                          monthlyPropertyIncome;
     private boolean                         isFirstTimeBuyer;
     private boolean                         isBankrupt;
-    private House                           home;
-    private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
-    private Config                          config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister                 rand; // Private field to contain the Model's random number generator
 
     //------------------------//
     //----- Constructors -----//
@@ -51,14 +53,15 @@ public class Household implements IHouseOwner, Serializable {
      * will be a BTL investor). Households start off in social
      * housing and with their 'desired bank balance' in the bank.
      ********************************************************/
-    public Household(double householdAgeAtBirth) {
+    public Household(double householdAgeAtBirth, Region region) {
+        this.region = region;
         rand = Model.rand;    // Passes the Model's random number generator to a private field of each instance
         home = null;
         isFirstTimeBuyer = true;
         id = ++id_pool;
         age = householdAgeAtBirth;
         incomePercentile = rand.nextDouble();
-        behaviour = new HouseholdBehaviour(incomePercentile);
+        behaviour = new HouseholdBehaviour(incomePercentile, region);
         monthlyEmploymentIncome = annualIncome()/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.desiredBankBalance(this);
         monthlyPropertyIncome = 0.0;
@@ -391,7 +394,7 @@ public class Household implements IHouseOwner, Serializable {
      ********************************************************/
     private boolean decideToSellHouse(House h) {
         if(h == home) {
-            return(behaviour.decideToSellHome(this));
+            return(behaviour.decideToSellHome(h));
         }
         if(config.BTL_ENABLED) return(behaviour.decideToSellInvestmentProperty(h, this));
         return(false);
