@@ -73,13 +73,17 @@ public class Region {
         // Updates regional households consumption, housing decisions, and corresponding regional bids and offers
         for(Household h : households) h.step();
         // Stores regional sale market bid and offer prices and averages before bids are matched by clearing the market
-        regionalHousingMarketStats.record();
+        regionalHousingMarketStats.preClearingRecord();
         // Clears regional sale market and updates the HPI
         houseSaleMarket.clearMarket();
+        // Computes and stores several regional housing market statistics after bids are matched by clearing the market (such as HPI, HPA)
+        regionalHousingMarketStats.postClearingRecord();
         // Stores regional rental market bid and offer prices and averages before bids are matched by clearing the market
-        regionalRentalMarketStats.record();
+        regionalRentalMarketStats.preClearingRecord();
         // Clears regional rental market
         houseRentalMarket.clearMarket();
+        // Computes and stores several regional rental market statistics after bids are matched by clearing the market (such as HPI, HPA)
+        regionalRentalMarketStats.postClearingRecord();
         // Stores regional household statistics after both regional markets have been cleared
         regionalHouseholdStats.step();
     }

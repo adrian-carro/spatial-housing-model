@@ -32,7 +32,7 @@ public class HouseSaleMarket {
 	/***
 	 * @return refPrice Array of doubles with the reference price for each quality band
 	 */
-	public static double [] getReferencePrices() {
+	public static double [] getReferencePricePerQuality() {
 		return refPrice;
 	}
 

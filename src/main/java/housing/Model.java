@@ -8,10 +8,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.time.Instant;
 
-import collectors.Collectors;
-import collectors.CoreIndicators;
-import collectors.MicroDataRecorder;
-import collectors.Recorder;
+import collectors.*;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.cli.*;
@@ -54,11 +51,15 @@ public class Model {
     public static Bank 				    bank;
     public static ArrayList<Region>     geography;
     public static MersenneTwister	    rand;
-    public static Collectors            collectors;
+    public static CreditSupply          creditSupply;
+    public static CoreIndicators        coreIndicators;
+    public static HouseholdStats        householdStats;
+    public static HousingMarketStats    housingMarketStats;
+    public static RentalMarketStats     rentalMarketStats;
     public static MicroDataRecorder     transactionRecorder;
     public static int	                nSimulation; // To keep track of the simulation number
     public static int	                t; // To keep track of time (in months)
-    public static int                   nHouseholds; // To keep track of the total number of households
+    public static int                   totalPopulation; // To keep track of the total number of households
 
     static Government		            government;
 
@@ -96,7 +97,11 @@ public class Model {
 
         recorder = new collectors.Recorder(outputFolder);
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
-        collectors = new collectors.Collectors(outputFolder);
+        creditSupply = new collectors.CreditSupply(outputFolder);
+        coreIndicators = new collectors.CoreIndicators();
+        householdStats = new collectors.HouseholdStats();
+        housingMarketStats = new collectors.HousingMarketStats(geography);
+        rentalMarketStats = new collectors.RentalMarketStats(geography);
 
         nSimulation = 0;
     }
@@ -137,7 +142,8 @@ public class Model {
                     if(config.recordCoreIndicators) recorder.step();
                 }
 
-                collectors.step();
+                if(creditSupply.isActive()) creditSupply.step();
+                if(householdStats.isActive()) householdStats.step();
 
                 // Print time information to screen
                 if (t % 100 == 0) {
@@ -169,21 +175,29 @@ public class Model {
 	private static void init() {
 		construction.init();
 		bank.init();
+		housingMarketStats.init();
+		rentalMarketStats.init();
         for(Region r : geography) r.init();
-		collectors.init();
+		totalPopulation = 0;
 	}
 
 	private static void modelStep() {
-        // Updates population with births and deaths
+        // Update population with births and deaths in each region
         demographics.step();
-        // Updates the number of houses
-        construction.step();
-        // Updates, for each region, its households, market statistics collectors and markets
+        // Update total population
+        totalPopulation = getTotalPopulation();
+        // Update number of houses in each region
+        construction.step(totalPopulation);
+        // Update, for each region, its households, market statistics collectors and markets
         for(Region r : geography) r.step();
-		// Updates bank and interest rate for new mortgages
-		bank.step();
-        // Updates central bank policies (currently empty!)
-		centralBank.step(getCoreIndicators());
+        // Update all sale market statistics by collecting and aggregating results from the regions
+        housingMarketStats.collectRegionalRecords();
+        // Update all rental market statistics by collecting and aggregating results from the regions
+        rentalMarketStats.collectRegionalRecords();
+		// Update bank and interest rate for new mortgages
+		bank.step(totalPopulation);
+        // Update central bank policies (currently empty!)
+		centralBank.step(coreIndicators);
 	}
 
     /**
@@ -288,34 +302,39 @@ public class Model {
         }
     }
 
+    /**
+     * @return Current total number of households, i.e., the sum of the current populations of each region
+     */
+    static public int getTotalPopulation() {
+        int sum = 0;
+        for (Region region: geography) {
+            sum += region.households.size();
+        }
+        return sum;
+    }
+
 	/**
 	 * @return Simulated time in months
 	 */
 	static public int getTime() {
-		return(t);
+		return t;
 	}
 
     /**
      * @return Current month of the simulation
      */
 	static public int getMonth() {
-		return(t%12 + 1);
+		return t%12 + 1;
 	}
 
-    /**
-     * @return Core indicators collector
-     */
-	private static CoreIndicators getCoreIndicators() {
-		return collectors.coreIndicators;
-	}
 
 	private static void setRecordCoreIndicators(boolean recordCoreIndicators) {
 		if(recordCoreIndicators) {
-			collectors.coreIndicators.setActive(true);
-			collectors.creditSupply.setActive(true);
-			collectors.householdStats.setActive(true);
-			collectors.housingMarketStats.setActive(true);
-			collectors.rentalMarketStats.setActive(true);
+			coreIndicators.setActive(true);
+			creditSupply.setActive(true);
+			householdStats.setActive(true);
+			housingMarketStats.setActive(true);
+			rentalMarketStats.setActive(true);
 			try {
 				recorder.start();
 			} catch (FileNotFoundException | UnsupportedEncodingException e) {

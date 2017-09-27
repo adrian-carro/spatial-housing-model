@@ -36,14 +36,14 @@ public class Config {
     public int N_QUALITY;                   // Number of quality bands for houses
 
     // Housing market parameters
-    int DAYS_UNDER_OFFER;                   // Time (in days) that a house remains under offer
-    double BIDUP;                           // Smallest proportional increase in price that can cause a gazump
-    double MARKET_AVERAGE_PRICE_DECAY;      // Decay constant for the exponential moving average of sale prices
-    public double INITIAL_HPI;              // Initial housing price index
-    double HPI_MEDIAN;                      // Median house price
-    public double HPI_SHAPE;                // Shape parameter for the log-normal distribution of housing prices
-    double AVERAGE_TENANCY_LENGTH;          // Average number of months a tenant will stay in a rented house
-    public double RENT_GROSS_YIELD;         // Profit margin for buy-to-let investors
+    int DAYS_UNDER_OFFER;                       // Time (in days) that a house remains under offer
+    double BIDUP;                               // Smallest proportional increase in price that can cause a gazump
+    public double MARKET_AVERAGE_PRICE_DECAY;   // Decay constant for the exponential moving average of sale prices
+    public double INITIAL_HPI;                  // Initial housing price index
+    double HPI_MEDIAN;                          // Median house price
+    public double HPI_SHAPE;                    // Shape parameter for the log-normal distribution of housing prices
+    double AVERAGE_TENANCY_LENGTH;              // Average number of months a tenant will stay in a rented house
+    public double RENT_GROSS_YIELD;             // Profit margin for buy-to-let investors
 
     // Demographic parameters
     public int TARGET_POPULATION;           // Target number of households
@@ -69,7 +69,7 @@ public class Config {
     // Household behaviour parameters: general
     double BANK_BALANCE_FOR_CASH_DOWNPAYMENT;   // If bankBalance/housePrice is above this, payment will be made fully in cash
     double HPA_EXPECTATION_FACTOR;              // Weight assigned to current trend when computing expectations
-    int HPA_YEARS_TO_CHECK;                     // Number of years of the HPI record to check when computing the annual HPA
+    public int HPA_YEARS_TO_CHECK;              // Number of years of the HPI record to check when computing the annual HPA
     double HOLD_PERIOD;                         // Average period, in years, for which owner-occupiers hold their houses
     // Household behaviour parameters: sale price reduction
     double P_SALE_PRICE_REDUCE;             // Monthly probability of reducing the price of a house on the market
@@ -170,11 +170,11 @@ public class Config {
      */
     public class DerivedParams {
         // Housing market parameters
-        int HPI_RECORD_LENGTH;          // Number of months to record HPI (to compute price growth at different time scales)
+        public int HPI_RECORD_LENGTH;   // Number of months to record HPI (to compute price growth at different time scales)
         double MONTHS_UNDER_OFFER;      // Time (in months) that a house remains under offer
         double T;                       // Characteristic number of data-points over which to average market statistics
-        double E;                       // Decay constant for averaging days on market (in transactions)
-        double G;                       // Decay constant for averageListPrice averaging (in transactions)
+        public double E;                // Decay constant for averaging days on market (in transactions)
+        public double G;                // Decay constant for averageListPrice averaging (in transactions)
         public double HPI_LOG_MEDIAN;   // Logarithmic median house price (scale parameter of the log-normal distribution)
         double HPI_REFERENCE;           // Mean of reference house prices
         // Household behaviour parameters: general
@@ -209,7 +209,7 @@ public class Config {
      * Class to contain all constants (not read from the configuration file nor derived from it)
      */
     public class Constants {
-        final int DAYS_IN_MONTH = 30;
+        final public int DAYS_IN_MONTH = 30;
         final public int MONTHS_IN_YEAR = 12;
     }
 
@@ -364,9 +364,9 @@ public class Config {
         // Housing market parameters
         derivedParams.HPI_RECORD_LENGTH = HPA_YEARS_TO_CHECK*constants.MONTHS_IN_YEAR + 3;  // Plus three months in a quarter
         derivedParams.MONTHS_UNDER_OFFER = DAYS_UNDER_OFFER/constants.DAYS_IN_MONTH;
-        derivedParams.T = 0.02*TARGET_POPULATION;                   // TODO: Clarify where does this 0.2 come from
-        derivedParams.E = Math.exp(-1.0/derivedParams.T);
-        derivedParams.G = Math.exp(-N_QUALITY/derivedParams.T);
+        derivedParams.T = 0.02*TARGET_POPULATION;                   // TODO: Clarify where does this 0.2 come from, and provide explanation for this formula
+        derivedParams.E = Math.exp(-1.0/derivedParams.T);           // TODO: Provide explanation for this formula
+        derivedParams.G = Math.exp(-N_QUALITY/derivedParams.T);     // TODO: Provide explanation for this formula
         derivedParams.HPI_LOG_MEDIAN = Math.log(HPI_MEDIAN);
         derivedParams.HPI_REFERENCE = Math.exp(derivedParams.HPI_LOG_MEDIAN + HPI_SHAPE*HPI_SHAPE/2.0);
         // Household behaviour parameters: general
