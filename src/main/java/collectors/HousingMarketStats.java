@@ -1,6 +1,9 @@
 package collectors;
 
 import housing.*;
+
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+
 import java.util.ArrayList;
 
 /**************************************************************************************************
@@ -17,174 +20,315 @@ public class HousingMarketStats extends CollectorBase {
     //----- Fields -----//
     //------------------//
 
-    private Config              config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private ArrayList<Region>   geography;
+    // General fields
+    private ArrayList<Region>       geography;
+    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
 
-    public double sumBidPrices;
-    public double sumOfferPrices;
-    public int    nSales, saleCount;
-    public int	  nFTBSales, ftbSaleCount;	  // number of sales to first-time-buyers
-    public int	  nBTLSales, btlSaleCount;	  // number of sales to first-time-buyers
-    public int    nBuyers;
-    public int    nSellers;
-    public int 	  nNewBuild;
-    public double [][]    priceData;
-    double [] offerPrices;
-    double [] bidPrices;
-    HousingMarket market;
+    // Variables computed at initialisation
+    private double []               referencePricePerQuality;
 
-    public int 	nEmpty;
+    // Variables computed before market clearing
+    private int                     nBuyers;
+    private int                     nSellers;
+    private int 	                nNewBuild;
+    private int 	                nEmpty;
+    private double                  sumBidPrices;
+    private double                  sumOfferPrices;
+    private double []               offerPrices;
+    private double []               bidPrices;
+
+    // Variables computed after market clearing to keep the previous values during the clearing
+    private int                     nSales; // Number of sales
+    private int	                    nFTBSales; // Number of sales to first-time buyers
+    private int	                    nBTLSales; // Number of sales to buy-to-let investors
+    private double                  sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
+    private double                  sumSoldPrice; // Sum of prices of properties sold this month
+    private double                  sumDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
+    private double []               sumSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
+    private int []                  nSalesPerQuality; // Number of sales for each quality band for properties sold this month
+
+    // Other variables computed after market clearing
+    private double                  expAvDaysOnMarket; // Exponential moving average of the number of days on the market
+    private double []               expAvSalePricePerQuality; // Exponential moving average of the price for each quality band
+    private double                  housePriceIndex;
+    private DescriptiveStatistics   HPIRecord;
+    private double                  annualHousePriceAppreciation;
+    private double                  longTermHousePriceAppreciation;
 
     //------------------------//
     //----- Constructors -----//
     //------------------------//
 
-
+    /**
+     * Initialises the national sale market statistics collector
+     *
+     * @param geography Reference to the whole geography of regions
+     */
     public HousingMarketStats(ArrayList<Region> geography) {
         setActive(true);
         this.geography = geography;
-        priceData = new double[2][config.N_QUALITY];
-        for(int i=0; i<config.N_QUALITY; ++i) {
-            priceData[0][i] = referencePrice(i);
-        }
+        referencePricePerQuality = new double[config.N_QUALITY];
+        System.arraycopy(data.HouseSaleMarket.getReferencePricePerQuality(), 0, referencePricePerQuality, 0,
+                config.N_QUALITY); // Copies reference prices from data/HouseSaleMarket into referencePricePerQuality
+        HPIRecord = new DescriptiveStatistics(config.derivedParams.HPI_RECORD_LENGTH);
     }
 
     //-------------------//
     //----- Methods -----//
     //-------------------//
 
-    public void record() {
+    /**
+     * Sets initial values for all relevant variables to enforce a controlled first measure for statistics
+     */
+    public void init() {
+        // Set zero initial value for variables computed (regionally) before market clearing
+        nBuyers = 0;
+        nSellers = 0;
+        nNewBuild = 0;
+        nEmpty = 0;
+        sumBidPrices = 0.0;
+        sumOfferPrices = 0.0;
+        offerPrices = new double[nSellers];
+        bidPrices = new double[nBuyers];
+
+        // Set zero initial value for persistent variables whose count is computed (regionally) during market clearing
         nSales = 0;
         nFTBSales = 0;
         nBTLSales = 0;
-        nNewBuild = 0;
-        nEmpty = 0;
-        nSellers = 0;
-        nBuyers = 0;
-        sumBidPrices = 0;
-        sumOfferPrices = 0;
-        for (Region region: geography) {
-            // TODO: All this should probably be done via getters
-            nSales += region.regionalHousingMarketStats.nSales;
-            nFTBSales += region.regionalHousingMarketStats.nFTBSales;
-            nBTLSales += region.regionalHousingMarketStats.nBTLSales;
-            nNewBuild += region.regionalHousingMarketStats.nNewBuild;
-            nEmpty += region.regionalHousingMarketStats.nEmpty;
-            nSellers += region.regionalHousingMarketStats.nSellers;
-            nBuyers += region.regionalHousingMarketStats.nBuyers;
-            sumBidPrices += region.regionalHousingMarketStats.sumBidPrices;
-            sumOfferPrices += region.regionalHousingMarketStats.sumOfferPrices;
-        }
+        sumSoldReferencePrice = 0;
+        sumSoldPrice = 0;
+        sumDaysOnMarket = 0;
+        sumSalePricePerQuality = new double[config.N_QUALITY];
+        nSalesPerQuality = new int[config.N_QUALITY];
 
-        recordOfferPrices();
-        recordBidPrices();
+        // Set initial values for other variables computed (regionally) after market clearing
+        expAvDaysOnMarket = config.constants.DAYS_IN_MONTH; // TODO: Make this initialisation explicit in the paper! Is 30 days similar to the final simulated value?
+        expAvSalePricePerQuality = new double[config.N_QUALITY];
+        System.arraycopy(referencePricePerQuality, 0, expAvSalePricePerQuality, 0,
+                config.N_QUALITY); // Exponential averaging of prices is initialised from reference prices
+        housePriceIndex = 1.0;
+        for (int i = 0; i < config.derivedParams.HPI_RECORD_LENGTH; ++i) HPIRecord.addValue(1.0);
+        annualHousePriceAppreciation = housePriceAppreciation(1);
+        longTermHousePriceAppreciation = housePriceAppreciation(config.HPA_YEARS_TO_CHECK);
     }
 
-	private void recordOfferPrices() {
-		offerPrices = new double[nSellers];
+    /**
+     * Collects current values, apart from updating those to be computed, for all relevant variables from the regional
+     * housing market statistics objects
+     */
+    public void collectRegionalRecords() {
+        // Re-initiate to zero variables to sum over regions
+        nBuyers = 0;
+        nSellers = 0;
+        nNewBuild = 0;
+        nEmpty = 0;
+        sumBidPrices = 0.0;
+        sumOfferPrices = 0.0;
+        nSales = 0;
+        nFTBSales = 0;
+        nBTLSales = 0;
+        sumSoldReferencePrice = 0;
+        sumSoldPrice = 0;
+        sumDaysOnMarket = 0;
+        sumSalePricePerQuality = new double[config.N_QUALITY];
+        nSalesPerQuality = new int[config.N_QUALITY];
+
+        // Run through regions summing
+        for (Region region: geography) {
+            nBuyers += region.regionalHousingMarketStats.getnBuyers();
+            nSellers += region.regionalHousingMarketStats.getnSellers();
+            nNewBuild += region.regionalHousingMarketStats.getnNewBuild();
+            nEmpty += region.regionalHousingMarketStats.getnEmpty();
+            sumBidPrices += region.regionalHousingMarketStats.getSumBidPrices();
+            sumOfferPrices += region.regionalHousingMarketStats.getSumOfferPrices();
+            nSales += region.regionalHousingMarketStats.getnSales();
+            nFTBSales += region.regionalHousingMarketStats.getnFTBSales();
+            nBTLSales += region.regionalHousingMarketStats.getnBTLSales();
+            sumSoldReferencePrice += region.regionalHousingMarketStats.getSumSoldReferencePrice();
+            sumSoldPrice += region.regionalHousingMarketStats.getSumSoldPrice();
+            sumDaysOnMarket += region.regionalHousingMarketStats.getSumDaysOnMarket();
+            for (int q = 0; q < config.N_QUALITY; q++) {
+                sumSalePricePerQuality[q] += region.regionalHousingMarketStats.getSumSalePricePerQuality()[q];
+                nSalesPerQuality[q] += region.regionalHousingMarketStats.getnSalesPerQuality()[q];
+            }
+        }
+
+        // Once we have total nSellers and nBuyers, we can allocate and collect offerPrices and bidPrices arrays
+        offerPrices = new double[nSellers];
+        bidPrices = new double[nBuyers];
+        // TODO: Check efficiency of methods 1 and 2 and decide for one or the other.
+        // METHOD 1
+        // Run through regions collecting regional offer and bid prices arrays into corresponding national arrays
+//        int i = 0;
+//        int j = 0;
+//        for (Region region: geography) {
+//            System.arraycopy(region.regionalHousingMarketStats.offerPrices, 0, offerPrices, i,
+//                    i + region.regionalHousingMarketStats.nSellers); // Copies regional offerPrices into national offerPrices
+//            System.arraycopy(region.regionalHousingMarketStats.bidPrices, 0, bidPrices, j,
+//                    j + region.regionalHousingMarketStats.nBuyers); // Copies regional bidPrices into national bidPrices
+//            i += region.regionalHousingMarketStats.nSellers;
+//            j += region.regionalHousingMarketStats.nBuyers;
+//        }
+        // METHOD 2
+        collectOfferPrices();
+        collectBidPrices();
+
+        // Compute all derived variables...
+        // ... exponential averages of days in the market and prices per quality band (only if there have been sales)
+        if (nSales > 0) {
+            expAvDaysOnMarket = config.derivedParams.E*expAvDaysOnMarket
+                    + (1.0 - config.derivedParams.E)*sumDaysOnMarket/nSales;
+        }
+        for (int q = 0; q < config.N_QUALITY; q++) {
+            if (nSalesPerQuality[q] > 0) {
+                expAvSalePricePerQuality[q] = config.derivedParams.G*expAvSalePricePerQuality[q]
+                        + (1.0 - config.derivedParams.G)*sumSalePricePerQuality[q]/nSalesPerQuality[q];
+            }
+        }
+        // ... current house price index (only if there have been sales)
+        if(nSales > 0) {
+            housePriceIndex = sumSoldPrice/sumSoldReferencePrice;
+        }
+        // ... HPIRecord with the new house price index value
+        HPIRecord.addValue(housePriceIndex);
+        // ... current house price appreciation values (both annual and long term value)
+        annualHousePriceAppreciation = housePriceAppreciation(1);
+        longTermHousePriceAppreciation = housePriceAppreciation(config.HPA_YEARS_TO_CHECK);
+        // ... relaxation of the price distribution towards the reference price distribution (described in appendix A3)
+        for(int q = 0; q < config.N_QUALITY; q++) {
+            expAvSalePricePerQuality[q] = config.MARKET_AVERAGE_PRICE_DECAY*expAvSalePricePerQuality[q]
+                    + (1.0 - config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePricePerQuality[q]);
+        }
+    }
+
+    /**
+     * Collects all offer prices from the regional housing market statistics objects
+     */
+	private void collectOfferPrices() {
 		int i = 0;
 		for (Region region: geography) {
-		    for (double price: region.regionalHousingMarketStats.offerPrices) {
+		    for (double price: region.regionalHousingMarketStats.getOfferPrices()) {
                 offerPrices[i] = price;
                 ++i;
             }
         }
 	}
 
-	private void recordBidPrices() {
-		bidPrices = new double[nBuyers];
+    /**
+     * Collects all bid prices from the regional housing market statistics objects
+     */
+	private void collectBidPrices() {
 		int i = 0;
         for (Region region: geography) {
-            for(double price: region.regionalHousingMarketStats.bidPrices) {
+            for(double price: region.regionalHousingMarketStats.getBidPrices()) {
                 bidPrices[i] = price;
                 ++i;
             }
         }
 	}
 
-    private double referencePrice(int quality) {
-        return data.HouseSaleMarket.referencePrice(quality);
+    /**
+     * This method computes the annualised appreciation in house price index by comparing the most recent quarter
+     * (previous 3 months, to smooth changes) to the quarter nYears years before (full years to avoid seasonal effects)
+     * and computing the geometric mean over that period
+     *
+     * @param nYears Integer with the number of years over which to average house price growth
+     * @return Annualised house price appreciation over nYears years
+     */
+    public double housePriceAppreciation(int nYears) {
+        double HPI = (HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 1)
+                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 2)
+                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 3));
+        double oldHPI = (HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH
+                - nYears*config.constants.MONTHS_IN_YEAR - 1)
+                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH
+                - nYears*config.constants.MONTHS_IN_YEAR - 2)
+                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH
+                - nYears*config.constants.MONTHS_IN_YEAR - 3));
+        return(Math.pow(HPI/oldHPI, 1.0/nYears) - 1.0);
     }
 
-    public double [][] priceData() {
-        for (Region region: geography) {
-            for(int i = 0; i < config.N_QUALITY; ++i) {
-                priceData[1][i] += region.regionalHousingMarketStats.priceData[1][i];
-            }
-        }
-        for(int i = 0; i < config.N_QUALITY; ++i) {
-            priceData[1][i] /= geography.size();
-        }
-        return priceData;
-    }
+    //----- Getter/setter methods -----//
 
-    ///////////////////////////////////////////////////////////////////////////////////////
-    // Getters and setters for Mason
-    ///////////////////////////////////////////////////////////////////////////////////////
+    // Getters for variables computed at initialisation
+    public double [] getReferencePricePerQuality() { return referencePricePerQuality; }
 
-    public double getAverageDaysOnMarket() {
-        return market.averageDaysOnMarket;
-    }
+    // Getters for variables computed before market clearing
+    public int getnBuyers() { return nBuyers; }
+    public int getnSellers() { return nSellers; }
+    public int getnNewBuild() { return nNewBuild; }
+    public int getnEmpty() { return nEmpty; }
+    public double getSumBidPrices() { return sumBidPrices; }
+    public double getSumOfferPrices() { return sumOfferPrices; }
+    public double [] getOfferPrices() { return offerPrices; }
+    public double [] getBidPrices() { return bidPrices; }
 
-    public double getAverageBidPrice() {
-        if(nBuyers > 0) {
+    // Getters for variables computed after market clearing to keep the previous values during the clearing
+    public int getnSales() { return nSales; }
+    public int getnFTBSales() { return nFTBSales; }
+    public int getnBTLSales() { return nBTLSales; }
+    public double getSumSoldReferencePrice() { return sumSoldReferencePrice; }
+    public double getSumSoldPrice() { return sumSoldPrice; }
+    public double getSumDaysOnMarket() { return sumDaysOnMarket; }
+    public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
+    public int [] getnSalesPerQuality() { return nSalesPerQuality; }
+
+    // Getters for other variables computed after market clearing
+    public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
+    public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
+    public double getHPI() { return housePriceIndex; }
+    public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
+    public double getAnnualHPA() { return annualHousePriceAppreciation; }
+    public double getLongTermHPA() {return longTermHousePriceAppreciation; }
+
+    // Getters for derived variables
+    public double getAvBidPrice() {
+        if (nBuyers > 0) {
             return sumBidPrices/nBuyers;
         } else {
             return 0.0;
         }
     }
-
-    public double getAverageOfferPrice() {
-        if(nSellers > 0) {
+    public double getAvOfferPrice() {
+        if (nSellers > 0) {
             return sumOfferPrices/nSellers;
         } else {
             return 0.0;
         }
     }
-
-    public int getNSales() {
-        return nSales;
-    }
-
-    public int getNNewBuild() {
-        return nNewBuild;
-    }
-
-    public int getNBuyers() {
-        return nBuyers;
-    }
-
-    /**
-     * @return Current total number of sellers aggregated through all the sale markets
-     */
-    public int getNSellers() {
-        return nSellers;
-    }
-
-    // Proportion of monthly sales that are to First-time-buyers
+    // Proportion of monthly sales that are to first-time buyers
     public double getFTBSalesProportion() {
-        return nFTBSales/(nSales+1e-8);
-    }
-
-    // Proportion of monthly sales that are to Buy-to-let investors
-    public double getBTLSalesProportion() {
-        return nBTLSales/(nSales+1e-8);
-    }
-
-    //House price growth year-on-year
-    public double getHPA() {
-        double hpa = 0;
-        for (Region region: geography) {
-            hpa += region.regionalHousingMarketStats.getHPA();
+        if (nSales > 0) {
+            return nFTBSales/nSales;
+        } else {
+            return 0.0;
         }
-        return(hpa/geography.size());
     }
-
-    public double getHPI() {
-        return(market.housePriceIndex);
+    // Proportion of monthly sales that are to buy-to-let investors
+    public double getBTLSalesProportion() {
+        if (nSales > 0) {
+            return nBTLSales/nSales;
+        } else {
+            return 0.0;
+        }
     }
-
-    public double getNEmpty() {
-        return nEmpty;
+    public double getAvDaysOnMarket() {
+        if (nSales > 0) {
+            return sumDaysOnMarket/nSales;
+        } else {
+            return 0.0;
+        }
+    }
+    public double [] getAvSalePricePerQuality() {
+        double [] avSalePricePerQuality;
+        avSalePricePerQuality = new double[config.N_QUALITY];
+        for (int q = 0; q < config.N_QUALITY; q++) {
+            if (nSalesPerQuality[q] > 0) {
+                avSalePricePerQuality[q] = sumSalePricePerQuality[q]/nSalesPerQuality[q];
+            } else {
+                avSalePricePerQuality[q] = 0.0;
+            }
+        }
+        return avSalePricePerQuality;
     }
 }

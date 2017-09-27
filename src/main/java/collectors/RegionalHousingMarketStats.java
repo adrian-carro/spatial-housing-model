@@ -1,6 +1,7 @@
 package collectors;
 
 import housing.*;
+
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 /**************************************************************************************************
@@ -39,9 +40,9 @@ public class RegionalHousingMarketStats extends CollectorBase {
     private int                     btlSalesCount; // Dummy variable to count sales to buy-to-let investors
     private double                  sumSoldReferencePriceCount; // Dummy counter
     private double                  sumSoldPriceCount; // Dummy counter
-    private double                  avDaysOnMarketCount; // Dummy counter
-    private double []               avSalePricePerQualityCount; // Dummy counter
-    private double []               nSalesPerQualityCount; // Dummy counter (only used for computing avSalePricePerQuality)
+    private double                  sumDaysOnMarketCount; // Dummy counter
+    private double []               sumSalePricePerQualityCount; // Dummy counter
+    private int []                  nSalesPerQualityCount; // Dummy counter
 
     // Variables computed after market clearing to keep the previous values during the clearing
     private int                     nSales; // Number of sales
@@ -49,8 +50,9 @@ public class RegionalHousingMarketStats extends CollectorBase {
     private int	                    nBTLSales; // Number of sales to buy-to-let investors
     private double                  sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
     private double                  sumSoldPrice; // Sum of prices of properties sold this month
-    private double                  avDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
-    private double []               avSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
+    private double                  sumDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
+    private double []               sumSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
+    private int []                  nSalesPerQuality; // Number of sales for each quality band for properties sold this month
 
     // Other variables computed after market clearing
     private double                  expAvDaysOnMarket; // Exponential moving average of the number of days on the market
@@ -106,8 +108,9 @@ public class RegionalHousingMarketStats extends CollectorBase {
         nBTLSales = 0;
         sumSoldReferencePrice = 0;
         sumSoldPrice = 0;
-        avDaysOnMarket = 0;
-        avSalePricePerQuality = new double[config.N_QUALITY];
+        sumDaysOnMarket = 0;
+        sumSalePricePerQuality = new double[config.N_QUALITY];
+        nSalesPerQuality = new int[config.N_QUALITY];
 
         // Set initial values for other variables computed after market clearing
         expAvDaysOnMarket = config.constants.DAYS_IN_MONTH; // TODO: Make this initialisation explicit in the paper! Is 30 days similar to the final simulated value?
@@ -132,9 +135,9 @@ public class RegionalHousingMarketStats extends CollectorBase {
         btlSalesCount = 0;
         sumSoldReferencePriceCount = 0;
         sumSoldPriceCount = 0;
-        avDaysOnMarketCount = 0;
-        avSalePricePerQualityCount = new double[config.N_QUALITY];
-        nSalesPerQualityCount = new double[config.N_QUALITY];
+        sumDaysOnMarketCount = 0;
+        sumSalePricePerQualityCount = new double[config.N_QUALITY];
+        nSalesPerQualityCount = new int[config.N_QUALITY];
 
         // Re-initialise to zero variables computed before market clearing
         nBuyers = market.getBids().size();
@@ -197,8 +200,8 @@ public class RegionalHousingMarketStats extends CollectorBase {
      * @param sale The HouseSaleRecord of the house being sold
      */
     public void recordTransaction(HouseSaleRecord sale) {
-        avDaysOnMarketCount += config.constants.DAYS_IN_MONTH*(Model.getTime() - sale.tInitialListing);
-        avSalePricePerQualityCount[sale.getQuality()] += sale.getPrice();
+        sumDaysOnMarketCount += config.constants.DAYS_IN_MONTH*(Model.getTime() - sale.tInitialListing);
+        sumSalePricePerQualityCount[sale.getQuality()] += sale.getPrice();
         nSalesPerQualityCount[sale.getQuality()]++;
         sumSoldReferencePriceCount += referencePricePerQuality[sale.getQuality()];
         sumSoldPriceCount += sale.getPrice();
@@ -218,19 +221,25 @@ public class RegionalHousingMarketStats extends CollectorBase {
         nBTLSales = btlSalesCount;
         sumSoldReferencePrice = sumSoldReferencePriceCount;
         sumSoldPrice = sumSoldPriceCount;
-        avDaysOnMarket = avDaysOnMarketCount/nSales;
+        sumDaysOnMarket = sumDaysOnMarketCount;
         for (int q = 0; q < config.N_QUALITY; q++) {
-            avSalePricePerQuality[q] = avSalePricePerQualityCount[q]/nSalesPerQualityCount[q];
+            sumSalePricePerQuality[q] = sumSalePricePerQualityCount[q];
+            nSalesPerQuality[q] = nSalesPerQualityCount[q];
         }
         // Compute the rest of variables after market clearing...
-        // ... exponential averages of days in the market and prices per quality band
-        expAvDaysOnMarket = config.derivedParams.E*expAvDaysOnMarket + (1.0 - config.derivedParams.E)*avDaysOnMarket;
-        for (int q = 0; q < config.N_QUALITY; q++) {
-            expAvSalePricePerQuality[q] = config.derivedParams.G * expAvSalePricePerQuality[q]
-                    + (1.0 - config.derivedParams.G)*avSalePricePerQuality[q];
+        // ... exponential averages of days in the market and prices per quality band (only if there have been sales)
+        if (nSales > 0) {
+            expAvDaysOnMarket = config.derivedParams.E*expAvDaysOnMarket
+                    + (1.0 - config.derivedParams.E)*sumDaysOnMarket/nSales;
         }
-        // ... current house price index (only if there has been any transaction, leading to sumSoldPrice > 0)
-        if(sumSoldPrice > 0.0) {
+        for (int q = 0; q < config.N_QUALITY; q++) {
+            if (nSalesPerQuality[q] > 0) {
+                expAvSalePricePerQuality[q] = config.derivedParams.G*expAvSalePricePerQuality[q]
+                        + (1.0 - config.derivedParams.G)*sumSalePricePerQuality[q]/nSalesPerQuality[q];
+            }
+        }
+        // ... current house price index (only if there have been sales)
+        if(nSales > 0) {
             housePriceIndex = sumSoldPrice/sumSoldReferencePrice;
         }
         // ... HPIRecord with the new house price index value
@@ -241,7 +250,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
         // ... relaxation of the price distribution towards the reference price distribution (described in appendix A3)
         for(int q = 0; q < config.N_QUALITY; q++) {
             expAvSalePricePerQuality[q] = config.MARKET_AVERAGE_PRICE_DECAY*expAvSalePricePerQuality[q]
-                    + (1.0-config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePricePerQuality[q]);
+                    + (1.0 - config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePricePerQuality[q]);
         }
     }
 
@@ -290,8 +299,9 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public int getnBTLSales() { return nBTLSales; }
     public double getSumSoldReferencePrice() { return sumSoldReferencePrice; }
     public double getSumSoldPrice() { return sumSoldPrice; }
-    public double getAvDaysOnMarket() { return avDaysOnMarket; }
-    public double [] getAvSalePricePerQuality() { return avSalePricePerQuality; }
+    public double getSumDaysOnMarket() { return sumDaysOnMarket; }
+    public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
+    public int [] getnSalesPerQuality() { return nSalesPerQuality; }
 
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
@@ -332,5 +342,24 @@ public class RegionalHousingMarketStats extends CollectorBase {
         } else {
             return 0.0;
         }
+    }
+    public double getAvDaysOnMarket() {
+        if (nSales > 0) {
+            return sumDaysOnMarket/nSales;
+        } else {
+            return 0.0;
+        }
+    }
+    public double [] getAvSalePricePerQuality() {
+        double [] avSalePricePerQuality;
+        avSalePricePerQuality = new double[config.N_QUALITY];
+        for (int q = 0; q < config.N_QUALITY; q++) {
+            if (nSalesPerQuality[q] > 0) {
+                avSalePricePerQuality[q] = sumSalePricePerQuality[q]/nSalesPerQuality[q];
+            } else {
+                avSalePricePerQuality[q] = 0.0;
+            }
+        }
+        return avSalePricePerQuality;
     }
 }
