@@ -148,8 +148,8 @@ public class HousingMarketStats extends CollectorBase {
             sumSoldPrice += region.regionalHousingMarketStats.getSumSoldPrice();
             sumDaysOnMarket += region.regionalHousingMarketStats.getSumDaysOnMarket();
             for (int q = 0; q < config.N_QUALITY; q++) {
-                sumSalePricePerQuality[q] += region.regionalHousingMarketStats.getSumSalePricePerQuality()[q];
-                nSalesPerQuality[q] += region.regionalHousingMarketStats.getnSalesPerQuality()[q];
+                sumSalePricePerQuality[q] += region.regionalHousingMarketStats.getSumSalePriceForQuality(q);
+                nSalesPerQuality[q] += region.regionalHousingMarketStats.getnSalesForQuality(q);
             }
         }
 
@@ -271,7 +271,9 @@ public class HousingMarketStats extends CollectorBase {
     public double getSumSoldPrice() { return sumSoldPrice; }
     public double getSumDaysOnMarket() { return sumDaysOnMarket; }
     public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
+    public double getSumSalePriceForQuality(int quality) { return sumSalePricePerQuality[quality]; }
     public int [] getnSalesPerQuality() { return nSalesPerQuality; }
+    public int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
 
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }

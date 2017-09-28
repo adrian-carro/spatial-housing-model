@@ -50,8 +50,8 @@ public class RegionalHousingMarketStats extends CollectorBase {
     private int	                    nBTLSales; // Number of sales to buy-to-let investors
     private double                  sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
     private double                  sumSoldPrice; // Sum of prices of properties sold this month
-    private double                  sumDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
-    private double []               sumSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
+    private double                  sumDaysOnMarket; // Sum of the number of days on the market for properties sold this month
+    private double []               sumSalePricePerQuality; // Sum of the price for each quality band for properties sold this month
     private int []                  nSalesPerQuality; // Number of sales for each quality band for properties sold this month
 
     // Other variables computed after market clearing
@@ -222,6 +222,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
         sumSoldReferencePrice = sumSoldReferencePriceCount;
         sumSoldPrice = sumSoldPriceCount;
         sumDaysOnMarket = sumDaysOnMarketCount;
+        // TODO: These are manual array copies... should probably change to System.arraycopy
         for (int q = 0; q < config.N_QUALITY; q++) {
             sumSalePricePerQuality[q] = sumSalePricePerQualityCount[q];
             nSalesPerQuality[q] = nSalesPerQualityCount[q];
@@ -301,7 +302,9 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public double getSumSoldPrice() { return sumSoldPrice; }
     public double getSumDaysOnMarket() { return sumDaysOnMarket; }
     public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
+    public double getSumSalePriceForQuality(int quality) { return sumSalePricePerQuality[quality]; }
     public int [] getnSalesPerQuality() { return nSalesPerQuality; }
+    public int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
 
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
@@ -361,5 +364,12 @@ public class RegionalHousingMarketStats extends CollectorBase {
             }
         }
         return avSalePricePerQuality;
+    }
+    public double getAvSalePriceForQuality(int quality) {
+        if (nSalesPerQuality[quality] > 0) {
+            return sumSalePricePerQuality[quality]/nSalesPerQuality[quality];
+        } else {
+            return 0.0;
+        }
     }
 }
