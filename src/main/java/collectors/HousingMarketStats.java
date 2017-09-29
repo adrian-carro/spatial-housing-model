@@ -333,4 +333,13 @@ public class HousingMarketStats extends CollectorBase {
         }
         return avSalePricePerQuality;
     }
+
+    public double getAvSalePriceForQuality(int quality) {
+        if (nSalesPerQuality[quality] > 0) {
+            return sumSalePricePerQuality[quality]/nSalesPerQuality[quality];
+        } else {
+            return 0.0;
+        }
+    }
+
 }

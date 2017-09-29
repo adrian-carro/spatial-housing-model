@@ -7,7 +7,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 /**************************************************************************************************
  * Class to collect regional sale market statistics
  *
- * @author daniel, Adrian Carro
+ * @author Adrian Carro
  * @since 06/09/2017
  *
  *************************************************************************************************/
@@ -317,14 +317,14 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
     // Getters for derived variables
     // TODO: Check whether to keep ifs or remove them and always add an infinitesimal amount
-    public double getAverageBidPrice() {
+    public double getAvBidPrice() {
         if (nBuyers > 0) {
             return sumBidPrices/nBuyers;
         } else {
             return 0.0;
         }
     }
-    public double getAverageOfferPrice() {
+    public double getAvOfferPrice() {
         if (nSellers > 0) {
             return sumOfferPrices/nSellers;
         } else {

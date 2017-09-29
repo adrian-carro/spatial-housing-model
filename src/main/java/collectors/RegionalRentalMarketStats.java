@@ -44,6 +44,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
      */
     public RegionalRentalMarketStats(Region region) {
         super(region);
+        setActive(true);
         this.regHousingMarketStats = region.regionalHousingMarketStats;
     }
 
@@ -60,7 +61,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     @Override
     public void init() {
         super.init();
-        // Set initial value for all variables
+        // Set initial value for all rental specific variables
         sumMonthsOnMarketPerQuality = new double[config.N_QUALITY];
         expAvMonthsOnMarketPerQuality  = new double[config.N_QUALITY];
         Arrays.fill(expAvMonthsOnMarketPerQuality, 1.0);

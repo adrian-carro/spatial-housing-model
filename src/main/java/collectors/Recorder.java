@@ -124,26 +124,26 @@ public class Recorder {
                 Model.householdStats.getnHomeless()+", "+
                 Model.householdStats.getnHouseholds()+", "+
                 Model.householdStats.getnRenting()+", "+
-                Model.housingMarketStats.getAverageBidPrice()+", "+
-                Model.housingMarketStats.getAverageDaysOnMarket()+", "+
-                Model.housingMarketStats.getAverageOfferPrice()+", "+
+                Model.housingMarketStats.getAvBidPrice()+", "+
+                Model.housingMarketStats.getAvDaysOnMarket()+", "+
+                Model.housingMarketStats.getAvOfferPrice()+", "+
                 Model.housingMarketStats.getBTLSalesProportion()+", "+
                 Model.housingMarketStats.getFTBSalesProportion()+", "+
-                Model.housingMarketStats.getHPA()+", "+
+                Model.housingMarketStats.getAnnualHPA()+", "+
                 Model.housingMarketStats.getHPI()+", "+
-                Model.housingMarketStats.getNBuyers()+", "+
-                Model.housingMarketStats.getNSellers()+", "+
-                Model.housingMarketStats.getNSales()+", "+
-                Model.housingMarketStats.getNNewBuild()+", "+
-                Model.rentalMarketStats.getAverageBidPrice()+", "+
-                Model.rentalMarketStats.getAverageDaysOnMarket()+", "+
-                Model.rentalMarketStats.getAverageOfferPrice()+", "+
-                Model.rentalMarketStats.getHPA()+", "+
+                Model.housingMarketStats.getnBuyers()+", "+
+                Model.housingMarketStats.getnSellers()+", "+
+                Model.housingMarketStats.getnSales()+", "+
+                Model.housingMarketStats.getnNewBuild()+", "+
+                Model.rentalMarketStats.getAvBidPrice()+", "+
+                Model.rentalMarketStats.getAvDaysOnMarket()+", "+
+                Model.rentalMarketStats.getAvOfferPrice()+", "+
+                Model.rentalMarketStats.getAnnualHPA()+", "+
                 Model.rentalMarketStats.getHPI()+", "+
-                Model.rentalMarketStats.getNBuyers()+", "+
-                Model.rentalMarketStats.getNSellers()+", "+
-                Model.rentalMarketStats.getNSales()+", "+
-                Model.rentalMarketStats.getAverageSoldGrossYield()+", "+
+                Model.rentalMarketStats.getnBuyers()+", "+
+                Model.rentalMarketStats.getnSellers()+", "+
+                Model.rentalMarketStats.getnSales()+", "+
+                Model.rentalMarketStats.getExpAvGrossYield()+", "+
                 Model.householdStats.getnActiveBtL()+", "+
                 Model.householdStats.getBTLProportion());
     }
