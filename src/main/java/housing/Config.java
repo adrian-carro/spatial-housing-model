@@ -42,7 +42,8 @@ public class Config {
     public double INITIAL_HPI;                  // Initial housing price index
     double HPI_MEDIAN;                          // Median house price
     public double HPI_SHAPE;                    // Shape parameter for the log-normal distribution of housing prices
-    double AVERAGE_TENANCY_LENGTH;              // Average number of months a tenant will stay in a rented house
+    public double AVERAGE_TENANCY_LENGTH;       // Average number of months a tenant will stay in a rented house
+    // TODO: Only used to initiate some exponential averaging. Remove it!
     public double RENT_GROSS_YIELD;             // Profit margin for buy-to-let investors
 
     // Demographic parameters
@@ -182,8 +183,8 @@ public class Config {
         // Bank parameters
         int N_PAYMENTS;                 // Number of monthly repayments (mortgage duration in months)
         // House rental market parameters
-        double K;                       // Decay factor for exponential moving average of gross yield from rentals (averageSoldGrossYield)
-        double KL;                      // Decay factor for long-term exponential moving average of gross yield from rentals (longTermAverageGrossYield)
+        public double K;                // Decay factor for exponential moving average of gross yield from rentals (averageSoldGrossYield)
+        public double KL;               // Decay factor for long-term exponential moving average of gross yield from rentals (longTermAverageGrossYield)
         // Collectors parameters
         double AFFORDABILITY_DECAY; 	// Decay constant for the exponential moving average of affordability
 

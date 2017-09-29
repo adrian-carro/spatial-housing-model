@@ -286,7 +286,8 @@ public class HouseholdBehaviour implements Serializable {
 		double mortgageRate = mortgage.nextPayment()*config.constants.MONTHS_IN_YEAR/equity;
 		if(config.BTL_YIELD_SCALING) {
 			effectiveYield = leverage*((1.0 - BtLCapGainCoeff)*rentalYield
-                    + BtLCapGainCoeff*(Model.houseRentalMarket.longTermAverageGrossYield + HPAExpectation())) - mortgageRate;
+                    + BtLCapGainCoeff*(region.regionalRentalMarketStats.getLongTermExpAvGrossYield()
+					+ HPAExpectation())) - mortgageRate;
 		} else {
 			effectiveYield = leverage*(rentalYield + BtLCapGainCoeff*HPAExpectation()) - mortgageRate;
 		}
@@ -356,11 +357,12 @@ public class HouseholdBehaviour implements Serializable {
 		MortgageAgreement m = Model.bank.requestApproval(me, maxPrice, 0.0, false); // maximise leverage with min downpayment
 		
 		double leverage = m.purchasePrice/m.downPayment;
-		double rentalYield = Model.houseRentalMarket.averageSoldGrossYield;
+		double rentalYield = region.regionalRentalMarketStats.getExpAvGrossYield();
 		double mortgageRate = m.monthlyPayment*config.constants.MONTHS_IN_YEAR/m.downPayment;
 		if(config.BTL_YIELD_SCALING) {
 			effectiveYield = leverage*((1.0 - BtLCapGainCoeff)*rentalYield
-                    + BtLCapGainCoeff*(Model.houseRentalMarket.longTermAverageGrossYield + HPAExpectation())) - mortgageRate;
+                    + BtLCapGainCoeff*(region.regionalRentalMarketStats.getLongTermExpAvGrossYield()
+					+ HPAExpectation())) - mortgageRate;
 		} else {
 			effectiveYield = leverage*(rentalYield + BtLCapGainCoeff*HPAExpectation()) - mortgageRate;
 		}
