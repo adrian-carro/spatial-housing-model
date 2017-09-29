@@ -27,13 +27,13 @@ public class RentalMarketStats extends HousingMarketStats {
     private Config              config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     // Rental-specific variables computed after market clearing to keep the previous values during the clearing
-    private double []           sumMonthsOnMarketPerQuality; // Sum of the months on market for each quality band for properties sold this month
+    private double []           sumMonthsOnMarketPerQuality; // Sum of the months on market for each quality band for properties rented this month
     private double []           expAvMonthsOnMarketPerQuality; // Exponential moving average of the months on market for each quality band
     private double []           avOccupancyPerQuality; // Average fraction of time a rental property stays rented for each quality band
-    private double []           avGrossYieldPerQuality; // Average gross rental yield for each quality band for properties sold this month
-    private double              avGrossYield; // Average gross rental yield for all properties sold this month
-    private double              expAvGrossYield; // Exponential moving average (fast decay) of the gross rental yield for all properties
-    private double              longTermExpAvGrossYield; // Exponential moving average (slow decay) of the gross rental yield for all properties
+    private double []           avGrossYieldPerQuality; // Average gross rental yield for each quality band for properties rented this month
+    private double              avGrossYield; // Average gross rental yield for properties rented this month
+    private double              expAvGrossYield; // Exponential moving average (fast decay) of the average gross rental yield
+    private double              longTermExpAvGrossYield; // Exponential moving average (slow decay) of the average gross rental yield
 
     //------------------------//
     //----- Constructors -----//
@@ -108,9 +108,9 @@ public class RentalMarketStats extends HousingMarketStats {
             avGrossYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
                     *avOccupancyPerQuality[q]/housingMarketStats.getAvSalePriceForQuality(q);
             // ... average gross rental yield (for all quality bands)
-            avGrossYield += avGrossYieldPerQuality[q];
+            avGrossYield += avGrossYieldPerQuality[q]*getnSalesForQuality(q);
         }
-        avGrossYield /= config.N_QUALITY;
+        avGrossYield /= getnSales();
         // ... a short and a long term exponential moving average of the average gross rental yield
         expAvGrossYield = expAvGrossYield*config.derivedParams.K + (1.0 - config.derivedParams.K)*avGrossYield;
         longTermExpAvGrossYield = longTermExpAvGrossYield*config.derivedParams.KL
