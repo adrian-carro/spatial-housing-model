@@ -2,7 +2,7 @@ package collectors;
 
 import housing.*;
 
-import java.awt.geom.Point2D;
+import java.util.Arrays;
 
 /**************************************************************************************************
  * Class to collect regional rental market statistics
@@ -18,14 +18,20 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     //------------------//
 
     // General fields
-    private Config              config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private HouseRentalMarket   market;
+    private RegionalHousingMarketStats  regHousingMarketStats;
+    private Config                      config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     // Rental-specific variables computed during market clearing, counters
-    private double []           sumMonthsOnMarketPerQualityCount; // Dummy counter
+    private double []                   sumMonthsOnMarketPerQualityCount; // Dummy counter
 
     // Rental-specific variables computed after market clearing to keep the previous values during the clearing
-    private double []           sumMonthsOnMarketPerQuality; // Normal average of the price for each quality band for properties sold this month
+    private double []                   sumMonthsOnMarketPerQuality; // Sum of the months on market for each quality band for properties sold this month
+    private double []                   expAvMonthsOnMarketPerQuality; // Exponential moving average of the months on market for each quality band
+    private double []                   avOccupancyPerQuality; // Average fraction of time a rental property stays rented for each quality band
+    private double []                   avGrossYieldPerQuality; // Average gross rental yield for each quality band for properties sold this month
+    private double                      avGrossYield; // Average gross rental yield for all properties sold this month
+    private double                      expAvGrossYield; // Exponential moving average (fast decay) of the gross rental yield for all properties
+    private double                      longTermExpAvGrossYield; // Exponential moving average (slow decay) of the gross rental yield for all properties
 
     //------------------------//
     //----- Constructors -----//
@@ -38,12 +44,34 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
      */
     public RegionalRentalMarketStats(Region region) {
         super(region);
-        this.market = region.houseRentalMarket;
+        this.regHousingMarketStats = region.regionalHousingMarketStats;
     }
 
     //-------------------//
     //----- Methods -----//
     //-------------------//
+
+    //----- Rental-specific initialisation methods -----//
+
+    /**
+     * This method extends the corresponding one at the RegionalHousingMarketStats class with some rental-specific
+     * variables. Sets initial values for all relevant variables to enforce a controlled first measure for statistics
+     */
+    @Override
+    public void init() {
+        super.init();
+        // Set initial value for all variables
+        sumMonthsOnMarketPerQuality = new double[config.N_QUALITY];
+        expAvMonthsOnMarketPerQuality  = new double[config.N_QUALITY];
+        Arrays.fill(expAvMonthsOnMarketPerQuality, 1.0);
+        avOccupancyPerQuality = new double[config.N_QUALITY];
+        Arrays.fill(avOccupancyPerQuality, 1.0);
+        avGrossYieldPerQuality = new double[config.N_QUALITY];
+        Arrays.fill(avGrossYieldPerQuality, config.RENT_GROSS_YIELD);
+        avGrossYield = config.RENT_GROSS_YIELD;
+        expAvGrossYield = config.RENT_GROSS_YIELD;
+        longTermExpAvGrossYield = config.RENT_GROSS_YIELD;
+    }
 
     //----- Rental-specific pre-market-clearing methods -----//
 
@@ -53,6 +81,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
      */
     @Override
     public void preClearingRecord() {
+        super.preClearingRecord();
         // Re-initialise to zero variables to be computed later on, during market clearing, counters
         sumMonthsOnMarketPerQualityCount = new double[config.N_QUALITY];
     }
@@ -69,7 +98,6 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     @Override
     public void recordTransaction(HouseSaleRecord sale) {
         super.recordTransaction(sale);
-        // TODO: Also on Regional- and HousingMarketStats, it should be months, not days being counted!
         sumMonthsOnMarketPerQualityCount[sale.getQuality()] += (Model.getTime() - sale.tInitialListing);
     }
 
@@ -79,12 +107,34 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
      * This method extends the corresponding one at the RegionalHousingMarketStats class with some rental-specific
      * variables. Updates several statistic records after bids have been matched by clearing the market.
      */
+    @Override
     public void postClearingRecord() {
         super.postClearingRecord();
         // Pass count value obtained during market clearing to persistent variables
+        System.arraycopy(sumMonthsOnMarketPerQualityCount, 0, sumMonthsOnMarketPerQuality, 0, config.N_QUALITY);
+        // Compute the rest of variables after market clearing...
+        avGrossYield = 0;
         for (int q = 0; q < config.N_QUALITY; q++) {
-            sumMonthsOnMarketPerQuality[q] = sumMonthsOnMarketPerQualityCount[q];
+            // ... exponential average of months in the market per quality band (only if there have been sales)
+            if (getnSalesForQuality(q) > 0) {
+                expAvMonthsOnMarketPerQuality[q] = config.derivedParams.E*expAvMonthsOnMarketPerQuality[q]
+                        + (1.0 - config.derivedParams.E)*sumMonthsOnMarketPerQuality[q]/getnSalesForQuality(q);
+            }
+            // ... average fraction of time that a house of a given quality is occupied, based on average tenancy length
+            // and exponential moving average of months that houses of this quality spend on the rental market
+            avOccupancyPerQuality[q] = config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
+                    + expAvMonthsOnMarketPerQuality[q]);
+            // ... average gross rental yield per quality band
+            avGrossYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
+                    *avOccupancyPerQuality[q]/regHousingMarketStats.getAvSalePriceForQuality(q);
+            // ... average gross rental yield (for all quality bands)
+            avGrossYield += avGrossYieldPerQuality[q];
         }
+        avGrossYield /= config.N_QUALITY;
+        // ... a short and a long term exponential moving average of the average gross rental yield
+        expAvGrossYield = expAvGrossYield*config.derivedParams.K + (1.0 - config.derivedParams.K)*avGrossYield;
+        longTermExpAvGrossYield = longTermExpAvGrossYield*config.derivedParams.KL
+                + (1.0 - config.derivedParams.KL)*avGrossYield;
     }
 
     //----- Getter/setter methods -----//
@@ -92,26 +142,15 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     // Note that, for security reasons, getters should never give or use counter variables, as their value changes
     // during market clearing
 
-    // Getters for derived variables
-
-    /**
-     * Computes the fraction of time that a house of a given quality is expected to be occupied, based on the average
-     * tenancy length in months and the average number of months that houses of this quality are currently spending on
-     * the rental market
-     *
-     * @param quality Quality of the house
-     */
-    public double getExpectedOccupancyForQuality(int quality) {
-        return config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
-                + sumMonthsOnMarketPerQuality[quality]/getnSalesForQuality(quality));
-    }
-
-    public double getExpectedGrossYieldForQuality(int quality) {
-        return getAvSalePriceForQuality(quality)*config.constants.MONTHS_IN_YEAR*getExpectedOccupancyForQuality(quality)
-                /market.getAverageSalePrice(quality);
-    }
-
-    public double getAverageSoldGrossYield() {
-        return(market.averageSoldGrossYield);
-    }
+    public double [] getSumMonthsOnMarketPerQuality() { return sumMonthsOnMarketPerQuality; }
+    public double getSumMonthsOnMarketForQuality(int quality) { return sumMonthsOnMarketPerQuality[quality]; }
+    public double [] getExpAvMonthsOnMarketPerQuality() { return expAvMonthsOnMarketPerQuality; }
+    public double getExpAvMonthsOnMarketForQuality(int quality) { return expAvMonthsOnMarketPerQuality[quality]; }
+    public double [] getAvOccupancyPerQuality() { return avOccupancyPerQuality; }
+    public double getAvOccupancyForQuality(int quality) { return avOccupancyPerQuality[quality]; }
+    public double [] getAvGrossYieldPerQuality() { return avGrossYieldPerQuality; }
+    public double getAvGrossYieldForQuality(int quality) { return avGrossYieldPerQuality[quality]; }
+    public double getAvGrossYield() { return avGrossYield; }
+    public double getExpAvGrossYield() { return expAvGrossYield; }
+    public double getLongTermExpAvGrossYield() { return longTermExpAvGrossYield; }
 }
