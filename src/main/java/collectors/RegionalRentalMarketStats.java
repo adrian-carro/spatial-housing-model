@@ -28,10 +28,10 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     private double []                   sumMonthsOnMarketPerQuality; // Sum of the months on market for each quality band for properties rented this month
     private double []                   expAvMonthsOnMarketPerQuality; // Exponential moving average of the months on market for each quality band
     private double []                   avOccupancyPerQuality; // Average fraction of time a rental property stays rented for each quality band
-    private double []                   avGrossYieldPerQuality; // Average gross rental yield for each quality band for properties rented this month
-    private double                      avGrossYield; // Average gross rental yield for properties rented this month
-    private double                      expAvGrossYield; // Exponential moving average (fast decay) of the average gross rental yield
-    private double                      longTermExpAvGrossYield; // Exponential moving average (slow decay) of the average gross rental yield
+    private double []                   avFlowYieldPerQuality; // Average gross rental yield for each quality band for properties rented out this month
+    private double                      avFlowYield; // Average gross rental yield for properties rented out this month
+    private double                      expAvFlowYield; // Exponential moving average (fast decay) of the average flow gross rental yield
+    private double                      longTermExpAvFlowYield; // Exponential moving average (slow decay) of the average flow gross rental yield
 
     //------------------------//
     //----- Constructors -----//
@@ -67,11 +67,11 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
         Arrays.fill(expAvMonthsOnMarketPerQuality, 1.0);
         avOccupancyPerQuality = new double[config.N_QUALITY];
         Arrays.fill(avOccupancyPerQuality, 1.0);
-        avGrossYieldPerQuality = new double[config.N_QUALITY];
-        Arrays.fill(avGrossYieldPerQuality, config.RENT_GROSS_YIELD);
-        avGrossYield = config.RENT_GROSS_YIELD;
-        expAvGrossYield = config.RENT_GROSS_YIELD;
-        longTermExpAvGrossYield = config.RENT_GROSS_YIELD;
+        avFlowYieldPerQuality = new double[config.N_QUALITY];
+        Arrays.fill(avFlowYieldPerQuality, config.RENT_GROSS_YIELD);
+        avFlowYield = config.RENT_GROSS_YIELD;
+        expAvFlowYield = config.RENT_GROSS_YIELD;
+        longTermExpAvFlowYield = config.RENT_GROSS_YIELD;
     }
 
     //----- Rental-specific pre-market-clearing methods -----//
@@ -114,7 +114,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
         // Pass count value obtained during market clearing to persistent variables
         System.arraycopy(sumMonthsOnMarketPerQualityCount, 0, sumMonthsOnMarketPerQuality, 0, config.N_QUALITY);
         // Compute the rest of variables after market clearing...
-        avGrossYield = 0;
+        avFlowYield = 0;
         for (int q = 0; q < config.N_QUALITY; q++) {
             // ... exponential average of months in the market per quality band (only if there have been sales)
             if (getnSalesForQuality(q) > 0) {
@@ -125,17 +125,17 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
             // and exponential moving average of months that houses of this quality spend on the rental market
             avOccupancyPerQuality[q] = config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
                     + expAvMonthsOnMarketPerQuality[q]);
-            // ... average gross rental yield per quality band
-            avGrossYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
+            // ... average flow gross rental yield per quality band
+            avFlowYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
                     *avOccupancyPerQuality[q]/regHousingMarketStats.getAvSalePriceForQuality(q);
-            // ... average gross rental yield (for all quality bands)
-            avGrossYield += avGrossYieldPerQuality[q]*getnSalesForQuality(q);
+            // ... average flow gross rental yield (for all quality bands)
+            avFlowYield += avFlowYieldPerQuality[q]*getnSalesForQuality(q);
         }
-        avGrossYield /= getnSales();
-        // ... a short and a long term exponential moving average of the average gross rental yield
-        expAvGrossYield = expAvGrossYield*config.derivedParams.K + (1.0 - config.derivedParams.K)*avGrossYield;
-        longTermExpAvGrossYield = longTermExpAvGrossYield*config.derivedParams.KL
-                + (1.0 - config.derivedParams.KL)*avGrossYield;
+        avFlowYield /= getnSales();
+        // ... a short and a long term exponential moving average of the average flow gross rental yield
+        expAvFlowYield = expAvFlowYield *config.derivedParams.K + (1.0 - config.derivedParams.K)* avFlowYield;
+        longTermExpAvFlowYield = longTermExpAvFlowYield *config.derivedParams.KL
+                + (1.0 - config.derivedParams.KL)* avFlowYield;
     }
 
     //----- Getter/setter methods -----//
@@ -149,9 +149,9 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     public double getExpAvMonthsOnMarketForQuality(int quality) { return expAvMonthsOnMarketPerQuality[quality]; }
     public double [] getAvOccupancyPerQuality() { return avOccupancyPerQuality; }
     public double getAvOccupancyForQuality(int quality) { return avOccupancyPerQuality[quality]; }
-    public double [] getAvGrossYieldPerQuality() { return avGrossYieldPerQuality; }
-    public double getAvGrossYieldForQuality(int quality) { return avGrossYieldPerQuality[quality]; }
-    public double getAvGrossYield() { return avGrossYield; }
-    public double getExpAvGrossYield() { return expAvGrossYield; }
-    public double getLongTermExpAvGrossYield() { return longTermExpAvGrossYield; }
+    public double [] getAvFlowYieldPerQuality() { return avFlowYieldPerQuality; }
+    public double getAvFlowYieldForQuality(int quality) { return avFlowYieldPerQuality[quality]; }
+    public double getAvFlowYield() { return avFlowYield; }
+    public double getExpAvFlowYield() { return expAvFlowYield; }
+    public double getLongTermExpAvFlowYield() { return longTermExpAvFlowYield; }
 }
