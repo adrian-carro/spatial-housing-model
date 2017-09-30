@@ -173,21 +173,19 @@ public class Model {
 	}
 
 	private static void init() {
+        demographics.init();
 		construction.init();
 		bank.init();
 		housingMarketStats.init();
 		rentalMarketStats.init();
         for(Region r : geography) r.init();
-		totalPopulation = 0;
 	}
 
 	private static void modelStep() {
         // Update population with births and deaths in each region
         demographics.step();
-        // Update total population
-        totalPopulation = getTotalPopulation();
         // Update number of houses in each region
-        construction.step(totalPopulation);
+        construction.step(demographics.getTotalPopulation());
         // Update, for each region, its households, market statistics collectors and markets
         for(Region r : geography) r.step();
         // Update all sale market statistics by collecting and aggregating results from the regions
@@ -195,7 +193,7 @@ public class Model {
         // Update all rental market statistics by collecting and aggregating results from the regions
         rentalMarketStats.collectRegionalRecords();
 		// Update bank and interest rate for new mortgages
-		bank.step(totalPopulation);
+		bank.step(demographics.getTotalPopulation());
         // Update central bank policies (currently empty!)
 		centralBank.step(coreIndicators);
 	}
@@ -300,17 +298,6 @@ public class Model {
         } catch (IOException ioe) {
             System.err.println("Copying config file to output folder failed. Reason: " + ioe.getMessage());
         }
-    }
-
-    /**
-     * @return Current total number of households, i.e., the sum of the current populations of each region
-     */
-    static public int getTotalPopulation() {
-        int sum = 0;
-        for (Region region: geography) {
-            sum += region.households.size();
-        }
-        return sum;
     }
 
 	/**
