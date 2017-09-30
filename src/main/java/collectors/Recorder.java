@@ -112,8 +112,8 @@ public class Recorder {
         advancesToBTL.print(Model.coreIndicators.getAdvancesToBTL());
         advancesToHomeMovers.print(Model.coreIndicators.getAdvancesToHomeMovers());
         priceToIncome.print(Model.coreIndicators.getPriceToIncome());
-        rentalYield.print(Model.coreIndicators.getRentalYield());
-        housePriceGrowth.print(Model.coreIndicators.getHousePriceGrowth());
+        rentalYield.print(Model.coreIndicators.getAvStockYield());
+        housePriceGrowth.print(Model.coreIndicators.getQoQHousePriceGrowth());
         interestRateSpread.print(Model.coreIndicators.getInterestRateSpread());
         
         outfile.println(

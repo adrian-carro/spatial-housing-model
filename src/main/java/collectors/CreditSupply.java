@@ -69,10 +69,6 @@ public class CreditSupply extends CollectorBase {
 				}
 				downpayments.addValue(approval.downPayment);
 			}
-//			approved_mortgages[0][approved_mortgages_index] = approval.principal/(h.annualEmploymentIncome());
-//			approved_mortgages[1][approved_mortgages_index] = approval.downPayment/(h.annualEmploymentIncome());
-//			approved_mortgages_index += 1;
-//			if(approved_mortgages_index == ARCHIVE_LEN) approved_mortgages_index = 0;
 			mortgageCounter += 1;
 			if(approval.isFirstTimeBuyer) ftbCounter += 1;
 			if(approval.isBuyToLet) btlCounter += 1;
@@ -82,11 +78,6 @@ public class CreditSupply extends CollectorBase {
     //TODO: Check which of these functions should be kept and which removed!
 	// ---- Mason stuff
 	// ----------------
-	public String desLTI() {return("Loan to Income constraint on mortgages");}
-	public String desTHETA_FTB() {return("Loan to Value haircut for first time buyers");}
-	public String desTHETA_HOME() {return("Loan to Value haircut for homeowners");}
-	public String desTHETA_BTL() {return("Loan to Value haircut for buy-to-let investors");}
-	public String desN_PAYMENTS() {return("Number of monthly repayments in a mortgage");}
 	public double getBaseRate() {
 		return Model.bank.getBaseRate();
 	}
@@ -148,9 +139,6 @@ public class CreditSupply extends CollectorBase {
 	}
 
 
-	//public double STATS_DECAY = 0.98; 	// Decay constant (per step) for exp averaging of stats
-	//public int 	HISTOGRAM_NBINS = 101;
-
 	public int archiveLength; // number of mortgage approvals to remember
 	public double affordability = 0.0;
 	public DescriptiveStatistics oo_lti;
@@ -158,8 +146,6 @@ public class CreditSupply extends CollectorBase {
 	public DescriptiveStatistics btl_ltv;
 	public DescriptiveStatistics btl_icr;
 	public DescriptiveStatistics downpayments;
-//	public double [][] approved_mortgages = new double [2][ARCHIVE_LEN]; // (loan/income, downpayment/income) pairs
-//	public int approved_mortgages_index;
 	public int mortgageCounter;
 	public int ftbCounter;	
 	public int btlCounter;	
