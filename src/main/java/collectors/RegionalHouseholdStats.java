@@ -18,21 +18,24 @@ public class RegionalHouseholdStats extends CollectorBase {
     //----- Fields -----//
     //------------------//
 
-    public int 		    nRenting;
-    public int 		    nHomeless;
-    public int 		    nNonOwner;
-    public int		    nHouseholds;
-    public int 		    nBtL;
-    public int 		    nActiveBtL;
-    public int		    nEmpty;
-    public double []    BtlNProperties; // number of properties owned by buy-to-let investors
-    public double	    BtLTotalAnnualIncome;
-    public double	    OOTotalAnnualIncome;
-    public double	    NonOwnerTotalAnnualIncome;
-    public double       rentalYield; // gross annual yield on occupied rental properties
+    private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
+    private int     nActiveBTL; // Number of BTL households with, at least, one BTL property
+    private int     nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
+    private int     nBTLHomeless; // Number of homeless BTL households
+    private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
+    private int     nRenting; // Number of (by definition, non-BTL) households renting their home
+    private int     nNonBTLHomeless; // Number of homeless non-BTL households
 
-    private Config      config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private Region      region;
+    private double  activeBTLAnnualisedTotalIncome;
+    private double  ownerOccupierAnnualisedTotalIncome;
+    private double  rentingAnnualisedTotalIncome;
+    private double  homelessAnnualisedTotalIncome;
+
+    private double  sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private int     nEmpty; // Number of empty houses
+
+    private Config  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private Region  region;
 
     //------------------------//
     //----- Constructors -----//
@@ -44,6 +47,7 @@ public class RegionalHouseholdStats extends CollectorBase {
      * @param region Reference to the region owning both the market and the regional collector
      */
     public RegionalHouseholdStats(Region region) {
+        setActive(true);
         this.region = region;
     }
 
@@ -51,41 +55,85 @@ public class RegionalHouseholdStats extends CollectorBase {
     //----- Methods -----//
     //-------------------//
 
-    public void step() {
-        BtLTotalAnnualIncome = 0.0;
-        OOTotalAnnualIncome = 0.0;
-        NonOwnerTotalAnnualIncome = 0.0;
+    // TODO: Add an init method enforcing initial values
+
+    public void record() {
+        // Initialise variables to sum
+        nBTL = 0;
+        nActiveBTL = 0;
+        nBTLOwnerOccupier = 0;
+        nBTLHomeless = 0;
+        nNonBTLOwnerOccupier = 0;
         nRenting = 0;
-        nHomeless = 0;
-        nBtL = 0;
-        nActiveBtL = 0;
-        nHouseholds = region.households.size();
-        rentalYield = 0.0;
-        for(Household h : region.households) {
-            if(h.behaviour.isPropertyInvestor()) {
-                ++nBtL;
-                if(h.nInvestmentProperties() > 0) ++nActiveBtL;
-                BtLTotalAnnualIncome += h.getMonthlyPreTaxIncome();
-            } else if(h.isInSocialHousing()) {
-                ++nHomeless;
-                NonOwnerTotalAnnualIncome += h.monthlyEmploymentIncome;
-            } else if(h.isRenting()) {
-                ++nRenting;
-                rentalYield += h.getHousePayments().get(h.getHome()).monthlyPayment*config.constants.MONTHS_IN_YEAR/
-                        region.houseSaleMarket.getAverageSalePrice(h.getHome().getQuality());
-                NonOwnerTotalAnnualIncome += h.monthlyEmploymentIncome;
+        nNonBTLHomeless = 0;
+        activeBTLAnnualisedTotalIncome = 0.0;
+        ownerOccupierAnnualisedTotalIncome = 0.0;
+        rentingAnnualisedTotalIncome = 0.0;
+        homelessAnnualisedTotalIncome = 0.0;
+        sumStockYield = 0.0;
+        // TODO: Print to screen and check all these numbers!
+        // Run through all households counting population in each type and summing their gross incomes
+        for (Household h : region.households) {
+            if (h.behaviour.isPropertyInvestor()) {
+                ++nBTL;
+                // Active BTL investors
+                if (h.nInvestmentProperties() > 0) {
+                    ++nActiveBTL;
+                    activeBTLAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                // Inactive BTL investors who own their house
+                } else if (h.nInvestmentProperties() == 0) {
+                    ++nBTLOwnerOccupier;
+                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                // Inactive BTL investors in social housing
+                } else {
+                    ++nBTLHomeless;
+                    homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                }
             } else {
-                OOTotalAnnualIncome += h.monthlyEmploymentIncome;
+                // Non-BTL investors who own their house
+                if (h.isHomeowner()) {
+                    ++nNonBTLOwnerOccupier;
+                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                // Non-BTL investors renting
+                } else if (h.isRenting()) {
+                    ++nRenting;
+                    rentingAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    sumStockYield += h.getHousePayments().get(h.getHome()).monthlyPayment
+                            *config.constants.MONTHS_IN_YEAR
+                            /region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getHome().getQuality());
+                // Non-BTL investors in social housing
+                } else if (h.isInSocialHousing()) {
+                    // TODO: Once checked, this else if can be replaced by an else
+                    ++nNonBTLHomeless;
+                    homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                }
             }
         }
-        if(rentalYield > 0.0) rentalYield /= nRenting;
-        nNonOwner = nHomeless + nRenting;
-        nEmpty = region.housingStock + nHomeless - nHouseholds;
-        BtLTotalAnnualIncome *= config.constants.MONTHS_IN_YEAR; // annualise
-        OOTotalAnnualIncome *= config.constants.MONTHS_IN_YEAR;
-        NonOwnerTotalAnnualIncome *= config.constants.MONTHS_IN_YEAR;
-
+        // Annualise monthly income data
+        activeBTLAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
+        ownerOccupierAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
+        rentingAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
+        homelessAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
+        // Compute empty houses
+        nEmpty = region.housingStock + nBTLHomeless + nNonBTLHomeless - region.households.size();
     }
+
+
+
+    // TODO: Give sums and subtractions with getters unless used many times per month, for which it's better to create a new variable
+    nNonOwner = nHomeless + nRenting;
+    nHomeless = nNonBTLHomeless + nBTLHomeless;
+    nOwnerOccupier = nNonBTLOwnerOccupier + nBTLOwnerOccupier
+    nonOwnerAnnualisedTotalIncome = rentingAnnualisedTotalIncome + homelessAnnualisedTotalIncome;
+
+    public double getAvStockYield() {
+        if(nRenting > 0) {
+            return sumStockYield/nRenting;
+        } else {
+            return 0.0;
+        }
+    }
+
     public double [] getAgeDistribution() {
         double [] result = new double[region.households.size()];
         int i = 0;
@@ -143,12 +191,12 @@ public class RegionalHouseholdStats extends CollectorBase {
     public String nameOwnerOccupierAges() {
         return("Ages of owner-occupiers");
     }
-    public double [] getBtLNProperties() {
-        if(isActive() && nBtL > 0) {
-            double [] result = new double[(int)nBtL];
+    public double [] getBTLNProperties() {
+        if(isActive() && nBTL > 0) {
+            double [] result = new double[(int)nBTL];
             int i = 0;
             for(Household h : region.households) {
-                if(h.behaviour.isPropertyInvestor() && i<nBtL) {
+                if(h.behaviour.isPropertyInvestor() && i<nBTL) {
                     result[i] = h.nInvestmentProperties();
                     ++i;
                 }
@@ -157,11 +205,11 @@ public class RegionalHouseholdStats extends CollectorBase {
         }
         return null;
     }
-    public String desBtLNProperties() {
+    public String desBTLNProperties() {
         return("Dist of Number of properties owned by BTL investors");
     }
 
-    public String nameBtLNProperties() {
+    public String nameBTLNProperties() {
         return("Dist of Number of properties owned by BTL investors");
     }
     public double getBTLProportion() {
@@ -223,31 +271,27 @@ public class RegionalHouseholdStats extends CollectorBase {
         return nNonOwner;
     }
 
-    public int getnHouseholds() {
-        return nHouseholds;
-    }
-
     public int getnEmpty() {
         return nEmpty;
     }
-    public int getnBtL() {
-        return nBtL;
+    public int getnBTL() {
+        return nBTL;
     }
-    public String desnBtL() {
-        return("Number of investors with BtL gene");
-    }
-
-    public String namenBtL() {
-        return("Number of BtL investors (gene)");
-    }
-    public int getnActiveBtL() {
-        return nActiveBtL;
-    }
-    public String desnActiveBtL() {
-        return("Number of BtL investors with one or more investment properties");
+    public String desnBTL() {
+        return("Number of investors with BTL gene");
     }
 
-    public String namenActiveBtL() {
-        return("Number of BtL investors (active)");
+    public String namenBTL() {
+        return("Number of BTL investors (gene)");
+    }
+    public int getnActiveBTL() {
+        return nActiveBTL;
+    }
+    public String desnActiveBTL() {
+        return("Number of BTL investors with one or more investment properties");
+    }
+
+    public String namenActiveBTL() {
+        return("Number of BTL investors (active)");
     }
 }
