@@ -67,12 +67,12 @@ public class Recorder {
             try {
                 outfile = new PrintWriter(outputFolderCopy + "output-"+Model.nSimulation+".csv", "UTF-8");
                 outfile.println(
-                        "Model time, NRegisteredMortgages, nBtL(gene), nEmpty, nHomeless, nHouseholds, nRenting, AverageBidPrice, "+
+                        "Model time, NRegisteredMortgages, nBTL(gene), nEmpty, nHomeless, nHouseholds, nRenting, AverageBidPrice, "+
                         "AverageDaysOnMarket, AverageOfferPrice, BTLSalesProportion, FTBSalesProportion, HPA, HPI, nBuyers, "+
                         "nSellers, nSales, nNewBuild, Rental AverageBidPrice, Rental AverageDaysOnMarket, Rental AverageOfferPrice, Rental HPA, Rental HPI, "+
-                        "Rental nBuyers, Rental nSellers, Rental nSales, averageNewRentalGrossYield, nBtL(active), ProportionOfHousingStockBtL");
+                        "Rental nBuyers, Rental nSellers, Rental nSales, averageNewRentalGrossYield, nBTL(active), ProportionOfHousingStockBTL");
                 paramfile = new PrintWriter(outputFolderCopy + "parameters-"+Model.nSimulation+".csv", "UTF-8");
-                paramfile.println("BtL P_INVESTOR, CentralBank ICR Limit");
+                paramfile.println("BTL P_INVESTOR, CentralBank ICR Limit");
                 paramfile.println(
                         config.getPInvestor()+", "+
                         Model.centralBank.interestCoverRatioLimit
@@ -119,7 +119,7 @@ public class Recorder {
         outfile.println(
                 Model.getTime()+", "+
                 Model.creditSupply.getNRegisteredMortgages()+", "+
-                Model.householdStats.getnBtL()+", "+
+                Model.householdStats.getnBTL()+", "+
                 Model.householdStats.getnEmpty()+", "+
                 Model.householdStats.getnHomeless()+", "+
                 Model.householdStats.getnHouseholds()+", "+
@@ -143,8 +143,8 @@ public class Recorder {
                 Model.rentalMarketStats.getnBuyers()+", "+
                 Model.rentalMarketStats.getnSellers()+", "+
                 Model.rentalMarketStats.getnSales()+", "+
-                Model.rentalMarketStats.getExpAvGrossYield()+", "+
-                Model.householdStats.getnActiveBtL()+", "+
+                Model.rentalMarketStats.getExpAvFlowYield()+", "+
+                Model.householdStats.getnActiveBTL()+", "+
                 Model.householdStats.getBTLProportion());
     }
     

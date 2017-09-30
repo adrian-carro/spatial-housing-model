@@ -32,7 +32,6 @@ public class RegionalHouseholdStats extends CollectorBase {
     private double  homelessAnnualisedTotalIncome;
 
     private double  sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
-    private int     nEmpty; // Number of empty houses
 
     private Config  config = Model.config; // Passes the Model's configuration parameters object to a private field
     private Region  region;
@@ -55,7 +54,23 @@ public class RegionalHouseholdStats extends CollectorBase {
     //----- Methods -----//
     //-------------------//
 
-    // TODO: Add an init method enforcing initial values
+    /**
+     * Sets initial values for all relevant variables to enforce a controlled first measure for statistics
+     */
+    public void init() {
+        nBTL = 0;
+        nActiveBTL = 0;
+        nBTLOwnerOccupier = 0;
+        nBTLHomeless = 0;
+        nNonBTLOwnerOccupier = 0;
+        nRenting = 0;
+        nNonBTLHomeless = 0;
+        activeBTLAnnualisedTotalIncome = 0.0;
+        ownerOccupierAnnualisedTotalIncome = 0.0;
+        rentingAnnualisedTotalIncome = 0.0;
+        homelessAnnualisedTotalIncome = 0.0;
+        sumStockYield = 0.0;
+    }
 
     public void record() {
         // Initialise variables to sum
@@ -103,7 +118,7 @@ public class RegionalHouseholdStats extends CollectorBase {
                             /region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getHome().getQuality());
                 // Non-BTL investors in social housing
                 } else if (h.isInSocialHousing()) {
-                    // TODO: Once checked, this else if can be replaced by an else
+                    // TODO: Once numbers are checked, this "else if" can be replaced by an "else"
                     ++nNonBTLHomeless;
                     homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
                 }
@@ -114,18 +129,33 @@ public class RegionalHouseholdStats extends CollectorBase {
         ownerOccupierAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
         rentingAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
         homelessAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
-        // Compute empty houses
-        nEmpty = region.housingStock + nBTLHomeless + nNonBTLHomeless - region.households.size();
     }
 
+    //----- Getter/setter methods -----//
 
+    // Getters for numbers of households variables
+    public int getnBTL() { return nBTL; }
+    public int getnActiveBTL() { return nActiveBTL; }
+    public int getnBTLOwnerOccupier() { return nBTLOwnerOccupier; }
+    public int getnBTLHomeless() { return nBTLHomeless; }
+    public int getnNonBTLOwnerOccupier() { return nNonBTLOwnerOccupier; }
+    public int getnRenting() { return nRenting; }
+    public int getnNonBTLHomeless() { return nNonBTLHomeless; }
+    public int getnOwnerOccupier() { return nBTLOwnerOccupier + nNonBTLOwnerOccupier; }
+    public int getnHomeless() { return nBTLHomeless + nNonBTLHomeless; }
+    public int getnNonOwner() { return nRenting + getnHomeless(); }
 
-    // TODO: Give sums and subtractions with getters unless used many times per month, for which it's better to create a new variable
-    nNonOwner = nHomeless + nRenting;
-    nHomeless = nNonBTLHomeless + nBTLHomeless;
-    nOwnerOccupier = nNonBTLOwnerOccupier + nBTLOwnerOccupier
-    nonOwnerAnnualisedTotalIncome = rentingAnnualisedTotalIncome + homelessAnnualisedTotalIncome;
+    // Getters for annualised income variables
+    public double getActiveBTLAnnualisedTotalIncome() { return activeBTLAnnualisedTotalIncome; }
+    public double getOwnerOccupierAnnualisedTotalIncome() { return ownerOccupierAnnualisedTotalIncome; }
+    public double getRentingAnnualisedTotalIncome() { return rentingAnnualisedTotalIncome; }
+    public double getHomelessAnnualisedTotalIncome() { return homelessAnnualisedTotalIncome; }
+    public double getNonOwnerAnnualisedTotalIncome() {
+        return rentingAnnualisedTotalIncome + homelessAnnualisedTotalIncome;
+    }
 
+    // Getters for yield variables
+    public double getSumStockYield() { return sumStockYield; }
     public double getAvStockYield() {
         if(nRenting > 0) {
             return sumStockYield/nRenting;
@@ -134,164 +164,87 @@ public class RegionalHouseholdStats extends CollectorBase {
         }
     }
 
-    public double [] getAgeDistribution() {
-        double [] result = new double[region.households.size()];
-        int i = 0;
-        for(Household h : region.households) {
-            result[i] = h.getAge();
-            ++i;
-        }
-        return(result);
-    }
-    public String desAgeDistribution() {
-        return("Age distribution of all households");
-    }
-
-    public String nameAgeDistribution() {
-        return("Age distribution of all households");
-    }
-    public double [] getNonOwnerAges() {
-        double [] result = new double[(int)nNonOwner];
-        int i = 0;
-        for(Household h : region.households) {
-            if(!h.isHomeowner() && i < nNonOwner) {
-                result[i++] = h.getAge();
-            }
-        }
-        while(i < nNonOwner) {
-            result[i++] = 0.0;
-        }
-        return(result);
-    }
-    public String desNonOwnerAges() {
-        return("Ages of Renters and households in social housing");
-    }
-
-    public String nameNonOwnerAges() {
-        return("Renter and Social-housing ages");
-    }
-    public double [] getOwnerOccupierAges() {
-        double [] result = new double[(int)nNonOwner];
-        int i = 0;
-        for(Household h : region.households) {
-            if(!h.isHomeowner() && i < nNonOwner) {
-                result[i] = h.getAge();
-                ++i;
-            }
-        }
-        while(i < nNonOwner) {
-            result[i++] = 0.0;
-        }
-        return(result);
-    }
-    public String desOwnerOccupierAges() {
-        return("Ages of owner-occupiers");
-    }
-
-    public String nameOwnerOccupierAges() {
-        return("Ages of owner-occupiers");
-    }
-    public double [] getBTLNProperties() {
-        if(isActive() && nBTL > 0) {
-            double [] result = new double[(int)nBTL];
-            int i = 0;
-            for(Household h : region.households) {
-                if(h.behaviour.isPropertyInvestor() && i<nBTL) {
-                    result[i] = h.nInvestmentProperties();
-                    ++i;
-                }
-            }
-            return(result);
-        }
-        return null;
-    }
-    public String desBTLNProperties() {
-        return("Dist of Number of properties owned by BTL investors");
-    }
-
-    public String nameBTLNProperties() {
-        return("Dist of Number of properties owned by BTL investors");
-    }
+    // Getters for other variables...
+    // ... number of empty houses
+    public int getnEmpty() { return region.housingStock + nBTLHomeless + nNonBTLHomeless - region.households.size(); }
+    // ... proportion of housing stock owned by buy-to-let investors
     public double getBTLProportion() {
-        return(((double)(nEmpty+nRenting))/region.housingStock);
-    }
-    public String desBTLProportion() {
-        return("Proportion of stock of housing owned by buy-to-let investors");
+        return ((double)(getnEmpty() + nRenting))/region.housingStock;
     }
 
-    public String nameBTLProportion() {
-        return("Buy-to-let housing stock proportion");
-    }
-    public double [] getRentalYields() {
-        double [] result = new double[nRenting];
-        int i = 0;
-        for(Household h : region.households) {
-            if(h.isRenting() && i<nRenting) {
-                result[i++] = h.getHousePayments().get(h.getHome()).monthlyPayment*config.constants.MONTHS_IN_YEAR/
-                        region.houseSaleMarket.getAverageSalePrice(h.getHome().getQuality());
-            }
-        }
-        return(result);
-    }
-    public String desRentalYields() {
-        return("Gross annual rental yield on occupied rental properties");
-    }
-
-    public String nameRentalYields() {
-        return("Rental Yields");
-    }
-
-    public double [] getLogIncomes() {
-        double [] result = new double[region.households.size()];
-        int i = 0;
-        for(Household h : region.households) {
-            result[i++] = Math.log(h.annualEmploymentIncome());
-        }
-        return(result);
-    }
-
-    public double [] getLogBankBalances() {
-        double [] result = new double[region.households.size()];
-        int i = 0;
-        for(Household h : region.households) {
-            result[i++] = Math.log(Math.max(0.0, h.getBankBalance()));
-        }
-        return(result);
-    }
-
-    public int getnRenting() {
-        return nRenting;
-    }
-
-    public int getnHomeless() {
-        return nHomeless;
-    }
-
-    public int getnNonOwner() {
-        return nNonOwner;
-    }
-
-    public int getnEmpty() {
-        return nEmpty;
-    }
-    public int getnBTL() {
-        return nBTL;
-    }
-    public String desnBTL() {
-        return("Number of investors with BTL gene");
-    }
-
-    public String namenBTL() {
-        return("Number of BTL investors (gene)");
-    }
-    public int getnActiveBTL() {
-        return nActiveBTL;
-    }
-    public String desnActiveBTL() {
-        return("Number of BTL investors with one or more investment properties");
-    }
-
-    public String namenActiveBTL() {
-        return("Number of BTL investors (active)");
-    }
+//    // Array with ages of all households
+//    public double [] getAgeDistribution() {
+//        double [] result = new double[region.households.size()];
+//        int i = 0;
+//        for(Household h : region.households) {
+//            result[i] = h.getAge();
+//            ++i;
+//        }
+//        return(result);
+//    }
+//
+//    // Array with ages of renters and households in social housing
+//    public double [] getNonOwnerAges() {
+//        double [] result = new double[getnNonOwner()];
+//        int i = 0;
+//        for(Household h : region.households) {
+//            if(!h.isHomeowner() && i < getnNonOwner()) {
+//                result[i++] = h.getAge();
+//            }
+//        }
+//        while(i < getnNonOwner()) {
+//            result[i++] = 0.0;
+//        }
+//        return(result);
+//    }
+//
+//    // Array with ages of owner-occupiers
+//    public double [] getOwnerOccupierAges() {
+//        double [] result = new double[getnNonOwner()];
+//        int i = 0;
+//        for(Household h : region.households) {
+//            if(!h.isHomeowner() && i < getnNonOwner()) {
+//                result[i] = h.getAge();
+//                ++i;
+//            }
+//        }
+//        while(i < getnNonOwner()) {
+//            result[i++] = 0.0;
+//        }
+//        return(result);
+//    }
+//
+//    // Distribution of the number of properties owned by BTL investors
+//    public double [] getBTLNProperties() {
+//        if(isActive() && nBTL > 0) {
+//            double [] result = new double[(int)nBTL];
+//            int i = 0;
+//            for(Household h : region.households) {
+//                if(h.behaviour.isPropertyInvestor() && i<nBTL) {
+//                    result[i] = h.nInvestmentProperties();
+//                    ++i;
+//                }
+//            }
+//            return(result);
+//        }
+//        return null;
+//    }
+//
+//    public double [] getLogIncomes() {
+//        double [] result = new double[region.households.size()];
+//        int i = 0;
+//        for(Household h : region.households) {
+//            result[i++] = Math.log(h.annualEmploymentIncome());
+//        }
+//        return(result);
+//    }
+//
+//    public double [] getLogBankBalances() {
+//        double [] result = new double[region.households.size()];
+//        int i = 0;
+//        for(Household h : region.households) {
+//            result[i++] = Math.log(Math.max(0.0, h.getBankBalance()));
+//        }
+//        return(result);
+//    }
 }

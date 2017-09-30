@@ -66,6 +66,7 @@ public class Region {
         houseRentalMarket.init();
         regionalHousingMarketStats.init();
         regionalRentalMarketStats.init();
+        regionalHouseholdStats.init();
         housingStock = 0;
     }
 
@@ -85,6 +86,6 @@ public class Region {
         // Computes and stores several regional rental market statistics after bids are matched by clearing the market (such as HPI, HPA)
         regionalRentalMarketStats.postClearingRecord();
         // Stores regional household statistics after both regional markets have been cleared
-        regionalHouseholdStats.step();
+        regionalHouseholdStats.record();
     }
 }
