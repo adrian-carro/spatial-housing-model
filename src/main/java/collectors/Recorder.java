@@ -122,7 +122,7 @@ public class Recorder {
                 Model.householdStats.getnBTL()+", "+
                 Model.householdStats.getnEmpty()+", "+
                 Model.householdStats.getnHomeless()+", "+
-                Model.householdStats.getnHouseholds()+", "+
+                Model.demographics.getTotalPopulation()+", "+
                 Model.householdStats.getnRenting()+", "+
                 Model.housingMarketStats.getAvBidPrice()+", "+
                 Model.housingMarketStats.getAvDaysOnMarket()+", "+

@@ -74,7 +74,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 	
 	public double getDebtToIncome() {
-		return(100.0*(Model.creditSupply.totalBTLCredit + Model.creditSupply.totalOOCredit)/(Model.collectors.householdStats.OOTotalAnnualIncome+Model.collectors.householdStats.BtLTotalAnnualIncome+Model.collectors.householdStats.NonOwnerTotalAnnualIncome));
+		return(100.0*(Model.creditSupply.totalBTLCredit + Model.creditSupply.totalOOCredit)/(Model.collectors.householdStats.OOTotalAnnualIncome+Model.collectors.householdStats.BTLTotalAnnualIncome+Model.collectors.householdStats.NonOwnerTotalAnnualIncome));
 	}
 	public String desDebtToIncome() {
 		return("Household mortgage debt to income ratio (%)");
@@ -87,8 +87,8 @@ public class CoreIndicators extends CollectorBase {
 	 * 
 	 */
 	public double getOODebtToIncome() {
-		return(100.0*Model.creditSupply.totalOOCredit/Model.householdStats.OOTotalAnnualIncome);
-	}
+        return(100.0*Model.creditSupply.totalOOCredit/Model.householdStats.getOwnerOccupierAnnualisedTotalIncome());
+    }
 	public String desOODebtToIncome() {
 		return("Household debt to income ratio (owner-occupier mortgages only) (%)");
 	}
@@ -151,7 +151,9 @@ public class CoreIndicators extends CollectorBase {
 	}
 
 	public double getPriceToIncome() {
-		return(Model.houseSaleMarket.housePriceIndex*config.derivedParams.getHPIReference()*(Model.householdStats.nHouseholds - Model.householdStats.nRenting - Model.householdStats.nHomeless)/(Model.householdStats.OOTotalAnnualIncome+Model.householdStats.BtLTotalAnnualIncome));
+		return(Model.houseSaleMarket.housePriceIndex*config.derivedParams.getHPIReference()
+				*(Model.demographics.getTotalPopulation() - Model.householdStats.getnRenting() - Model.householdStats.getnHomeless())
+                /(Model.householdStats.getOwnerOccupierAnnualisedTotalIncome() + Model.householdStats.getActiveBTLAnnualisedTotalIncome()));
 	}
 	public String desPriceToIncome() {
 		return("House price to household disposable income ratio");
@@ -161,7 +163,7 @@ public class CoreIndicators extends CollectorBase {
 	}
 	
 	public double getRentalYield() {
-		return(100.0*Model.householdStats.rentalYield);
+		return(100.0*Model.householdStats.getAvStockYield());
 	}
 	public String desRentalYield() {
 		return("Average gross annual yield on occupied rental properties");
@@ -172,7 +174,7 @@ public class CoreIndicators extends CollectorBase {
 
 	public double getHousePriceGrowth() {
 		// As opposed to HPA, this captures quarter to quarter housing price growth
-//		return(100.0*Model.collectors.housingMarketStats.getHPA());
+//		return(100.0*Model.collectors.housingMarketStats.getAnnualHPA());
 		double lastHPI = Model.houseSaleMarket.HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 4)
                 + Model.houseSaleMarket.HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 5)
                 + Model.houseSaleMarket.HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 6);

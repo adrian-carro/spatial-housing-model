@@ -99,7 +99,7 @@ public class Model {
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
         creditSupply = new collectors.CreditSupply(outputFolder);
         coreIndicators = new collectors.CoreIndicators();
-        householdStats = new collectors.HouseholdStats();
+        householdStats = new collectors.HouseholdStats(geography);
         housingMarketStats = new collectors.HousingMarketStats(geography);
         rentalMarketStats = new collectors.RentalMarketStats(geography);
 
@@ -141,9 +141,6 @@ public class Model {
                     // Finds values of variables and records them to their respective files
                     if(config.recordCoreIndicators) recorder.step();
                 }
-
-                if(creditSupply.isActive()) creditSupply.step();
-                if(householdStats.isActive()) householdStats.step();
 
                 // Print time information to screen
                 if (t % 100 == 0) {
@@ -192,6 +189,10 @@ public class Model {
         housingMarketStats.collectRegionalRecords();
         // Update all rental market statistics by collecting and aggregating results from the regions
         rentalMarketStats.collectRegionalRecords();
+        // Update all household statistics by collecting and aggregating results from the regions
+        if(householdStats.isActive()) householdStats.collectRegionalRecords();
+        // Update all credit supply statistics // TODO: Check what this actually does and if it should go elsewhere!
+        if(creditSupply.isActive()) creditSupply.step();
 		// Update bank and interest rate for new mortgages
 		bank.step(demographics.getTotalPopulation());
         // Update central bank policies (currently empty!)
