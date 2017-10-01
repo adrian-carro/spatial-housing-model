@@ -316,7 +316,6 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public double getLongTermHPA() {return longTermHousePriceAppreciation; }
 
     // Getters for derived variables
-    // TODO: Check whether to keep ifs or remove them and always add an infinitesimal amount
     public double getAvBidPrice() {
         if (nBuyers > 0) {
             return sumBidPrices/nBuyers;
@@ -372,5 +371,16 @@ public class RegionalHousingMarketStats extends CollectorBase {
         } else {
             return 0.0;
         }
+    }
+    /**
+     * Computes the best quality of house that a buyer could expect to get for a given price. If return value is -1,
+     * the buyer can't afford even lowest quality house.
+     *
+     * @param price Price the buyer is ready to pay
+     */
+    public int getMaxQualityForPrice(double price) {
+        int q = config.N_QUALITY - 1;
+        while(q >= 0 && getAvSalePriceForQuality(q) > price) --q;
+        return q;
     }
 }

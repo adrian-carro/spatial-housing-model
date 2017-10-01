@@ -85,7 +85,7 @@ public class HouseSaleMarket extends HousingMarket {
 	
 	public Iterator<HousingMarketRecord> offersIterator() {
 		final PriorityQueue2D<HousingMarketRecord>.Iter underlyingIterator
-				= (PriorityQueue2D<HousingMarketRecord>.Iter)super.offersIterator();
+				= (PriorityQueue2D<HousingMarketRecord>.Iter)super.getOffersIterator();
 		return(new Iterator<HousingMarketRecord>() {
 			@Override
 			public boolean hasNext() {

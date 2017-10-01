@@ -6,8 +6,6 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.commons.math3.distribution.GeometricDistribution;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-
 import org.apache.commons.math3.random.MersenneTwister;
 
 import utilities.PriorityQueue2D;
@@ -27,32 +25,25 @@ public abstract class HousingMarket implements Serializable {
 
     private static Authority                        authority = new Authority();
 
-    public double                                   averageDaysOnMarket;
-    public double                                   housePriceIndex;
+    private Config                                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private MersenneTwister                         rand = Model.rand; // Passes the Model's random number generator to a private field
+    private Region                                  region;
+    private PriorityQueue2D<HousingMarketRecord>    offersPQ;
 
     ArrayList<HouseBuyerRecord>                     bids;
-
-    private PriorityQueue2D<HousingMarketRecord>    offersPQ;
-    private DescriptiveStatistics                   HPIRecord;
-    private MersenneTwister                         rand = Model.rand; // Passes the Model's random number generator to a private field
-    private Config                                  config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private double                                  sumSoldPrice = 0.0;
-    private double                                  sumSoldRefPrice = 0.0;
-    private int                                     nSold = 0;
-    private double                                  averageSalePrice[] = new double[config.N_QUALITY];
 
     //------------------------//
     //----- Constructors -----//
     //------------------------//
 
-    public HousingMarket() {
+    public HousingMarket(Region region) {
+        this.region = region;
         offersPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); //Priority Queue of (Price, Quality)
         // The integer passed to the ArrayList constructor is an initially declared capacity (for initial memory
         // allocation purposes), it will actually have size zero and only grow by adding elements
-        // TODO: Check if this integer is too large or small, check speed penalty for using ArrayList as opposed to normal arrays
+        // TODO: Check if this integer is too large or small, check speed penalty for using ArrayList as opposed to
+        // TODO: normal arrays
         bids = new ArrayList<>(config.TARGET_POPULATION/16);
-        HPIRecord = new DescriptiveStatistics(config.derivedParams.HPI_RECORD_LENGTH);
-        init();
     }
 
     //----------------------//
@@ -60,7 +51,7 @@ public abstract class HousingMarket implements Serializable {
     //----------------------//
 
     // TODO: Make sure this authority class is actually needed
-    static public class Authority {
+    static class Authority {
         private Authority() {}
     }
 
@@ -68,101 +59,80 @@ public abstract class HousingMarket implements Serializable {
     //----- Methods -----//
     //-------------------//
 
-    public double[] getAverageSalePrice() {
-        return averageSalePrice;
-    }
-
-    public ArrayList<HouseBuyerRecord> getBids() {
-        return bids;
-    }
-
-    public PriorityQueue2D<HousingMarketRecord> getOffersPQ() {
-        return offersPQ;
-    }
+    //----- Initialisation methods -----//
     
     public void init() {
-        int i;
-        for(i = 0; i<config.N_QUALITY; ++i) {
-            averageSalePrice[i] = referencePrice(i);
-        }
-        housePriceIndex = 1.0;
-        // TODO: Why to initiate averageDaysOnMarket to 30? Check if this has any influence!
-        // TODO: Make this and any other dummy initial values explicit in the paper
-        averageDaysOnMarket = config.constants.DAYS_IN_MONTH;
-        for(i=0; i<config.derivedParams.HPI_RECORD_LENGTH; ++i) HPIRecord.addValue(1.0);
         offersPQ.clear();
-//        matches.clear();
     }
+
+    //----- Methods to add, update, remove offers and bids -----//
     
-    /******************************************
-     * Put a new offer on the market.
+    /**
+     * Put a new offer on the market
+     *
      * @param house House to put on the market
-     * @param price List price for the house.
-     ******************************************/
+     * @param price List price for the house
+     * @return HouseSaleRecord for the house
+     */
     public HouseSaleRecord offer(House house, double price) {
-        HouseSaleRecord hsr = new HouseSaleRecord(house, price);
+        HouseSaleRecord hsr = new HouseSaleRecord(region, house, price);
         offersPQ.add(hsr);
-        return(hsr);
+        return hsr;
     }
     
-    /******************************************
-     * Change the list-price on a house that is already on
-     * the market.
+    /**
+     * Change the list-price on a house that is already on the market
      * 
-     * @param hsr The HouseSaleRecord to change the price for.
-     * @param newPrice The new price of the house.
-     ******************************************/
+     * @param hsr The HouseSaleRecord of the house to change the price for
+     * @param newPrice The new price of the house
+     */
     public void updateOffer(HouseSaleRecord hsr, double newPrice) {
         offersPQ.remove(hsr);
         hsr.setPrice(newPrice, authority);
         offersPQ.add(hsr);
     }
     
-    /*******************************************
-     * Take a house off the market.
+    /**
+     * Take a house off the market
      * 
-     * @param hsr The HouseSaleRecord to take off the market.
-     *******************************************/
-    public void removeOffer(HouseSaleRecord hsr) {
-        offersPQ.remove(hsr);
-    }
+     * @param hsr The HouseSaleRecord of the house to take off the market
+     */
+    public void removeOffer(HouseSaleRecord hsr) { offersPQ.remove(hsr); }
 
-    /*******************************************
-     * Make a bid on the market (i.e. make an offer on
-     * a (yet to be decided) house).
+    /**
+     * Make a bid on the market (i.e. make an offer on a (yet to be decided) house
      * 
-     * @param buyer The household that is making the bid.
-     * @param price The price that the household is willing to pay.
-     ******************************************/
-    public void bid(Household buyer, double price) {
-        bids.add(new HouseBuyerRecord(buyer, price));
-        // match bid with current offers
-    }
-
-
-    /***************************
-     * Get the highest quality offer for a price up to that of the bid
-     *
-     * @param bid the highest possible price we are looking for
-     * @return the highest quality house being offered for a price <= bid
+     * @param buyer The household that is making the bid
+     * @param price The price that the household is willing to pay
      */
-    protected HouseSaleRecord getBestOffer(HouseBuyerRecord bid) {
-        return (HouseSaleRecord)offersPQ.peek(bid);
-    }
-    
-    public Iterator<HousingMarketRecord> offersIterator() {
-        return(offersPQ.iterator());
+    public void bid(Household buyer, double price) { bids.add(new HouseBuyerRecord(buyer, price)); }
+
+    //----- Market clearing methods -----//
+
+    /**
+     * Main simulation step. For a number of rounds, matches bids with offers and clears the matches.
+     */
+    void clearMarket() {
+        // offersPQ contains Price-Quality 2D-priority queue of offers
+        // offersPY contains Price-Yield 2D-priority queue of offers
+        // bids contains bids (HouseBuyerRecords) in an array
+        // TODO: 500 is reported in the paper as 5000000. In any case, why this number? Why the 1000? This should be
+        // TODO: made a less arbitrary or better justified "model rule", not even parameters. Also, why to necessarily
+        // TODO: iterate rounds times if market might be cleared before? Is this often the case?
+        int rounds = Math.min(config.TARGET_POPULATION/1000,1 + (offersPQ.size()+bids.size())/500);
+        for(int i=0; i<rounds; ++i) {
+            matchBidsWithOffers(); // Step 1: iterate through bids
+            clearMatches(); // Step 2: iterate through offers
+        }
+        bids.clear();
     }
 
-    /**********************************
-     * The first step to clear the market.
-     *
-     * Iterate through all *bids* and, for each bid, find the best house being offered
-     * for that price or lower (if it exists) and record the match. Note that
-     * offers could be matched with multiple bids.
-     *
+    /**
+     * First step to clear the market. Iterate through all bids and, for each bid, find the best quality house being
+     * offered for that price or lower (if it exists) and record the match. Note that offers could be matched with
+     * multiple bids.
      */
-    protected void matchBidsWithOffers() {
+    private void matchBidsWithOffers() {
         HouseSaleRecord offer;
         for(HouseBuyerRecord bid : bids) {
             offer = getBestOffer(bid);
@@ -173,18 +143,13 @@ public abstract class HousingMarket implements Serializable {
         bids.clear();
     }
 
-    /***********************************
-     * The second step to clear the market.
-     *
-     * Iterate through all *offers* and, for each offer, loop through its matched bids.
-     *
-     * If BIDUP is implemented, the offer price is bid up according to a geometric distribution with
-     * mean dependent on the number of matched bids.
-     *
+    /**
+     * Second step to clear the market. Iterate through all offers and, for each offer, loop through its matched bids.
+     * If BIDUP is activated, the offer price is bid up according to a geometric distribution with mean dependent on the
+     * number of matched bids.
      */
-    protected void clearMatches() {
+    private void clearMatches() {
         // --- clear and resolve oversubscribed offers
-        // 
         HouseSaleRecord offer;
         GeometricDistribution geomDist;
         int nBids;
@@ -192,14 +157,15 @@ public abstract class HousingMarket implements Serializable {
         double salePrice;
         int winningBid;
         int enoughBids; // upper bounded number of bids on one house
-        Iterator<HousingMarketRecord> record = offersIterator();
+        Iterator<HousingMarketRecord> record = getOffersIterator();
         while(record.hasNext()) {
             offer = (HouseSaleRecord)record.next();
             nBids = offer.matchedBids.size(); // if there are no bids matched, skip this offer
             if(nBids > 0) {
                 // bid up the price
                 if(config.BIDUP != 1.0) {
-                    // TODO: the 10000/N factor, the 0.5 added, and the topping of the function at 4 are not declared in the paper. Remove or explain!
+                    // TODO: the 10000/N factor, the 0.5 added, and the topping of the function at 4 are not declared in
+                    // TODO: the paper. Remove or explain!
                     enoughBids = Math.min(4, (int)(0.5 + nBids*10000.0/config.TARGET_POPULATION));
                     pSuccessfulBid = Math.exp(-enoughBids*config.derivedParams.MONTHS_UNDER_OFFER);
                     geomDist = new GeometricDistribution(Model.rand, pSuccessfulBid);
@@ -214,147 +180,44 @@ public abstract class HousingMarket implements Serializable {
                     salePrice = offer.matchedBids.get(nBids).getPrice();
                     winningBid = nBids;
                 } else {
-                    while(nBids >=0 && offer.matchedBids.get(nBids).getPrice() > salePrice) {
+                    while(nBids >= 0 && offer.matchedBids.get(nBids).getPrice() > salePrice) {
                         --nBids;
                     }
                     ++nBids;
-                    winningBid = nBids + rand.nextInt(offer.matchedBids.size()-nBids);
+                    winningBid = nBids + rand.nextInt(offer.matchedBids.size()- nBids);
                 }
                 record.remove();
                 offer.setPrice(salePrice, authority);
+                // Complete the successful transaction and record it into the corresponding regionalHousingMarketStats
                 completeTransaction(offer.matchedBids.get(winningBid), offer);
-                // put failed bids back on array
+                // Put the rest of the bids for this property (failed bids) back on array
                 bids.addAll(offer.matchedBids.subList(0, winningBid));
                 bids.addAll(offer.matchedBids.subList(winningBid+1, offer.matchedBids.size()));            
             }
         }        
     }
-    
-    /**************************************************
-     * Main simulation step.
+
+    /**
+     * This abstract method allows for the different implementations at HouseSaleMarket and HouseRentalMarket to be
+     * called as appropriate
      *
-     * For a number of rounds, matches bids with offers and
-     * clears the matches.
-     * 
-     **************************************************/
-    public void clearMarket() {
-        // offersPQ contains Price-Quality 2D-priority queue of offers
-        // offersPY contains Price-Yeild 2D-priority queue of offers
-        // bids contains bids (HouseBuyerRecords) in an array
-        
-        recordMarketStats();
-        // TODO: 500 is reported in the paper as 5000000. In any case, why this number? Why the 1000?
-        // TODO: These numbers should be made a less arbitrary or better justified "model rule", not even parameters
-        // TODO: Also, why to necessarily iterate rounds times if market might be cleared before? Is this often the case?
-        int rounds = Math.min(config.TARGET_POPULATION/1000,1 + (offersPQ.size()+bids.size())/500);
-        for(int i=0; i<rounds; ++i) {
-            matchBidsWithOffers(); // Step 1: iterate through bids
-            clearMatches(); // Step 2: iterate through offers
-        }
-        bids.clear();
-    }
+     * @param purchase HouseBuyerRecord with information on the offer
+     * @param sale HouseSaleRecord with information on the bid
+     */
+    public abstract void completeTransaction(HouseBuyerRecord purchase, HouseSaleRecord sale);
 
-        
-    /**********************************************
-     * Do all stuff necessary when a buyer and seller is matched
-     * and the transaction is completed.
-     * 
-     * @param b The buyer's record
-     * @param sale The seller's record
-     **********************************************/
-    public void completeTransaction(HouseBuyerRecord b, HouseSaleRecord sale) {
-        // --- update sales statistics
-        // TODO: This an exponential moving average with smoothing parameter E. Not explained in the paper!
-        // TODO: No justification is given for the smoothing parameter... check how much it matters for the results
-        averageDaysOnMarket = config.derivedParams.E*averageDaysOnMarket + (1.0-config.derivedParams.E)*config.constants.DAYS_IN_MONTH*(Model.getTime() - sale.tInitialListing);
-        averageSalePrice[sale.getQuality()] = config.derivedParams.G*averageSalePrice[sale.getQuality()] + (1.0-config.derivedParams.G)*sale.getPrice();
-        
-//        housePriceRegression.addData(referencePrice(sale.getQuality()), sale.getPrice());
-        sumSoldRefPrice += referencePrice(sale.getQuality());
-        sumSoldPrice += sale.getPrice();
-        nSold += 1;
-        
-        if(averageSalePrice[sale.getQuality()] < 0.0) {
-            System.out.println("Average sale price "+sale.getQuality()+" is "+averageSalePrice[sale.getQuality()]);
-        }
-    }
-    
-    /***************************************************
-     * Get the annualised appreciation in house price index
-     * It compares the previous quarter (previous 3 months, to smooth changes) to the quarter nYears years before
-     * (full years to avoid seasonal effects) to compute the geometric mean over the nYear years
+    //----- Getter/setter methods -----//
+
+    public ArrayList<HouseBuyerRecord> getBids() { return bids; }
+
+    public PriorityQueue2D<HousingMarketRecord> getOffersPQ() { return offersPQ; }
+
+    Iterator<HousingMarketRecord> getOffersIterator() { return(offersPQ.iterator()); }
+
+    /**
+     * Get the highest quality house being offered for a price up to that of the bid (OfferPrice <= bidPrice)
      *
-     * @param nYears number of years to average house price growth
-     * @return Annualised appreciation
-     ***************************************************/
-    public double housePriceAppreciation(int nYears) {
-        double HPI = (HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 1)
-                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 2)
-                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 3));
-        double oldHPI = (HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH
-                - nYears*config.constants.MONTHS_IN_YEAR - 1)
-                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH
-                - nYears*config.constants.MONTHS_IN_YEAR - 2)
-                + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH
-                - nYears*config.constants.MONTHS_IN_YEAR - 3));
-        return(Math.pow(HPI/oldHPI, 1.0/nYears) - 1.0);
-    }
-    
-    /***********************************************
-     * HPI reference price of a house for a given quality
-     * 
-     * @param quality quality of the house
-    ************************************************/
-    public abstract double referencePrice(int quality);
-
-    /***
-     * 
-     * @param q the quality of the house
-     * @return the average sale price of houses of the given quality
+     * @param bid The highest possible price the buyer is ready to pay
      */
-    // TODO: Change name of this method (getAverageSalePricePerQuality) as it coincides with a different one
-    public double getAverageSalePrice(int q) {
-        double price = averageSalePrice[q];
-        if(price <= 0.0) {
-            price = 0.01;
-            System.out.println("Average sale price "+q+" is "+averageSalePrice[q]);
-        }
-        return(price);
-    }
-    
-    /***
-     * @param price
-     * @return      The best quality of house you would expect to get
-     * for the given price. If return value is -1, can't afford
-     * even lowest quality house.
-     */
-    public int maxQualityGivenPrice(double price) {
-        int q=config.N_QUALITY-1;
-        while(q >= 0 && averageSalePrice[q] > price) --q;
-        return(q);
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    protected void recordMarketStats() {
-        // --- House Price Index stuff
-        // TODO: Why only when nSold greater than 4? Undeclared in the paper! Test influence of this value!
-        if(nSold > 4) {
-            // TODO: Is this a parameter? As it is playing no role, could we remove it?
-            // TODO: Revise if declared in the article!
-            double c = 0.0;
-            housePriceIndex = sumSoldPrice/sumSoldRefPrice;
-            sumSoldPrice = 0.0;
-            sumSoldRefPrice = 0.0;
-            nSold = 0;
-
-
-            for(int q=0; q<config.N_QUALITY; ++q) {
-                averageSalePrice[q] = config.MARKET_AVERAGE_PRICE_DECAY*averageSalePrice[q]
-                        + (1.0-config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePrice(q) + c);
-            }
-        }
-        HPIRecord.addValue(housePriceIndex);
-    }
+    protected HouseSaleRecord getBestOffer(HouseBuyerRecord bid) { return (HouseSaleRecord)offersPQ.peek(bid); }
 }
