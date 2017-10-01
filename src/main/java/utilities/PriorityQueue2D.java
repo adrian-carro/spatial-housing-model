@@ -27,16 +27,16 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 		/***
 		 * @return (-1, 0, 1) if this is (less than, equal to, greater than) other
 		 */
-		public int XCompareTo(T other);
-		public int YCompareTo(T other);
+        int XCompareTo(T other);
+		int YCompareTo(T other);
 	}
 
 	public interface XYComparator<T> extends Serializable {
 		/***
 		 * @return (-1, 0, 1) if arg0 is (less than, equal to, greater than) arg1
 		 */
-		public int XCompare(T arg0, T arg1);
-		public int YCompare(T arg0, T arg1);
+        int XCompare(T arg0, T arg1);
+		int YCompare(T arg0, T arg1);
 	}
 
 	public class XComparator implements Comparator<E>, Serializable {
@@ -208,11 +208,8 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 		if(nextLower == null) {
 			return(true);
 		}
-		if(comparator.YCompare(nextLower, element) == -1) {
-			return(true);
-		}
-		return(false);
-	}
+        return comparator.YCompare(nextLower, element) == -1;
+    }
 	
 	public int size() {return(ySortedElements.size());}
 	public int uncoveredSize() {return(uncoveredElements.size());}

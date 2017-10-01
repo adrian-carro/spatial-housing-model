@@ -67,11 +67,11 @@ public class HouseSaleMarket extends HousingMarket {
 	
 	@Override
 	protected HouseSaleRecord getBestOffer(HouseBuyerRecord bid) {
-		if(bid.getClass() == BtLBuyerRecord.class) { // BTL buyer (yield driven)
+		if(bid.getClass() == BTLBuyerRecord.class) { // BTL buyer (yield driven)
 			HouseSaleRecord bestOffer = (HouseSaleRecord)offersPY.peek(bid);
 			if(bestOffer != null) {
 					double minDownpayment = bestOffer.getPrice()*(1.0
-                            - region.regionalRentalMarketStats.getExpAvGrossYield()/
+                            - region.regionalRentalMarketStats.getExpAvFlowYield()/
                             (Model.bank.interestCoverageRatio()*config.CENTRAL_BANK_BTL_STRESSED_INTEREST));
 					if(bid.buyer.getBankBalance() >= minDownpayment) {
 						return(bestOffer);
@@ -84,7 +84,8 @@ public class HouseSaleMarket extends HousingMarket {
 	}
 	
 	public Iterator<HousingMarketRecord> offersIterator() {
-		final PriorityQueue2D<HousingMarketRecord>.Iter underlyingIterator = (PriorityQueue2D<HousingMarketRecord>.Iter)super.offersIterator();
+		final PriorityQueue2D<HousingMarketRecord>.Iter underlyingIterator
+				= (PriorityQueue2D<HousingMarketRecord>.Iter)super.offersIterator();
 		return(new Iterator<HousingMarketRecord>() {
 			@Override
 			public boolean hasNext() {
@@ -109,9 +110,7 @@ public class HouseSaleMarket extends HousingMarket {
 	 * @param buyer The household that is making the bid.
 	 * @param maxPrice The maximum price that the household is willing to pay.
 	 ******************************************/
-	public void BTLbid(Household buyer, double maxPrice) {
-		bids.add(new BtLBuyerRecord(buyer, maxPrice));
-	}
+	public void BTLbid(Household buyer, double maxPrice) { bids.add(new BTLBuyerRecord(buyer, maxPrice)); }
 
-	protected PriorityQueue2D<HousingMarketRecord>	offersPY;
+	private PriorityQueue2D<HousingMarketRecord>	offersPY;
 }

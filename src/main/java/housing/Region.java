@@ -3,7 +3,6 @@ package housing;
 import collectors.RegionalHouseholdStats;
 import collectors.RegionalHousingMarketStats;
 import collectors.RegionalRentalMarketStats;
-import org.apache.commons.math3.random.MersenneTwister;
 
 import java.util.ArrayList;
 
@@ -29,9 +28,6 @@ public class Region {
     public RegionalRentalMarketStats    regionalRentalMarketStats;
     public int                          targetPopulation;
     public int                          housingStock;
-
-    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister         rand = Model.rand; // Passes the Model's random number generator to a private field
 
     // Temporary stuff
 //    static long startTime;

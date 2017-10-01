@@ -15,7 +15,7 @@ public class House implements Comparable<House>, Serializable {
     //----- Fields -----//
     //------------------//
 
-    private static int      id_pool = 0;
+    private static int 	id_pool = 0;
 
     public IHouseOwner  owner;
     public Household    resident;
@@ -49,43 +49,23 @@ public class House implements Comparable<House>, Serializable {
     //----- Methods -----//
     //-------------------//
 
-	public boolean isOnMarket() {
-		return saleRecord != null;
-	}
+	boolean isOnMarket() { return saleRecord != null; }
 
-	public HouseSaleRecord getSaleRecord() {
-		return saleRecord;
-	}
+	HouseSaleRecord getSaleRecord() { return saleRecord; }
 
-	public HouseSaleRecord getRentalRecord() {
-		return rentalRecord;
-	}
+	HouseSaleRecord getRentalRecord() { return rentalRecord; }
 
-	public boolean isOnRentalMarket() {
-		return rentalRecord != null;
-	}
-    public void putForSale(HouseSaleRecord saleRecord) {
-		this.saleRecord = saleRecord;
-	}
+	boolean isOnRentalMarket() { return rentalRecord != null; }
+    void putForSale(HouseSaleRecord saleRecord) { this.saleRecord = saleRecord; }
 
-	public void resetSaleRecord() {
-		saleRecord = null;
-	}
-    public void putForRent(HouseSaleRecord rentalRecord) {
-		this.rentalRecord = rentalRecord;
-	}
+	void resetSaleRecord() { saleRecord = null; }
+    void putForRent(HouseSaleRecord rentalRecord) { this.rentalRecord = rentalRecord; }
 
-	public void resetRentalRecord() {
-		rentalRecord = null;
-	}
+	void resetRentalRecord() { rentalRecord = null; }
 
-	public int getQuality() {
-		return quality;
-	}
+	public int getQuality() { return quality; }
 
 	@Override
-	public int compareTo(House o) {
-		return((int)Math.signum(id-o.id));
-	}
+	public int compareTo(House o) { return((int)Math.signum(id-o.id)); }
 	
 }
