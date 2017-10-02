@@ -249,16 +249,17 @@ public class Household implements IHouseOwner, Serializable {
             if(behaviour.isPropertyInvestor()) System.out.println("Is investor");
             System.out.println("House owner = "+sale.house.owner);
             System.out.println("me = "+this);
+        } else {
+            bankBalance -= mortgage.downPayment;
+            housePayments.put(sale.house, mortgage);
+            if (home == null) { // move in to house
+                home = sale.house;
+                sale.house.resident = this;
+            } else if (sale.house.resident == null) { // put empty buy-to-let house on rental market
+                sale.house.region.houseRentalMarket.offer(sale.house, buyToLetRent(sale.house));
+            }
+            isFirstTimeBuyer = false;
         }
-        bankBalance -= mortgage.downPayment;
-        housePayments.put(sale.house, mortgage);
-        if(home == null) { // move in to house
-            home = sale.house;
-            sale.house.resident = this;
-        } else if(sale.house.resident == null) { // put empty buy-to-let house on rental market
-            sale.house.region.houseRentalMarket.offer(sale.house, buyToLetRent(sale.house));
-        }
-        isFirstTimeBuyer = false;
     }
 
     /********************************************************

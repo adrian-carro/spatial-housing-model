@@ -284,6 +284,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
     // Getters for variables computed at initialisation
     public double [] getReferencePricePerQuality() { return referencePricePerQuality; }
+    public double getReferencePriceForQuality(int quality) { return referencePricePerQuality[quality]; }
 
     // Getters for variables computed before market clearing
     public int getnBuyers() { return nBuyers; }

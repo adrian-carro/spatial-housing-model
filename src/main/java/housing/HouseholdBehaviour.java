@@ -2,7 +2,6 @@ package housing;
 
 import java.io.Serializable;
 
-import com.sun.org.apache.regexp.internal.RE;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 

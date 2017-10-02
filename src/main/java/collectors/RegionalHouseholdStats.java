@@ -170,10 +170,12 @@ public class RegionalHouseholdStats extends CollectorBase {
 
     // Getters for other variables...
     // ... number of empty houses
-    public int getnEmpty() { return region.housingStock + nBTLHomeless + nNonBTLHomeless - region.households.size(); }
+    public int getnEmpty() {
+        return region.getHousingStock() + nBTLHomeless + nNonBTLHomeless - region.households.size();
+    }
     // ... proportion of housing stock owned by buy-to-let investors
     public double getBTLProportion() {
-        return ((double)(getnEmpty() + nRenting))/region.housingStock;
+        return ((double)(getnEmpty() + nRenting))/region.getHousingStock();
     }
 
 //    // Array with ages of all households

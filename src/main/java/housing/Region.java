@@ -27,7 +27,7 @@ public class Region {
     public RegionalHousingMarketStats   regionalHousingMarketStats;
     public RegionalRentalMarketStats    regionalRentalMarketStats;
     public int                          targetPopulation;
-    public int                          housingStock;
+    private int                         housingStock;
 
     // Temporary stuff
 //    static long startTime;
@@ -84,4 +84,12 @@ public class Region {
         // Stores regional household statistics after both regional markets have been cleared
         regionalHouseholdStats.record();
     }
+
+    //----- Getter/setter methods -----//
+
+    public int getTargetPopulation() { return targetPopulation; }
+
+    public int getHousingStock() { return housingStock; }
+
+    void increaseHousingStock () { housingStock++; }
 }

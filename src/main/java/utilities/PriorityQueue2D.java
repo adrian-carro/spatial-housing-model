@@ -139,7 +139,7 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 	 * @param element Element to remove (must be an uncovered member of this set).
 	 */
 	protected void removeFromUncovered(E element) {
-		if(uncoveredElements.remove(element) == false) return;
+		if(!uncoveredElements.remove(element)) return;
 		if(ySortedElements.size() == 0) return;
 		boolean inclusive = false;
 		E nextxLower = uncoveredElements.lower(element);
@@ -170,26 +170,26 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 //		System.out.println("done");
 	}
 	
-	/*** testing only */
-	public boolean checkConsistency() {
-		E last = null;
-		for(E element : uncoveredElements) {
-			if(last != null) {
-				if(comparator.YCompare(element, last) != 1) {
-					System.out.println("uncovered elements are not monotonically increasing");
-					return(false);
-				}
-				last = element;
-			}
-		}
-		for(E element : ySortedElements) {
-			if(isUncovered(element) && !uncoveredElements.contains(element)) {
-				System.out.println("uncovered elements are missing memebers");
-				return(false);
-			}
-		}
-		return(true);
-	}
+//	/*** testing only */
+//	public boolean checkConsistency() {
+//		E last = null;
+//		for(E element : uncoveredElements) {
+//			if(last != null) {
+//				if(comparator.YCompare(element, last) != 1) {
+//					System.out.println("uncovered elements are not monotonically increasing");
+//					return(false);
+//				}
+//				last = element;
+//			}
+//		}
+//		for(E element : ySortedElements) {
+//			if(isUncovered(element) && !uncoveredElements.contains(element)) {
+//				System.out.println("uncovered elements are missing memebers");
+//				return(false);
+//			}
+//		}
+//		return(true);
+//	}
 	
 	/***
 	 * An element, a, is said to be "covered" by and element, b, iff

@@ -87,7 +87,7 @@ public class Model {
 
         government = new Government();
         demographics = new Demographics(geography);
-        construction = new Construction();
+        construction = new Construction(geography);
         centralBank = new CentralBank();
         bank = new Bank();
 
@@ -182,7 +182,7 @@ public class Model {
         // Update population with births and deaths in each region
         demographics.step();
         // Update number of houses in each region
-        construction.step(demographics.getTotalPopulation());
+        construction.step();
         // Update, for each region, its households, market statistics collectors and markets
         for(Region r : geography) r.step();
         // Update all sale market statistics by collecting and aggregating results from the regions

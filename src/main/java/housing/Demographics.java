@@ -49,7 +49,8 @@ public class Demographics {
         for (Region region: geography) {
             // Birth: Add households in proportion to target population and monthly birth rate of first-time-buyers
             // TODO: Shouldn't this include also new renters? Review the whole method...
-            int nBirths = (int)(region.targetPopulation*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR + 0.5);
+            int nBirths = (int)(region.getTargetPopulation()*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR
+                    + 0.5);
             while(nBirths-- > 0) {
                 region.households.add(new Household(data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(), region));
                 totalPopulation++;
