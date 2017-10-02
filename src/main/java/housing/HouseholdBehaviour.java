@@ -2,6 +2,7 @@ package housing;
 
 import java.io.Serializable;
 
+import com.sun.org.apache.regexp.internal.RE;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 
@@ -104,10 +105,10 @@ public class HouseholdBehaviour implements Serializable {
      *
 	 * @param monthlyIncome Monthly income of the household
 	 */
-	double getDesiredPurchasePrice(double monthlyIncome) {
+	double getDesiredPurchasePrice(double monthlyIncome, Region region) {
 		return config.BUY_SCALE*config.constants.MONTHS_IN_YEAR*monthlyIncome
 				*Math.exp(config.BUY_EPSILON*rand.nextGaussian())
-				/(1.0 - config.BUY_WEIGHT_HPA* getLongTermHPAExpectation());
+				/(1.0 - config.BUY_WEIGHT_HPA*getLongTermHPAExpectation(region));
 	}
 
 	/**
@@ -190,13 +191,9 @@ public class HouseholdBehaviour implements Serializable {
 	 * @param sale The HouseSaleRecord of the house that is on the market.
 	 ********************************************************/
 	public double rethinkHouseSalePrice(HouseSaleRecord sale) {
-//		return(sale.getPrice() *0.95);
-
 		if(rand.nextDouble() < config.P_SALE_PRICE_REDUCE) {
 			double logReduction = config.REDUCTION_MU+(rand.nextGaussian()*config.REDUCTION_SIGMA);
-//			System.out.println(1.0-Math.exp(logReduction)/100.0);
-			return(sale.getPrice() * (1.0-Math.exp(logReduction)/100.0));
-//			return(sale.getPrice() * (1.0-data.Households.REDUCTION_MU/100.0) + rand.nextGaussian()*data.Households.REDUCTION_SIGMA/100.0);
+			return(sale.getPrice()*(1.0 - Math.exp(logReduction)/100.0));
 		}
 		return(sale.getPrice());
 	}
@@ -211,27 +208,21 @@ public class HouseholdBehaviour implements Serializable {
 	 *  is assumed to be the difference in rental price between the two qualities.
 	 *  @return true if we should buy a house, false if we should rent
 	 */
-    public boolean rentOrPurchaseDecision(Household me, double desiredPurchasePrice) {
+    public boolean decideRentOrPurchase(Household me, Region region, double desiredPurchasePrice) {
         if(isPropertyInvestor()) return(true);
-
         double purchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(me, true));
         MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, purchasePrice,
                 decideDownPayment(me,purchasePrice), true);
-        // TODO: Next line should use regionalHousingMarketStats.getMaxQualityForPrice(purchasePrice)
-        // TODO: Probably need to introduce a region within the household (jobRegion), such that we can here query that
-        // TODO: particular region...
-        int newHouseQuality = Model.houseSaleMarket.maxQualityGivenPrice(purchasePrice);
-//		int rentalQuality = Model.houseRentalMarket.maxQualityGivenPrice(desiredRent(me, me.monthlyEmploymentIncome));
-//		if(rentalQuality > newHouseQuality+House.Config.N_QUALITY/8) return(false); // better quality to rent
-        if(newHouseQuality < 0) return(false); // can't afford a house anyway
+        // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
+        // TODO: here query that particular region...
+        int newHouseQuality = region.regionalHousingMarketStats.getMaxQualityForPrice(purchasePrice);
+        if (newHouseQuality < 0) return false; // can't afford a house anyway
         double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR
-				- purchasePrice* getLongTermHPAExpectation();
-        double costOfRent = Model.houseRentalMarket.getAverageSalePrice(newHouseQuality)
+				- purchasePrice*getLongTermHPAExpectation(region);
+        double costOfRent = region.regionalRentalMarketStats.getAvSalePriceForQuality(newHouseQuality)
                 *config.constants.MONTHS_IN_YEAR;
-//		System.out.println(FTB_K*(costOfRent + COST_OF_RENTING - costOfHouse));
-        //return(rand.nextDouble() < 1.0/(1.0 + Math.exp(-FTB_K*(costOfRent*(1.0+COST_OF_RENTING) - costOfHouse))));
-        return(rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
-                + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse)));
+        return rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
+                + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse));
     }
 
 	/********************************************************
@@ -254,33 +245,28 @@ public class HouseholdBehaviour implements Serializable {
 	 * @return Does an investor decide to sell a buy-to-let property (per month)
 	 */
 	public boolean decideToSellInvestmentProperty(House h, Household me) {
-	    // TODO: This implies BTL agents keep, at least, 2, not 1, investment properties
 		if(me.nInvestmentProperties() < 2) return(false); // Always keep at least one property
-
 		double effectiveYield;
-		
-		// sell if not selling on rental market at interest coverage ratio of 1.0 (?)
 		if(!h.isOnRentalMarket()) return(false); // don't sell while occupied by tenant
 		MortgageAgreement mortgage = me.mortgageFor(h);
-		//if(mortgage == null) {
 		if(h.owner!=me){
 			System.out.println("Strange: deciding to sell investment property that I don't own");
 			return(false);
 		}
-		// TODO: add transaction costs to expected capital gain
-//		double icr = (h.rentalRecord.getPrice()-mortgage.nextPayment())/h.rentalRecord.getPrice();
-		double marketPrice = Model.houseSaleMarket.getAverageSalePrice(h.getQuality());
+		double marketPrice = h.region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getQuality());
 		// TODO: Why to call this "equity"? It is called "downpayment" in the article!
-        double equity = Math.max(0.01, marketPrice - mortgage.principal);   // Dummy security parameter to avoid dividing by zero
+        double equity = Math.max(0.01, marketPrice - mortgage.principal); // Dummy security parameter to avoid dividing by zero
 		double leverage = marketPrice/equity;
+		// TODO: ATTENTION ---> This rental yield is not accounting for expected occupancy
 		double rentalYield = h.rentalRecord.getPrice()*config.constants.MONTHS_IN_YEAR/marketPrice;
 		double mortgageRate = mortgage.nextPayment()*config.constants.MONTHS_IN_YEAR/equity;
 		if(config.BTL_YIELD_SCALING) {
 			effectiveYield = leverage*((1.0 - BTLCapGainCoefficient)*rentalYield
-                    + BTLCapGainCoefficient *(region.regionalRentalMarketStats.getLongTermExpAvFlowYield()
-					+ getLongTermHPAExpectation())) - mortgageRate;
+                    + BTLCapGainCoefficient*(h.region.regionalRentalMarketStats.getLongTermExpAvFlowYield()
+					+ getLongTermHPAExpectation(h.region))) - mortgageRate;
 		} else {
-			effectiveYield = leverage*(rentalYield + BTLCapGainCoefficient * getLongTermHPAExpectation()) - mortgageRate;
+			effectiveYield = leverage*(rentalYield + BTLCapGainCoefficient*getLongTermHPAExpectation(h.region))
+                    - mortgageRate;
 		}
 		double pKeep = Math.pow(sigma(config.BTL_CHOICE_INTENSITY*effectiveYield),
                 1.0/config.constants.MONTHS_IN_YEAR);
@@ -303,7 +289,7 @@ public class HouseholdBehaviour implements Serializable {
                 + config.RENT_EPSILON*rand.nextGaussian();
 		double result = Math.exp(exponent);
         // TODO: The following contains a fudge (config.RENT_MAX_AMORTIZATION_PERIOD) to keep rental yield up
-		double minAcceptable = Model.houseSaleMarket.getAverageSalePrice(h.getQuality())
+		double minAcceptable = h.region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getQuality())
                 /(config.RENT_MAX_AMORTIZATION_PERIOD*config.constants.MONTHS_IN_YEAR);
 		if(result < minAcceptable) result = minAcceptable;
 		return(result);
@@ -330,42 +316,40 @@ public class HouseholdBehaviour implements Serializable {
 	 * @param me household
 	 * @return true if decision to buy
 	 */
-	public boolean decideToBuyBuyToLet(Household me) {
-		if(me.nInvestmentProperties() < 1) { // If I don't have any BTL properties, I always decide to buy one!!
-			return(true);
-		}
-		double effectiveYield;
-		
-		if(!isPropertyInvestor()) return false;
+	public boolean decideToBuyBuyToLet(Household me, Region region) {
+        // If I don't have any BTL properties, I always decide to buy one!
+		if (me.nInvestmentProperties() < 1) { return true ; }
+		// If my bank balance is below my desired bank balance, then I keep on saving instead of buying new properties
 		// TODO: This mechanism and its parameter are not declared in the article! Any reference for the value of the parameter?
-		if(me.getBankBalance() < getDesiredBankBalance(me)*config.BTL_CHOICE_MIN_BANK_BALANCE) {
-			return(false);
-		}
-		// --- calculate expected yield on zero quality house
+		if (me.getBankBalance() < getDesiredBankBalance(me)*config.BTL_CHOICE_MIN_BANK_BALANCE) { return false; }
+		// Compute maximum price I could pay (maximum mortgage I could get)
 		double maxPrice = Model.bank.getMaxMortgage(me, false);
-		if(maxPrice < Model.houseSaleMarket.getAverageSalePrice(0)) return false;
-		
+		// If my maximum price is below the average price for the lowest quality, then I won't even try
+		if (maxPrice < region.regionalHousingMarketStats.getAvSalePriceForQuality(0)) return false;
+
+        // --- calculate expected yield on zero quality house
+        double effectiveYield;
 		MortgageAgreement m = Model.bank.requestApproval(me, maxPrice, 0.0, false); // maximise leverage with min downpayment
-		
 		double leverage = m.purchasePrice/m.downPayment;
 		double rentalYield = region.regionalRentalMarketStats.getExpAvFlowYield();
 		double mortgageRate = m.monthlyPayment*config.constants.MONTHS_IN_YEAR/m.downPayment;
 		if(config.BTL_YIELD_SCALING) {
 			effectiveYield = leverage*((1.0 - BTLCapGainCoefficient)*rentalYield
-                    + BTLCapGainCoefficient *(region.regionalRentalMarketStats.getLongTermExpAvFlowYield()
-					+ getLongTermHPAExpectation())) - mortgageRate;
+                    + BTLCapGainCoefficient*(region.regionalRentalMarketStats.getLongTermExpAvFlowYield()
+					+ getLongTermHPAExpectation(region))) - mortgageRate;
 		} else {
-			effectiveYield = leverage*(rentalYield + BTLCapGainCoefficient * getLongTermHPAExpectation()) - mortgageRate;
+			effectiveYield = leverage*(rentalYield + BTLCapGainCoefficient*getLongTermHPAExpectation(region))
+                    - mortgageRate;
 		}
-		//double pDontBuy = Math.pow(1.0/(1.0 + Math.exp(INTENSITY*effectiveYield)),AGGREGATE_RATE);
-		//return(rand.nextDouble() < (1.0-pDontBuy));
 	    return (rand.nextDouble() < Math.pow(sigma(config.BTL_CHOICE_INTENSITY*effectiveYield),
                 1.0/config.constants.MONTHS_IN_YEAR));
 	}
 	
-	public double btlPurchaseBid(Household me) {
+	public double btlPurchaseBid(Household me, Region region) {
+	    // TODO: What is this 1.1 factor? Another fudge parameter???????????????????????????
+        // TODO: It prevents wealthy investors from offering more than 10% above the average price of top quality houses
 		return(Math.min(Model.bank.getMaxMortgage(me, false),
-                1.1*Model.houseSaleMarket.getAverageSalePrice(config.N_QUALITY-1)));
+                1.1*region.regionalHousingMarketStats.getAvSalePriceForQuality(config.N_QUALITY-1)));
 	}
 
 	public boolean isPropertyInvestor() {
@@ -389,7 +373,7 @@ public class HouseholdBehaviour implements Serializable {
 	/**
      * @returns expectation value of HPI in one year's time divided by today's HPI
      */
-	public double getLongTermHPAExpectation() {
+	public double getLongTermHPAExpectation(Region region) {
 		// Dampening or multiplier factor, depending on its value being <1 or >1, for the current trend of HPA when
 		// computing expectations as in HPI(t+DT) = HPI(t) + FACTOR*DT*dHPI/dt (double)
 		return(region.regionalHousingMarketStats.getLongTermHPA()*config.HPA_EXPECTATION_FACTOR);

@@ -61,7 +61,7 @@ public class Household implements IHouseOwner, Serializable {
         id = ++id_pool;
         age = householdAgeAtBirth;
         incomePercentile = rand.nextDouble();
-        behaviour = new HouseholdBehaviour(incomePercentile, region);
+        behaviour = new HouseholdBehaviour(incomePercentile);
         monthlyEmploymentIncome = annualIncome()/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.getDesiredBankBalance(this); // Desired bank balance is used as initial value for actual bank balance
         monthlyPropertyIncome = 0.0;
@@ -119,30 +119,27 @@ public class Household implements IHouseOwner, Serializable {
                 isBankrupt = true;
             }
         }
-
         // TODO: Attention, here BTL agents might have properties in more than one region
-
         for(House h : housePayments.keySet()) {
             if(h.owner == this) manageHouse(h); // Manage all owned properties
-
         }
 
+        // TODO: ATTENTION ---> Non-investor households always bid in the region where they already live!
+        // TODO: ATTENTION ---> For now, investor households also bid always in the region where they already live!
         if(isInSocialHousing()) {
-            bidForAHome();
+            bidForAHome(region);
         } else if(isRenting()) {
             if(housePayments.get(home).nPayments == 0) { // end of rental period for renter
                 endTenancy();
-                bidForAHome();
+                bidForAHome(region);
             }            
         } else if(behaviour.isPropertyInvestor()) {
-//            for(House h : housePayments.keySet()) {
-//                manageHouse(h);
-//            }
-                if(behaviour.decideToBuyBuyToLet(this)) {
-                    Model.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this));
-            }        
-        } else if(isHomeowner()) {
-//            manageHouse(home);
+            // TODO: This needs to be broken up in two "decisions" (methods), one for quickly disqualifying investors
+            // TODO: who can't afford investing, and another one that, running through the regions, decides whether to
+            // TODO: invest there or not (decideToBuyToLetInRegion). How to choose between regions in unbiased manner?
+            if(behaviour.decideToBuyBuyToLet(this, region)) {
+                region.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, region));
+            }
         } else {
             System.out.println("Strange: this household is not a type I recognize");
         }
@@ -369,10 +366,10 @@ public class Household implements IHouseOwner, Serializable {
      * COST_OF_RENTING being an intrinsic psychological cost of not
      * owning. 
      ********************************************************/
-    private void bidForAHome() {
+    private void bidForAHome(Region region) {
         double maxMortgage = Model.bank.getMaxMortgage(this, true);
-        double price = behaviour.getDesiredPurchasePrice(this, monthlyEmploymentIncome);
-        if(behaviour.rentOrPurchaseDecision(this, price)) {
+        double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, region);
+        if(behaviour.decideRentOrPurchase(this, region, price)) {
             if(price > maxMortgage - 1.0) {
                 price = maxMortgage -1.0;
             }
