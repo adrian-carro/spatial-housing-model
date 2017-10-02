@@ -51,7 +51,6 @@ public class Config {
     public double FUTURE_BIRTH_RATE;        // Future birth rate (births per year per capita), calibrated with flux of FTBs
 
     // Household parameters
-    boolean BTL_ENABLED;                    // True to have a buy-to-let sector // TODO: Currently pretty much useless parameter!
     double RETURN_ON_FINANCIAL_WEALTH;      // Monthly percentage growth of financial investments
     int TENANCY_LENGTH_AVERAGE;             // Average number of months a tenant will stay in a rented house
     int TENANCY_LENGTH_EPSILON;             // Standard deviation of the noise in determining the tenancy length

@@ -13,8 +13,9 @@ import utilities.PriorityQueue2D;
 public class HouseSaleMarket extends HousingMarket {
 	private static final long serialVersionUID = -2878118108039744432L;
 
-	private Config      config = Model.config; // Passes the Model's configuration parameters object to a private field
-	private Region      region;
+	private Config                                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+	private Region                                  region;
+    private PriorityQueue2D<HousingMarketRecord>    offersPY;
 
 	public HouseSaleMarket(Region region) {
 	    super(region);
@@ -102,7 +103,7 @@ public class HouseSaleMarket extends HousingMarket {
 			}
 		});
 	}
-	
+
 	/*******************************************
 	 * Make a bid on the market as a Buy-to-let investor
 	 *  (i.e. make an offer on a (yet to be decided) house).
@@ -111,6 +112,4 @@ public class HouseSaleMarket extends HousingMarket {
 	 * @param maxPrice The maximum price that the household is willing to pay.
 	 ******************************************/
 	public void BTLbid(Household buyer, double maxPrice) { bids.add(new BTLBuyerRecord(buyer, maxPrice)); }
-
-	private PriorityQueue2D<HousingMarketRecord>	offersPY;
 }

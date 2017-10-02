@@ -53,7 +53,7 @@ public class MicroDataRecorder {
     			purchase.buyer.getMonthlyPreTaxIncome()+", "+
     			purchase.buyer.monthlyEmploymentIncome+", "+
     			purchase.buyer.getBankBalance()+", "+
-    			purchase.buyer.behaviour.BTLCapGainCoeff+", "
+    			purchase.buyer.behaviour.getBTLCapGainCoefficient() +", "
 				);
 		if(mortgage != null) {
 			outfile.print(
@@ -73,7 +73,7 @@ public class MicroDataRecorder {
 					seller.getMonthlyPreTaxIncome()+", "+
 					seller.monthlyEmploymentIncome+", "+
 					seller.getBankBalance()+", "+
-					seller.behaviour.BTLCapGainCoeff
+					seller.behaviour.getBTLCapGainCoefficient()
 					);			
 		} else {
 			// must be construction sector

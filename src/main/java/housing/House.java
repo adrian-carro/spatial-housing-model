@@ -65,6 +65,8 @@ public class House implements Comparable<House>, Serializable {
 
 	public int getQuality() { return quality; }
 
+    public Region getRegion() { return region; }
+
 	@Override
 	public int compareTo(House o) { return((int)Math.signum(id-o.id)); }
 	

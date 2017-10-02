@@ -36,7 +36,7 @@ public abstract class HousingMarket implements Serializable {
     //----- Constructors -----//
     //------------------------//
 
-    public HousingMarket(Region region) {
+    HousingMarket(Region region) {
         this.region = region;
         offersPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); //Priority Queue of (Price, Quality)
         // The integer passed to the ArrayList constructor is an initially declared capacity (for initial memory
@@ -61,9 +61,7 @@ public abstract class HousingMarket implements Serializable {
 
     //----- Initialisation methods -----//
     
-    public void init() {
-        offersPQ.clear();
-    }
+    public void init() { offersPQ.clear(); }
 
     //----- Methods to add, update, remove offers and bids -----//
     
@@ -220,4 +218,6 @@ public abstract class HousingMarket implements Serializable {
      * @param bid The highest possible price the buyer is ready to pay
      */
     protected HouseSaleRecord getBestOffer(HouseBuyerRecord bid) { return (HouseSaleRecord)offersPQ.peek(bid); }
+
+    int getnHousesOnMarket() { return offersPQ.size(); }
 }
