@@ -40,7 +40,7 @@ public class HouseSaleRecord extends HousingMarketRecord {
 		initialListedPrice = price;
 		tInitialListing = Model.getTime();
 		matchedBids = new ArrayList<>(8); // TODO: Check if this initial size of 8 is good enough or can be improved
-        recalculateHouseSpecificYield();
+        recalculateHouseSpecificYield(price);
 	}
 
     //-------------------//
@@ -52,11 +52,13 @@ public class HouseSaleRecord extends HousingMarketRecord {
      * yield for houses of this quality in this particular region by the average sale price for houses of this quality
      * in this region and dividing by the actual listed price of this property
      */
-    private void recalculateHouseSpecificYield() {
+    private void recalculateHouseSpecificYield(double price) {
         int q = house.getQuality();
-        houseSpecificYield = region.regionalRentalMarketStats.getAvFlowYieldForQuality(q)
-                *region.regionalHousingMarketStats.getAvSalePriceForQuality(q)
-                /getPrice();
+        if (price > 0) {
+            houseSpecificYield = region.regionalRentalMarketStats.getAvFlowYieldForQuality(q)
+                    *region.regionalHousingMarketStats.getAvSalePriceForQuality(q)
+                    /price;
+        }
     }
 
     /**
@@ -89,6 +91,6 @@ public class HouseSaleRecord extends HousingMarketRecord {
      */
 	public void setPrice(double newPrice, HousingMarket.Authority auth) {
 		super.setPrice(newPrice, auth);
-        recalculateHouseSpecificYield();
+        recalculateHouseSpecificYield(newPrice);
 	}
 }

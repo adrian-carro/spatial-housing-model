@@ -59,7 +59,6 @@ public class Model {
     public static MicroDataRecorder     transactionRecorder;
     public static int	                nSimulation; // To keep track of the simulation number
     public static int	                t; // To keep track of time (in months)
-    public static int                   totalPopulation; // To keep track of the total number of households
 
     static Government		            government;
 
@@ -84,16 +83,17 @@ public class Model {
         // TODO: Check that random numbers are working properly!
         config = new Config(configFileName);
         rand = new MersenneTwister(config.SEED);
+        geography = new ArrayList<>();
+
+        for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {
+            geography.add(new Region(targetPopulation));
+        }
 
         government = new Government();
         demographics = new Demographics(geography);
         construction = new Construction(geography);
         centralBank = new CentralBank();
         bank = new Bank();
-
-        for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {
-            geography.add(new Region(targetPopulation));
-        }
 
         recorder = new collectors.Recorder(outputFolder);
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);

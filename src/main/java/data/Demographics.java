@@ -101,9 +101,9 @@ public class Demographics {
                 if (line.charAt(0) != '#') {
                     try {
                         Double [] band = new Double[3];
-                        band[0] = Double.parseDouble(line.split(",")[0]);
-                        band[1] = Double.parseDouble(line.split(",")[1]);
-                        band[2] = Double.parseDouble(line.split(",")[2]);
+                        band[0] = Double.parseDouble(line.split(",")[0].trim());
+                        band[1] = Double.parseDouble(line.split(",")[1].trim());
+                        band[2] = Double.parseDouble(line.split(",")[2].trim());
                         probDeathGivenAgeData.add(band);
                     } catch (NumberFormatException nfe) {
                         System.out.println("Exception " + nfe + " while trying to parse " +
@@ -152,7 +152,7 @@ public class Demographics {
             while (line != null) {
                 if (line.charAt(0) != '#') {
                     try {
-                        realPopulation = Integer.parseInt(line.split(",")[1]);
+                        realPopulation = Integer.parseInt(line.split(",")[1].trim());
                         realPopulationPerRegion.add(realPopulation);
                         totalRealPopulation += realPopulation;
                     } catch (NumberFormatException nfe) {

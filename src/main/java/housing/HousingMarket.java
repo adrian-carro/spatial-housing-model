@@ -2,7 +2,6 @@ package housing;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.commons.math3.distribution.GeometricDistribution;
@@ -147,51 +146,62 @@ public abstract class HousingMarket implements Serializable {
      * number of matched bids.
      */
     private void clearMatches() {
-        // --- clear and resolve oversubscribed offers
+        // Clear and resolve oversubscribed offers
         HouseSaleRecord offer;
         GeometricDistribution geomDist;
         int nBids;
         double pSuccessfulBid;
         double salePrice;
         int winningBid;
-        int enoughBids; // upper bounded number of bids on one house
+        int enoughBids; // Upper bounded number of bids on one house
         Iterator<HousingMarketRecord> record = getOffersIterator();
         while(record.hasNext()) {
             offer = (HouseSaleRecord)record.next();
-            nBids = offer.matchedBids.size(); // if there are no bids matched, skip this offer
-            if(nBids > 0) {
-                // bid up the price
-                if(config.BIDUP != 1.0) {
-                    // TODO: the 10000/N factor, the 0.5 added, and the topping of the function at 4 are not declared in
-                    // TODO: the paper. Remove or explain!
+            nBids = offer.matchedBids.size();
+            // If matches for this offer are multiple...
+            if(nBids > 1) {
+                // ...first bid up the price
+                if(config.BIDUP > 1.0) {
+                    // TODO: All this enough bids mechanism is not explained! The 10000/N factor, the 0.5 added, and the
+                    // TODO: topping of the function at 4 are not declared in the paper. Remove or explain!
                     enoughBids = Math.min(4, (int)(0.5 + nBids*10000.0/config.TARGET_POPULATION));
+                    // TODO: Also, the role of MONTHS_UNDER_OFFER is not explained or declared!
                     pSuccessfulBid = Math.exp(-enoughBids*config.derivedParams.MONTHS_UNDER_OFFER);
-                    geomDist = new GeometricDistribution(Model.rand, pSuccessfulBid);
-                    salePrice = offer.getPrice() * Math.pow(config.BIDUP, geomDist.sample());
+                    geomDist = new GeometricDistribution(rand, pSuccessfulBid);
+                    salePrice = offer.getPrice()*Math.pow(config.BIDUP, geomDist.sample());
                 } else {
                     salePrice = offer.getPrice();                    
                 }
-                // choose a bid above the new price
-                Collections.sort(offer.matchedBids, new HouseBuyerRecord.PComparator()); // highest price last
-                --nBids;
-                if(offer.matchedBids.get(nBids).getPrice() < salePrice) {
-                    salePrice = offer.matchedBids.get(nBids).getPrice();
-                    winningBid = nBids;
-                } else {
-                    while(nBids >= 0 && offer.matchedBids.get(nBids).getPrice() > salePrice) {
-                        --nBids;
-                    }
-                    ++nBids;
-                    winningBid = nBids + rand.nextInt(offer.matchedBids.size()- nBids);
+                // ...then choose a bid above the new price
+                offer.matchedBids.sort(new HouseBuyerRecord.PComparator()); // This orders the list with the highest price last
+                while(nBids > 0 && offer.matchedBids.get(nBids - 1).getPrice() >= salePrice) {
+                    --nBids; // This counts the number of bids above the new price
                 }
-                record.remove();
+                if (offer.matchedBids.size() - nBids > 1) {
+                    winningBid = nBids + rand.nextInt(offer.matchedBids.size()- nBids); // This chooses a random one if they are multiple
+                } else if (offer.matchedBids.size() - nBids == 1) {
+                    winningBid = nBids; // This chooses the only one if there is only one
+                } else {
+                    winningBid = nBids - 1;
+                    salePrice = offer.matchedBids.get(winningBid).getPrice(); // This chooses the highest bid if all of them are below the new price
+                }
+                // ...update price for the offer
                 offer.setPrice(salePrice, authority);
-                // Complete the successful transaction and record it into the corresponding regionalHousingMarketStats
-                completeTransaction(offer.matchedBids.get(winningBid), offer);
-                // Put the rest of the bids for this property (failed bids) back on array
+                // ...put the rest of the bids for this property (failed bids) back on bids array
                 bids.addAll(offer.matchedBids.subList(0, winningBid));
-                bids.addAll(offer.matchedBids.subList(winningBid+1, offer.matchedBids.size()));            
+                bids.addAll(offer.matchedBids.subList(winningBid + 1, offer.matchedBids.size()));
+                // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
+                completeTransaction(offer.matchedBids.get(winningBid), offer);
+                // ...remove this offer from the offers priority queue, offersPQ, underlying the record iterator
+                record.remove();
+            // If there is only one match...
+            } else if (nBids == 1) {
+                // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
+                completeTransaction(offer.matchedBids.get(0), offer);
+                // ...remove this offer from the offers priority queue, offersPQ, underlying the record iterator
+                record.remove();
             }
+            // Note that we skip the whole process if there are no matches
         }        
     }
 

@@ -266,13 +266,13 @@ public class Bank implements Serializable {
 		} else {
 			icr_max = Model.rentalMarketStats.getExpAvFlowYield()
                     /(interestCoverageRatio()*config.CENTRAL_BANK_BTL_STRESSED_INTEREST);
+
 			if(icr_max < 1.0) {
 				icr_max = liquidWealth/(1.0 - icr_max);
 				max = Math.min(max,  icr_max);
-			}
-		}
-		
-		max = Math.floor(max*100.0)/100.0; // round down to nearest penny
+            }
+        }
+        max = Math.floor(max*100.0)/100.0; // round down to nearest penny
 
         return max;
 	}

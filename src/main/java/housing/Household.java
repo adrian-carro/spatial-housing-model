@@ -373,8 +373,12 @@ public class Household implements IHouseOwner, Serializable {
             if(price > maxMortgage - 1.0) {
                 price = maxMortgage -1.0;
             }
+            if (Double.isNaN(price)) System.out.println("price1 = " + price);
             region.houseSaleMarket.bid(this, price);
         } else {
+            if (Double.isNaN(behaviour.desiredRent(this, monthlyEmploymentIncome))) {
+                System.out.println("price2 = " + behaviour.desiredRent(this, monthlyEmploymentIncome));
+            }
             region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
         }
     }

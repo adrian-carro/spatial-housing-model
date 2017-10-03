@@ -93,7 +93,7 @@ public class RentalMarketStats extends HousingMarketStats {
             }
         }
         // Compute the rest of aggregate variables...
-        avFlowYield = 0.0;
+        double avFlowYieldCount = 0.0; // Dummy counter
         for (int q = 0; q < config.N_QUALITY; q++) {
             // ... exponential average of months in the market per quality band (only if there have been sales)
             if (getnSalesForQuality(q) > 0) {
@@ -104,17 +104,22 @@ public class RentalMarketStats extends HousingMarketStats {
             // and exponential moving average of months that houses of this quality spend on the rental market
             avOccupancyPerQuality[q] = config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
                     + expAvMonthsOnMarketPerQuality[q]);
-            // ... average flow gross rental yield per quality band
-            avFlowYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
-                    *avOccupancyPerQuality[q]/housingMarketStats.getAvSalePriceForQuality(q);
+            // ... average flow gross rental yield per quality band (stick to previous value if no sales)
+            if (housingMarketStats.getAvSalePriceForQuality(q) > 0) {
+                avFlowYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
+                        *avOccupancyPerQuality[q]/housingMarketStats.getAvSalePriceForQuality(q);
+            }
             // ... average flow gross rental yield (for all quality bands)
-            avFlowYield += avFlowYieldPerQuality[q]*getnSalesForQuality(q);
+            avFlowYieldCount += avFlowYieldPerQuality[q]*getnSalesForQuality(q);
         }
-        avFlowYield /= getnSales();
+        // If no new rentals, then avFlowYield keeps its previous value
+        if (getnSales() > 0) {
+            avFlowYield = avFlowYieldCount/getnSales();
+        }
         // ... a short and a long term exponential moving average of the average flow gross rental yield
-        expAvFlowYield = expAvFlowYield *config.derivedParams.K + (1.0 - config.derivedParams.K)* avFlowYield;
-        longTermExpAvFlowYield = longTermExpAvFlowYield *config.derivedParams.KL
-                + (1.0 - config.derivedParams.KL)* avFlowYield;
+        expAvFlowYield = expAvFlowYield*config.derivedParams.K + (1.0 - config.derivedParams.K)*avFlowYield;
+        longTermExpAvFlowYield = longTermExpAvFlowYield*config.derivedParams.KL
+                + (1.0 - config.derivedParams.KL)*avFlowYield;
     }
 
     //----- Getter/setter methods -----//
