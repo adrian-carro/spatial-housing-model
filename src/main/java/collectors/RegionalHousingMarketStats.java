@@ -18,7 +18,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     //------------------//
 
     // General fields
-    private HouseSaleMarket         saleMarket;
+    private HousingMarket           market; // Declared HousingMarket so that it can accommodate both sale and rental markets
     private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     // Variables computed at initialisation
@@ -27,8 +27,6 @@ public class RegionalHousingMarketStats extends CollectorBase {
     // Variables computed before market clearing
     private int                     nBuyers;
     private int                     nSellers;
-    private int 	                nNewBuild;
-    private int 	                nEmpty;
     private double                  sumBidPrices;
     private double                  sumOfferPrices;
     private double []               offerPrices;
@@ -48,6 +46,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     private int                     nSales; // Number of sales
     private int	                    nFTBSales; // Number of sales to first-time buyers
     private int	                    nBTLSales; // Number of sales to buy-to-let investors
+    private int 	                nUnsoldNewBuild; // Accumulated number of new built properties still unsold after market clearing
     private double                  sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
     private double                  sumSoldPrice; // Sum of prices of properties sold this month
     // TODO: This should probably be months, not days... also in HousingMarketStats
@@ -63,7 +62,6 @@ public class RegionalHousingMarketStats extends CollectorBase {
     private double                  annualHousePriceAppreciation;
     private double                  longTermHousePriceAppreciation;
 
-
     //------------------------//
     //----- Constructors -----//
     //------------------------//
@@ -71,11 +69,12 @@ public class RegionalHousingMarketStats extends CollectorBase {
     /**
      * Initialises the regional sale market statistics collector
      *
-     * @param region Reference to the region owning both the market and the regional collector
+     * @param market Reference to the sale or rental market of the region, depending on being called as a constructor
+     *               for this class or as part of the construction of a RegionalRentalMarketStats
      */
-    public RegionalHousingMarketStats(Region region) {
+    public RegionalHousingMarketStats(HousingMarket market) {
         setActive(true);
-        this.saleMarket = region.houseSaleMarket;
+        this.market = market;
         referencePricePerQuality = new double[config.N_QUALITY];
         // TODO: Attention, this is passing the national reference prices for each region! Each region should have its own!
         System.arraycopy(data.HouseSaleMarket.getReferencePricePerQuality(), 0, referencePricePerQuality, 0,
@@ -96,8 +95,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
         // Set zero initial value for variables computed before market clearing
         nBuyers = 0;
         nSellers = 0;
-        nNewBuild = 0;
-        nEmpty = 0;
+        nUnsoldNewBuild = 0;
         sumBidPrices = 0.0;
         sumOfferPrices = 0.0;
         offerPrices = new double[nSellers];
@@ -141,10 +139,8 @@ public class RegionalHousingMarketStats extends CollectorBase {
         nSalesPerQualityCount = new int[config.N_QUALITY];
 
         // Re-initialise to zero variables computed before market clearing
-        nBuyers = saleMarket.getBids().size();
-        nSellers = saleMarket.getOffersPQ().size();
-        nNewBuild = 0;
-        nEmpty = 0;
+        nBuyers = market.getBids().size();
+        nSellers = market.getOffersPQ().size();
         sumBidPrices = 0.0;
         sumOfferPrices = 0.0;
         offerPrices = new double[nSellers];
@@ -153,7 +149,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
         // Record bid prices and their average
         int i = 0;
-        for(HouseBuyerRecord bid : saleMarket.getBids()) {
+        for(HouseBuyerRecord bid : market.getBids()) {
             sumBidPrices += bid.getPrice();
             bidPrices[i] = bid.getPrice();
             ++i;
@@ -161,9 +157,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
         // Record offer prices, their average, and the number of empty and new houses
         i = 0;
-        for(HousingMarketRecord sale : saleMarket.getOffersPQ()) {
-            if(((HouseSaleRecord)sale).house.owner == Model.construction) nNewBuild++;
-            if(((HouseSaleRecord)sale).house.resident == null) nEmpty++;
+        for(HousingMarketRecord sale : market.getOffersPQ()) {
             sumOfferPrices += sale.getPrice();
             offerPrices[i] = sale.getPrice();
             ++i;
@@ -191,7 +185,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
             }
         }
         // TODO: Attention, call to model from regional class: need to build regional recorders!
-        Model.transactionRecorder.recordSale(purchase, sale, mortgage, saleMarket);
+        Model.transactionRecorder.recordSale(purchase, sale, mortgage, market);
     }
 
     /**
@@ -223,11 +217,8 @@ public class RegionalHousingMarketStats extends CollectorBase {
         sumSoldReferencePrice = sumSoldReferencePriceCount;
         sumSoldPrice = sumSoldPriceCount;
         sumDaysOnMarket = sumDaysOnMarketCount;
-        // TODO: These are manual array copies... should probably change to System.arraycopy
-        for (int q = 0; q < config.N_QUALITY; q++) {
-            sumSalePricePerQuality[q] = sumSalePricePerQualityCount[q];
-            nSalesPerQuality[q] = nSalesPerQualityCount[q];
-        }
+        System.arraycopy(nSalesPerQualityCount, 0, nSalesPerQuality, 0, config.N_QUALITY);
+        System.arraycopy(sumSalePricePerQualityCount, 0, sumSalePricePerQuality, 0, config.N_QUALITY);
         // Compute the rest of variables after market clearing...
         // ... exponential averages of days in the market and prices per quality band (only if there have been sales)
         if (nSales > 0) {
@@ -253,6 +244,11 @@ public class RegionalHousingMarketStats extends CollectorBase {
         for(int q = 0; q < config.N_QUALITY; q++) {
             expAvSalePricePerQuality[q] = config.MARKET_AVERAGE_PRICE_DECAY*expAvSalePricePerQuality[q]
                     + (1.0 - config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePricePerQuality[q]);
+        }
+        // ...record number of unsold new build houses
+        nUnsoldNewBuild = 0;
+        for(HousingMarketRecord sale : market.getOffersPQ()) {
+            if(((HouseSaleRecord)sale).house.owner == Model.construction) nUnsoldNewBuild++;
         }
     }
 
@@ -289,8 +285,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     // Getters for variables computed before market clearing
     public int getnBuyers() { return nBuyers; }
     public int getnSellers() { return nSellers; }
-    public int getnNewBuild() { return nNewBuild; }
-    public int getnEmpty() { return nEmpty; }
+    public int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
     public double getSumBidPrices() { return sumBidPrices; }
     public double getSumOfferPrices() { return sumOfferPrices; }
     public double [] getOfferPrices() { return offerPrices; }

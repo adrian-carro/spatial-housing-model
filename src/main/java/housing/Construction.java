@@ -4,6 +4,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 
@@ -14,12 +15,14 @@ public class Construction implements IHouseOwner, Serializable {
     //----- Fields -----//
     //------------------//
 
-    public int                  housingStock; // total number of houses built
+    private HashMap<Region, Integer>    nNewBuildPerRegion;
+    private int                         housingStock; // Total number of houses in the whole model
+    private int                         nNewBuild; // Number of houses built this month
 
-    private Config	            config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister     rand = Model.rand; // Passes the Model's random number generator to a private field
-    private ArrayList<Region>   geography;
-    private HashSet<House>      onMarket;
+    private Config	                    config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private MersenneTwister             rand = Model.rand; // Passes the Model's random number generator to a private field
+    private ArrayList<Region>           geography;
+    private HashSet<House>              onMarket;
 
     //------------------------//
     //----- Constructors -----//
@@ -27,8 +30,8 @@ public class Construction implements IHouseOwner, Serializable {
 
 	public Construction(ArrayList<Region> geography) {
 	    this.geography = geography;
-		housingStock = 0;
-		onMarket = new HashSet<>();
+        nNewBuildPerRegion = new HashMap<>();
+        onMarket = new HashSet<>();
 	}
 
     //-------------------//
@@ -36,38 +39,44 @@ public class Construction implements IHouseOwner, Serializable {
     //-------------------//
 
 	public void init() {
-		housingStock = 0;
+        housingStock = 0;
+        for (Region region: geography) nNewBuildPerRegion.put(region, 0);
 		onMarket.clear();
 	}
 
 	public void step() {
+	    // Initialise to zero the number of houses built this month
+	    nNewBuild = 0;
         // First update prices of properties put on the market on previous time steps and still unsold
         for(House h : onMarket) {
             h.region.houseSaleMarket.updateOffer(h.getSaleRecord(), h.getSaleRecord().getPrice()*0.95);
         }
 	    // Then, for each region...
         for (Region region: geography) {
-            // ... compute target housing stock dependent on current and target population for the region
+            // ...compute target housing stock dependent on current and target population for the region
             int targetStock;
             if(region.households.size() < config.TARGET_POPULATION) {
                 targetStock = (int)(region.households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD);
             } else {
                 targetStock = (int)(config.TARGET_POPULATION*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD);
             }
-            // ... compute the shortfall of houses
+            // ...compute the shortfall of houses
             int shortFall = targetStock - region.getHousingStock();
-            // ... and while there is any shortfall...
-            House newBuild;
+            // ...add this regional shortfall to the number of houses built this month in the region and nationally
+            nNewBuildPerRegion.put(region, shortFall);
+            nNewBuild += shortFall;
+            // ...and while there is any shortfall...
+            House newHouse;
             while(shortFall > 0) {
-                // ... create a new house with a random quality and with the construction sector as the owner
-                newBuild = new House(region, (int)(rand.nextDouble()*config.N_QUALITY));
-                newBuild.owner = this;
-                // ... put the house for sale in the regional house sale market at the reference price for that quality
-                region.houseSaleMarket.offer(newBuild,
-                        region.regionalHousingMarketStats.getReferencePriceForQuality(newBuild.getQuality()));
-                // ... add the house to the portfolio of construction sector properties
-                onMarket.add(newBuild);
-                // ... and finally increase both regional and general housing stocks, and decrease shortfall
+                // ...create a new house with a random quality and with the construction sector as the owner
+                newHouse = new House(region, (int)(rand.nextDouble()*config.N_QUALITY));
+                newHouse.owner = this;
+                // ...put the house for sale in the regional house sale market at the reference price for that quality
+                region.houseSaleMarket.offer(newHouse,
+                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()));
+                // ...add the house to the portfolio of construction sector properties
+                onMarket.add(newHouse);
+                // ...and finally increase both regional and general housing stocks, and decrease shortfall
                 region.increaseHousingStock();
                 ++housingStock;
                 --shortFall;
@@ -87,4 +96,14 @@ public class Construction implements IHouseOwner, Serializable {
 	public void completeHouseLet(HouseSaleRecord sale) {
         System.out.println("Strange: the construction sector is trying to let a house!");
 	}
+
+    //----- Getter/setter methods -----//
+
+    public int getHousingStock() { return housingStock; }
+
+    public HashMap<Region, Integer> getnNewBuildPerRegion() { return nNewBuildPerRegion; }
+
+    public int getnNewBuildForRegion(Region region) { return nNewBuildPerRegion.get(region); }
+
+    public int getnNewBuild() { return nNewBuild; }
 }

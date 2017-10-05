@@ -30,7 +30,6 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     private double []                   avOccupancyPerQuality; // Average fraction of time a rental property stays rented for each quality band
     private double []                   avFlowYieldPerQuality; // Average gross rental yield for each quality band for properties rented out this month
     private double                      avFlowYield; // Average gross rental yield for properties rented out this month
-    private double                      avFlowYieldCount; // Dummy counter
     private double                      expAvFlowYield; // Exponential moving average (fast decay) of the average flow gross rental yield
     private double                      longTermExpAvFlowYield; // Exponential moving average (slow decay) of the average flow gross rental yield
 
@@ -41,12 +40,13 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     /**
      * Initialises the regional rental market statistics collector
      *
-     * @param region Reference to the region owning both the market and the regional collector
+     * @param regionalHousingMarketStats Reference to the regional housing market collector
+     * @param market Reference to the rental market of the region
      */
-    public RegionalRentalMarketStats(Region region) {
-        super(region);
+    public RegionalRentalMarketStats(RegionalHousingMarketStats regionalHousingMarketStats, HouseRentalMarket market) {
+        super(market);
         setActive(true);
-        this.regHousingMarketStats = region.regionalHousingMarketStats;
+        this.regHousingMarketStats = regionalHousingMarketStats;
     }
 
     //-------------------//
@@ -115,7 +115,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
         // Pass count value obtained during market clearing to persistent variables
         System.arraycopy(sumMonthsOnMarketPerQualityCount, 0, sumMonthsOnMarketPerQuality, 0, config.N_QUALITY);
         // Compute the rest of variables after market clearing...
-        avFlowYieldCount = 0;
+        double avFlowYieldCount = 0; // Dummy counter
         for (int q = 0; q < config.N_QUALITY; q++) {
             // ... exponential average of months in the market per quality band (only if there have been sales)
             if (getnSalesForQuality(q) > 0) {
@@ -136,7 +136,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
         }
         // If no new rentals, then avFlowYield keeps its previous value
         if (getnSales() > 0) {
-            avFlowYield = avFlowYieldCount/getnSales();
+            avFlowYield = avFlowYieldCount /getnSales();
         }
         // ... a short and a long term exponential moving average of the average flow gross rental yield
         expAvFlowYield = expAvFlowYield*config.derivedParams.K + (1.0 - config.derivedParams.K)*avFlowYield;

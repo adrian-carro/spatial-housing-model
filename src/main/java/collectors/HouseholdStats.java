@@ -115,26 +115,26 @@ public class HouseholdStats extends CollectorBase {
     // Getters for numbers of households variables
     int getnBTL() { return nBTL; }
     int getnActiveBTL() { return nActiveBTL; }
-    public int getnBTLOwnerOccupier() { return nBTLOwnerOccupier; }
-    public int getnBTLHomeless() { return nBTLHomeless; }
-    public int getnNonBTLOwnerOccupier() { return nNonBTLOwnerOccupier; }
+    int getnBTLOwnerOccupier() { return nBTLOwnerOccupier; }
+    int getnBTLHomeless() { return nBTLHomeless; }
+    int getnNonBTLOwnerOccupier() { return nNonBTLOwnerOccupier; }
     int getnRenting() { return nRenting; }
-    public int getnNonBTLHomeless() { return nNonBTLHomeless; }
-    public int getnOwnerOccupier() { return nBTLOwnerOccupier + nNonBTLOwnerOccupier; }
+    int getnNonBTLHomeless() { return nNonBTLHomeless; }
+    int getnOwnerOccupier() { return nBTLOwnerOccupier + nNonBTLOwnerOccupier; }
     int getnHomeless() { return nBTLHomeless + nNonBTLHomeless; }
-    public int getnNonOwner() { return nRenting + getnHomeless(); }
+    int getnNonOwner() { return nRenting + getnHomeless(); }
 
     // Getters for annualised income variables
     double getActiveBTLAnnualisedTotalIncome() { return activeBTLAnnualisedTotalIncome; }
     double getOwnerOccupierAnnualisedTotalIncome() { return ownerOccupierAnnualisedTotalIncome; }
-    public double getRentingAnnualisedTotalIncome() { return rentingAnnualisedTotalIncome; }
-    public double getHomelessAnnualisedTotalIncome() { return homelessAnnualisedTotalIncome; }
-    public double getNonOwnerAnnualisedTotalIncome() {
+    double getRentingAnnualisedTotalIncome() { return rentingAnnualisedTotalIncome; }
+    double getHomelessAnnualisedTotalIncome() { return homelessAnnualisedTotalIncome; }
+    double getNonOwnerAnnualisedTotalIncome() {
         return rentingAnnualisedTotalIncome + homelessAnnualisedTotalIncome;
     }
 
     // Getters for yield variables
-    public double getSumStockYield() { return sumStockYield; }
+    double getSumStockYield() { return sumStockYield; }
     double getAvStockYield() {
         if(nRenting > 0) {
             return sumStockYield/nRenting;
@@ -145,13 +145,15 @@ public class HouseholdStats extends CollectorBase {
 
     // Getters for other variables...
     // ... number of empty houses
-    int getnEmpty() {
-        return Model.construction.housingStock + nBTLHomeless + nNonBTLHomeless
+    int getnEmptyHouses() {
+        return Model.construction.getHousingStock() + nBTLHomeless + nNonBTLHomeless
                 - Model.demographics.getTotalPopulation();
     }
-    // ... proportion of housing stock owned by buy-to-let investors
-    double getBTLProportion() {
-        return ((double)(getnEmpty() + nRenting))/Model.construction.housingStock;
+    // ... proportion of housing stock owned by buy-to-let investors (all rental properties, plus all empty houses not
+    // owned by the construction sector)
+    double getBTLStockFraction() {
+        return ((double)(getnEmptyHouses() - Model.housingMarketStats.getnUnsoldNewBuild()
+                + nRenting))/Model.construction.getHousingStock();
     }
 
 //    // Array with ages of all households

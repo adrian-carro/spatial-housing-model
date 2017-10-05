@@ -122,8 +122,65 @@ public class RentalMarketStats extends HousingMarketStats {
                 + (1.0 - config.derivedParams.KL)*avFlowYield;
     }
 
+    //----- Methods to override those at HousingMarketStats -----//
+
+    /**
+     * Runs through the regions aggregating regional results
+     * Note: Overrides equivalent at RentalMarketStats
+     */
+    @Override
+    void runThroughRegionsSumming() {
+        // Run through regions summing
+        for (Region region : geography) {
+            nBuyers += region.regionalRentalMarketStats.getnBuyers();
+            nSellers += region.regionalRentalMarketStats.getnSellers();
+            nUnsoldNewBuild += region.regionalRentalMarketStats.getnUnsoldNewBuild();
+            sumBidPrices += region.regionalRentalMarketStats.getSumBidPrices();
+            sumOfferPrices += region.regionalRentalMarketStats.getSumOfferPrices();
+            nSales += region.regionalRentalMarketStats.getnSales();
+            sumSoldReferencePrice += region.regionalRentalMarketStats.getSumSoldReferencePrice();
+            sumSoldPrice += region.regionalRentalMarketStats.getSumSoldPrice();
+            sumDaysOnMarket += region.regionalRentalMarketStats.getSumDaysOnMarket();
+            for (int q = 0; q < config.N_QUALITY; q++) {
+                sumSalePricePerQuality[q] += region.regionalRentalMarketStats.getSumSalePriceForQuality(q);
+                nSalesPerQuality[q] += region.regionalRentalMarketStats.getnSalesForQuality(q);
+            }
+        }
+    }
+
+    /**
+     * Collects all offer prices from the regional rental market statistics objects
+     * Note: Overrides equivalent at RentalMarketStats
+     */
+    @Override
+    void collectOfferPrices() {
+        int i = 0;
+        for (Region region: geography) {
+            for (double price: region.regionalRentalMarketStats.getOfferPrices()) {
+                offerPrices[i] = price;
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * Collects all bid prices from the regional rental market statistics objects
+     * Note: Overrides equivalent at RentalMarketStats
+     */
+    @Override
+    void collectBidPrices() {
+        int i = 0;
+        for (Region region: geography) {
+            for(double price: region.regionalRentalMarketStats.getBidPrices()) {
+                bidPrices[i] = price;
+                ++i;
+            }
+        }
+    }
+
     //----- Getter/setter methods -----//
 
+    // Rental-specific getters
     public double [] getSumMonthsOnMarketPerQuality() { return sumMonthsOnMarketPerQuality; }
     public double getSumMonthsOnMarketForQuality(int quality) { return sumMonthsOnMarketPerQuality[quality]; }
     public double [] getExpAvMonthsOnMarketPerQuality() { return expAvMonthsOnMarketPerQuality; }

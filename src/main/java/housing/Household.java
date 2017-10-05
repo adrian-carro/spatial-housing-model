@@ -373,12 +373,8 @@ public class Household implements IHouseOwner, Serializable {
             if(price > maxMortgage - 1.0) {
                 price = maxMortgage -1.0;
             }
-            if (Double.isNaN(price)) System.out.println("price1 = " + price);
             region.houseSaleMarket.bid(this, price);
         } else {
-            if (Double.isNaN(behaviour.desiredRent(this, monthlyEmploymentIncome))) {
-                System.out.println("price2 = " + behaviour.desiredRent(this, monthlyEmploymentIncome));
-            }
             region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
         }
     }
@@ -412,7 +408,7 @@ public class Household implements IHouseOwner, Serializable {
     private double buyToLetRent(House h) {
         return(behaviour.buyToLetRent(
                 h.region.regionalRentalMarketStats.getAvSalePriceForQuality(h.getQuality()),
-                h.region.regionalRentalMarketStats.getExpAvDaysOnMarket(),h));
+                h.region.regionalRentalMarketStats.getExpAvDaysOnMarket(), h));
     }
 
     /////////////////////////////////////////////////////////
@@ -427,7 +423,7 @@ public class Household implements IHouseOwner, Serializable {
      * @param beneficiary The household that will inherit the wealth
      */
     void transferAllWealthTo(Household beneficiary) {
-        if(beneficiary == this) System.out.println("Strange: I'm transfering all my wealth to myself");
+        if(beneficiary == this) System.out.println("Strange: I'm transferring all my wealth to myself");
         boolean isHome;
         Iterator<Entry<House, PaymentAgreement>> paymentIt = housePayments.entrySet().iterator();
         Entry<House, PaymentAgreement> entry;

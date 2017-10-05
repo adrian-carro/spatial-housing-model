@@ -119,7 +119,7 @@ public class HouseholdBehaviour implements Serializable {
 	 */
 	double getInitialSalePrice(Region region, int quality, double principal) {
 		double exponent = config.SALE_MARKUP
-                + Math.log(region.regionalHousingMarketStats.getAvSalePriceForQuality(quality))
+                + Math.log(region.regionalHousingMarketStats.getAvSalePriceForQuality(quality) + 1.0)
                 - config.SALE_WEIGHT_DAYS_ON_MARKET*Math.log((region.regionalHousingMarketStats.getExpAvDaysOnMarket()
                     + 1.0)/(config.constants.DAYS_IN_MONTH + 1.0))
                 + config.SALE_EPSILON*rand.nextGaussian();
@@ -283,7 +283,7 @@ public class HouseholdBehaviour implements Serializable {
 		// TODO: What? Where does this equation come from?
 		final double beta = config.RENT_MARKUP/Math.log(config.RENT_EQ_MONTHS_ON_MARKET); // Weight of days-on-market effect
 
-		double exponent = config.RENT_MARKUP + Math.log(rbar)
+		double exponent = config.RENT_MARKUP + Math.log(rbar + 1.0)
                 - beta*Math.log((d + 1.0)/(config.constants.DAYS_IN_MONTH + 1))
                 + config.RENT_EPSILON*rand.nextGaussian();
 		double result = Math.exp(exponent);

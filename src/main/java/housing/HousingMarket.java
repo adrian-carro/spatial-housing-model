@@ -102,7 +102,8 @@ public abstract class HousingMarket implements Serializable {
      * @param buyer The household that is making the bid
      * @param price The price that the household is willing to pay
      */
-    public void bid(Household buyer, double price) { bids.add(new HouseBuyerRecord(buyer, price)); }
+    public void bid(Household buyer, double price) {
+        bids.add(new HouseBuyerRecord(buyer, price)); }
 
     //----- Market clearing methods -----//
 
@@ -187,12 +188,12 @@ public abstract class HousingMarket implements Serializable {
                 }
                 // ...update price for the offer
                 offer.setPrice(salePrice, authority);
-                // ...put the rest of the bids for this property (failed bids) back on bids array
-                bids.addAll(offer.matchedBids.subList(0, winningBid));
-                bids.addAll(offer.matchedBids.subList(winningBid + 1, offer.matchedBids.size()));
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
                 completeTransaction(offer.matchedBids.get(winningBid), offer);
-                // ...remove this offer from the offers priority queue, offersPQ, underlying the record iterator
+                // Put the rest of the bids for this property (failed bids) back on bids array
+                bids.addAll(offer.matchedBids.subList(0, winningBid));
+                bids.addAll(offer.matchedBids.subList(winningBid + 1, offer.matchedBids.size()));
+                // Remove this offer from the offers priority queue, offersPQ, underlying the record iterator
                 record.remove();
             // If there is only one match...
             } else if (nBids == 1) {

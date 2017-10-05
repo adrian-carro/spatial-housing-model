@@ -170,12 +170,14 @@ public class RegionalHouseholdStats extends CollectorBase {
 
     // Getters for other variables...
     // ... number of empty houses
-    public int getnEmpty() {
+    public int getnEmptyHouses() {
         return region.getHousingStock() + nBTLHomeless + nNonBTLHomeless - region.households.size();
     }
-    // ... proportion of housing stock owned by buy-to-let investors
-    public double getBTLProportion() {
-        return ((double)(getnEmpty() + nRenting))/region.getHousingStock();
+    // ... proportion of housing stock owned by buy-to-let investors (all rental properties, plus all empty houses not
+    // owned by the construction sector)
+    public double getBTLStockFraction() {
+        return ((double)(getnEmptyHouses() - region.regionalHousingMarketStats.getnUnsoldNewBuild()
+                + nRenting))/region.getHousingStock();
     }
 
 //    // Array with ages of all households
