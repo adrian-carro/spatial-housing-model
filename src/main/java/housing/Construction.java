@@ -55,16 +55,22 @@ public class Construction implements IHouseOwner, Serializable {
         for (Region region: geography) {
             // ...compute target housing stock dependent on current and target population for the region
             int targetStock;
-            if(region.households.size() < config.TARGET_POPULATION) {
+            if(region.households.size() < region.targetPopulation) {
                 targetStock = (int)(region.households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD);
             } else {
-                targetStock = (int)(config.TARGET_POPULATION*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD);
+                targetStock = (int)(region.targetPopulation*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD);
             }
             // ...compute the shortfall of houses
             int shortFall = targetStock - region.getHousingStock();
-            // ...add this regional shortfall to the number of houses built this month in the region and nationally
-            nNewBuildPerRegion.put(region, shortFall);
-            nNewBuild += shortFall;
+            // ...if shortfall is positive...
+            if (shortFall > 0) {
+                // ...add this regional shortfall to the number of houses built this month in the region and nationally
+                nNewBuildPerRegion.put(region, shortFall);
+                nNewBuild += shortFall;
+            } else {
+                // ...otherwise add zero newBuilds to the region
+                nNewBuildPerRegion.put(region, 0);
+            }
             // ...and while there is any shortfall...
             House newHouse;
             while(shortFall > 0) {

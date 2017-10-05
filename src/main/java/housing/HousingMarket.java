@@ -117,10 +117,12 @@ public abstract class HousingMarket implements Serializable {
         // TODO: 500 is reported in the paper as 5000000. In any case, why this number? Why the 1000? This should be
         // TODO: made a less arbitrary or better justified "model rule", not even parameters. Also, why to necessarily
         // TODO: iterate rounds times if market might be cleared before? Is this often the case?
-        int rounds = Math.min(config.TARGET_POPULATION/1000,1 + (offersPQ.size()+bids.size())/500);
-        for(int i=0; i<rounds; ++i) {
+        int rounds = Math.max(5, region.households.size()/100); // Previously, int rounds = Math.min(config.TARGET_POPULATION/1000, 1 + (offersPQ.size() + bids.size())/500);
+        int i = 0;
+        while (i < rounds && bids.size() > 0 && offersPQ.size() > 0) { // Previously, for(int i=0, i<rounds, i++) {
             matchBidsWithOffers(); // Step 1: iterate through bids
             clearMatches(); // Step 2: iterate through offers
+            i++; // Previously absent
         }
         bids.clear();
     }
@@ -134,10 +136,15 @@ public abstract class HousingMarket implements Serializable {
         HouseSaleRecord offer;
         for(HouseBuyerRecord bid : bids) {
             offer = getBestOffer(bid);
+            // If buyer and seller is the same household, then the bid falls through and the household will need to
+            // reissue it next month. Also, if the bid price is not enough to buy anything in this market and at this
+            // time, the bid also falls through
             if(offer != null && (offer.house.owner != bid.buyer)) {
                 offer.matchWith(bid);
             }
         }
+        // To keep only matched bids, we clear the bids ArrayList, it will be refilled with unsuccessful bids when
+        // matches are cleared at clearMatches
         bids.clear();
     }
 
