@@ -128,7 +128,7 @@ public class Household implements IHouseOwner, Serializable {
         // TODO: ATTENTION ---> Non-investor households always bid in the region where they already live!
         // TODO: ATTENTION ---> For now, investor households also bid always in the region where they already live!
         if(isInSocialHousing()) {
-            bidForAHome(region);
+            bidForAHome(region); // When BTL households are born, they enter here the first time!
         } else if(isRenting()) {
             if(housePayments.get(home).nPayments == 0) { // end of rental period for renter
                 endTenancy();
@@ -371,6 +371,7 @@ public class Household implements IHouseOwner, Serializable {
         double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, region);
         if(behaviour.decideRentOrPurchase(this, region, price)) {
             if(price > maxMortgage - 1.0) {
+                // TODO: Why the need for the -1.0?
                 price = maxMortgage -1.0;
             }
             region.houseSaleMarket.bid(this, price);

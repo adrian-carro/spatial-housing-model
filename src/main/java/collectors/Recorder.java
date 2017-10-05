@@ -148,7 +148,7 @@ public class Recorder {
         }
 
         // Write general output results to output file
-        outfile.println(Model.getTime() + ", " +
+        outfile.println(time + ", " +
                 // Number of households of each type
                 Model.householdStats.getnNonBTLHomeless() + ", " +
                 Model.householdStats.getnBTLHomeless() + ", " +
@@ -179,7 +179,6 @@ public class Recorder {
                 Model.housingMarketStats.getBTLSalesProportion() + ", " +
                 Model.housingMarketStats.getFTBSalesProportion() + ", " +
                 // Rental market data
-                // TODO: RENTAL HPI = SALE HPI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 Model.rentalMarketStats.getHPI() + ", " +
                 Model.rentalMarketStats.getAnnualHPA() + ", " +
                 Model.rentalMarketStats.getAvBidPrice() + ", " +

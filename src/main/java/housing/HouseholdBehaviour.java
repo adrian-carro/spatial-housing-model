@@ -105,9 +105,13 @@ public class HouseholdBehaviour implements Serializable {
 	 * @param monthlyIncome Monthly income of the household
 	 */
 	double getDesiredPurchasePrice(double monthlyIncome, Region region) {
+        double HPAFactor = config.BUY_WEIGHT_HPA*getLongTermHPAExpectation(region);
+        // TODO: The capping of this factor intends to avoid negative and too large desired prices, the 0.9 is a
+        // TODO: purely artificial fudge parameter. This formula should be reviewed and changed!
+        if (HPAFactor > 0.9) HPAFactor = 0.9;
 		return config.BUY_SCALE*config.constants.MONTHS_IN_YEAR*monthlyIncome
-				*Math.exp(config.BUY_EPSILON*rand.nextGaussian())
-				/(1.0 - config.BUY_WEIGHT_HPA*getLongTermHPAExpectation(region));
+                *Math.exp(config.BUY_EPSILON*rand.nextGaussian())
+                /(1.0 - HPAFactor);
 	}
 
 	/**
@@ -347,6 +351,7 @@ public class HouseholdBehaviour implements Serializable {
 	public double btlPurchaseBid(Household me, Region region) {
 	    // TODO: What is this 1.1 factor? Another fudge parameter???????????????????????????
         // TODO: It prevents wealthy investors from offering more than 10% above the average price of top quality houses
+        // TODO: But also, it's going to lead to many BTL investors wanting to spend the same and focused on top qualities
 		return(Math.min(Model.bank.getMaxMortgage(me, false),
                 1.1*region.regionalHousingMarketStats.getAvSalePriceForQuality(config.N_QUALITY-1)));
 	}
