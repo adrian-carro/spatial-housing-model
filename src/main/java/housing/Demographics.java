@@ -57,11 +57,14 @@ public class Demographics {
             }
             // Death: Kill households with a probability dependent on their age and organise inheritance
             double pDeath;
+            // TODO: ATTENTION ---> fudge parameter so that population approaches the target value
+            //double multFactor = (double)region.households.size()/region.getTargetPopulation();
+            double multFactor = 0.05;
             Iterator<Household> iterator = region.households.iterator();
             while(iterator.hasNext()) {
                 Household h = iterator.next();
                 pDeath = data.Demographics.probDeathGivenAge(h.getAge())/config.constants.MONTHS_IN_YEAR;
-                if(rand.nextDouble() < pDeath) {
+                if(rand.nextDouble() < pDeath*multFactor) {
                     iterator.remove();
                     totalPopulation--;
                     // Inheritance
