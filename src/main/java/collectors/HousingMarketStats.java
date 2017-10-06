@@ -4,7 +4,6 @@ import housing.*;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import javax.jws.WebParam;
 import java.util.ArrayList;
 
 /**************************************************************************************************
@@ -29,23 +28,23 @@ public class HousingMarketStats extends CollectorBase {
     private double []               referencePricePerQuality;
 
     // Variables computed before market clearing
-    int                     nBuyers;
-    int                     nSellers;
-    double                  sumBidPrices;
-    double                  sumOfferPrices;
-    double []               offerPrices;
-    double []               bidPrices;
+    int                             nBuyers;
+    int                             nSellers;
+    double                          sumBidPrices;
+    double                          sumOfferPrices;
+    double []                       offerPrices;
+    double []                       bidPrices;
 
     // Variables computed after market clearing to keep the previous values during the clearing
-    int                     nSales; // Number of sales
+    int                             nSales; // Number of sales
     private int	                    nFTBSales; // Number of sales to first-time buyers
     private int	                    nBTLSales; // Number of sales to buy-to-let investors
-    int 	                nUnsoldNewBuild; // Accumulated number of new built properties still unsold after market clearing
-    double                  sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
-    double                  sumSoldPrice; // Sum of prices of properties sold this month
-    double                  sumDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
-    double []               sumSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
-    int []                  nSalesPerQuality; // Number of sales for each quality band for properties sold this month
+    int 	                        nUnsoldNewBuild; // Accumulated number of new built properties still unsold after market clearing
+    double                          sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
+    double                          sumSoldPrice; // Sum of prices of properties sold this month
+    double                          sumDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
+    double []                       sumSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
+    int []                          nSalesPerQuality; // Number of sales for each quality band for properties sold this month
 
     // Other variables computed after market clearing
     private double                  expAvDaysOnMarket; // Exponential moving average of the number of days on the market
@@ -279,16 +278,16 @@ public class HousingMarketStats extends CollectorBase {
     public double [] getReferencePricePerQuality() { return referencePricePerQuality; }
 
     // Getters for variables computed before market clearing
-    public int getnBuyers() { return nBuyers; }
-    public int getnSellers() { return nSellers; }
-    public int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
+    int getnBuyers() { return nBuyers; }
+    int getnSellers() { return nSellers; }
+    int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
     public double getSumBidPrices() { return sumBidPrices; }
     public double getSumOfferPrices() { return sumOfferPrices; }
     public double [] getOfferPrices() { return offerPrices; }
     public double [] getBidPrices() { return bidPrices; }
 
     // Getters for variables computed after market clearing to keep the previous values during the clearing
-    public int getnSales() { return nSales; }
+    int getnSales() { return nSales; }
     public int getnFTBSales() { return nFTBSales; }
     public int getnBTLSales() { return nBTLSales; }
     public double getSumSoldReferencePrice() { return sumSoldReferencePrice; }
@@ -297,7 +296,7 @@ public class HousingMarketStats extends CollectorBase {
     public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
     public double getSumSalePriceForQuality(int quality) { return sumSalePricePerQuality[quality]; }
     public int [] getnSalesPerQuality() { return nSalesPerQuality; }
-    public int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
+    int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
 
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
@@ -308,14 +307,14 @@ public class HousingMarketStats extends CollectorBase {
     public double getLongTermHPA() {return longTermHousePriceAppreciation; }
 
     // Getters for derived variables
-    public double getAvBidPrice() {
+    double getAvBidPrice() {
         if (nBuyers > 0) {
             return sumBidPrices/nBuyers;
         } else {
             return 0.0;
         }
     }
-    public double getAvOfferPrice() {
+    double getAvOfferPrice() {
         if (nSellers > 0) {
             return sumOfferPrices/nSellers;
         } else {
@@ -323,17 +322,17 @@ public class HousingMarketStats extends CollectorBase {
         }
     }
     // Proportion of monthly sales that are to first-time buyers
-    public double getFTBSalesProportion() {
+    double getFTBSalesProportion() {
         if (nSales > 0) {
-            return nFTBSales/nSales;
+            return (double)nFTBSales/nSales;
         } else {
             return 0.0;
         }
     }
     // Proportion of monthly sales that are to buy-to-let investors
-    public double getBTLSalesProportion() {
+    double getBTLSalesProportion() {
         if (nSales > 0) {
-            return nBTLSales/nSales;
+            return (double)nBTLSales/nSales;
         } else {
             return 0.0;
         }

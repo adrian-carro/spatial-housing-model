@@ -260,7 +260,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
      * @param nYears Integer with the number of years over which to average house price growth
      * @return Annualised house price appreciation over nYears years
      */
-    public double housePriceAppreciation(int nYears) {
+    private double housePriceAppreciation(int nYears) {
         double HPI = (HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 1)
                 + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 2)
                 + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 3));
@@ -283,25 +283,25 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public double getReferencePriceForQuality(int quality) { return referencePricePerQuality[quality]; }
 
     // Getters for variables computed before market clearing
-    public int getnBuyers() { return nBuyers; }
-    public int getnSellers() { return nSellers; }
-    public int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
-    public double getSumBidPrices() { return sumBidPrices; }
-    public double getSumOfferPrices() { return sumOfferPrices; }
-    public double [] getOfferPrices() { return offerPrices; }
-    public double [] getBidPrices() { return bidPrices; }
+    int getnBuyers() { return nBuyers; }
+    int getnSellers() { return nSellers; }
+    int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
+    double getSumBidPrices() { return sumBidPrices; }
+    double getSumOfferPrices() { return sumOfferPrices; }
+    double [] getOfferPrices() { return offerPrices; }
+    double [] getBidPrices() { return bidPrices; }
 
     // Getters for variables computed after market clearing to keep the previous values during the clearing
-    public int getnSales() { return nSales; }
-    public int getnFTBSales() { return nFTBSales; }
-    public int getnBTLSales() { return nBTLSales; }
-    public double getSumSoldReferencePrice() { return sumSoldReferencePrice; }
-    public double getSumSoldPrice() { return sumSoldPrice; }
-    public double getSumDaysOnMarket() { return sumDaysOnMarket; }
+    int getnSales() { return nSales; }
+    int getnFTBSales() { return nFTBSales; }
+    int getnBTLSales() { return nBTLSales; }
+    double getSumSoldReferencePrice() { return sumSoldReferencePrice; }
+    double getSumSoldPrice() { return sumSoldPrice; }
+    double getSumDaysOnMarket() { return sumDaysOnMarket; }
     public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
-    public double getSumSalePriceForQuality(int quality) { return sumSalePricePerQuality[quality]; }
+    double getSumSalePriceForQuality(int quality) { return sumSalePricePerQuality[quality]; }
     public int [] getnSalesPerQuality() { return nSalesPerQuality; }
-    public int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
+    int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
 
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
@@ -329,7 +329,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     // Proportion of monthly sales that are to first-time buyers
     public double getFTBSalesProportion() {
         if (nSales > 0) {
-            return nFTBSales/nSales;
+            return (double)nFTBSales/nSales;
         } else {
             return 0.0;
         }
@@ -337,7 +337,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     // Proportion of monthly sales that are to buy-to-let investors
     public double getBTLSalesProportion() {
         if (nSales > 0) {
-            return nBTLSales/nSales;
+            return (double)nBTLSales/nSales;
         } else {
             return 0.0;
         }
