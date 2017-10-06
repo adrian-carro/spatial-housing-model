@@ -326,6 +326,13 @@ public class RegionalHousingMarketStats extends CollectorBase {
             return 0.0;
         }
     }
+    public double getAvSalePrice() {
+        if (nSales > 0) {
+            return sumSoldPrice/nSales;
+        } else {
+            return 0.0;
+        }
+    }
     // Proportion of monthly sales that are to first-time buyers
     public double getFTBSalesProportion() {
         if (nSales > 0) {

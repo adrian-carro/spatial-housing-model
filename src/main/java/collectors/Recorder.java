@@ -97,10 +97,10 @@ public class Recorder {
                     // Numbers of houses of each type
                     + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                     // House sale market data
-                    + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvDaysOnMarket, "
+                    + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, Sale AvDaysOnMarket, "
                     + "Sale nBuyers, Sale nSellers, Sale nSales, Sale BTLSalesProportion, Sale FTBSalesProportion, "
                     // Rental market data
-                    + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvDaysOnMarket, "
+                    + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, Rental AvDaysOnMarket, "
                     + "Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
                     // Credit data
                     + "nRegisteredMortgages"
@@ -172,6 +172,7 @@ public class Recorder {
                 Model.housingMarketStats.getAnnualHPA() + ", " +
                 Model.housingMarketStats.getAvBidPrice() + ", " +
                 Model.housingMarketStats.getAvOfferPrice() + ", " +
+                Model.housingMarketStats.getAvSalePrice() + ", " +
                 Model.housingMarketStats.getAvDaysOnMarket() + ", " +
                 Model.housingMarketStats.getnBuyers() + ", " +
                 Model.housingMarketStats.getnSellers() + ", " +
@@ -183,6 +184,7 @@ public class Recorder {
                 Model.rentalMarketStats.getAnnualHPA() + ", " +
                 Model.rentalMarketStats.getAvBidPrice() + ", " +
                 Model.rentalMarketStats.getAvOfferPrice() + ", " +
+                Model.rentalMarketStats.getAvSalePrice() + ", " +
                 Model.rentalMarketStats.getAvDaysOnMarket() + ", " +
                 Model.rentalMarketStats.getnBuyers() + ", " +
                 Model.rentalMarketStats.getnSellers() + ", " +
