@@ -117,9 +117,11 @@ public class RegionalHouseholdStats extends CollectorBase {
                 } else if (h.isRenting()) {
                     ++nRenting;
                     rentingAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                    sumStockYield += h.getHousePayments().get(h.getHome()).monthlyPayment
-                            *config.constants.MONTHS_IN_YEAR
-                            /region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getHome().getQuality());
+                    if (region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getHome().getQuality()) > 0) {
+                        sumStockYield += h.getHousePayments().get(h.getHome()).monthlyPayment
+                                *config.constants.MONTHS_IN_YEAR
+                                /region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getHome().getQuality());
+                    }
                 // Non-BTL investors in social housing
                 } else if (h.isInSocialHousing()) {
                     // TODO: Once numbers are checked, this "else if" can be replaced by an "else"

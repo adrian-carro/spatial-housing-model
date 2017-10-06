@@ -1,5 +1,6 @@
 package collectors;
 
+import com.sun.org.apache.xpath.internal.operations.Mod;
 import housing.Config;
 import housing.Model;
 import utilities.MeanAboveMedian;
@@ -40,15 +41,34 @@ public class CoreIndicators extends CollectorBase {
     }
 
     // Owner-occupier mortgage LTI ratio (mean above the median)
-	double getOwnerOccupierLTIMeanAboveMedian() { return Model.creditSupply.oo_lti.apply(new MeanAboveMedian()); }
+	double getOwnerOccupierLTIMeanAboveMedian() {
+        if (Model.creditSupply.oo_lti.getN() > 0) {
+            return Model.creditSupply.oo_lti.apply(new MeanAboveMedian());
+        } else {
+            return 0.0;
+        }
+	}
 
     // Owner-occupier mortage LTV ratio (mean above the median)
-	double getOwnerOccupierLTVMeanAboveMedian() { return Model.creditSupply.oo_ltv.apply(new MeanAboveMedian()); }
+	double getOwnerOccupierLTVMeanAboveMedian() {
+        if (Model.creditSupply.oo_ltv.getN() > 0) {
+            return Model.creditSupply.oo_ltv.apply(new MeanAboveMedian());
+        } else {
+            return 0.0;
+        }
+	}
 
     // Buy-to-let loan-to-value ratio (mean)
-	double getBuyToLetLTVMean() { return Model.creditSupply.btl_ltv.getMean(); }
+	double getBuyToLetLTVMean() {
+        if (Model.creditSupply.btl_ltv.getN() > 0) {
+            return Model.creditSupply.btl_ltv.getMean();
+        } else {
+            return 0.0;
+        }
+    }
 
-	// Household credit growth (net, annualised, as a proportion of credit in previous step)
+	// Annualised household credit growth (credit growth: rate of change of credit, current month new credit divided by
+    //  new credit in previous step)
 	double getHouseholdCreditGrowth() { return Model.creditSupply.netCreditGrowth*12.0*100.0; }
 
 	// Household mortgage debt to income ratio (%)

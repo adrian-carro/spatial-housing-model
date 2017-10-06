@@ -36,7 +36,11 @@ public class CreditSupply extends CollectorBase {
         		totalOOCredit += m.principal;
         	}
         }
-        netCreditGrowth = (totalOOCredit + totalBTLCredit - oldTotalCredit)/oldTotalCredit;
+        if (oldTotalCredit > 0.0) {
+            netCreditGrowth = (totalOOCredit + totalBTLCredit - oldTotalCredit)/oldTotalCredit;
+        } else {
+            netCreditGrowth = 0;
+        }
         nApprovedMortgages = mortgageCounter;
         nFTBMortgages = ftbCounter;
         nBTLMortgages = btlCounter;
@@ -57,7 +61,8 @@ public class CreditSupply extends CollectorBase {
 			affordability = config.derivedParams.getAffordabilityDecay()*affordability +
                     (1.0-config.derivedParams.getAffordabilityDecay())*approval.monthlyPayment/
                             (h.monthlyEmploymentIncome);
-			if(approval.principal > 1.0) {
+			// TODO: This condition is redundant, as the method is only called when approval.principal > 0
+			if(approval.principal > 0.0) {
 				if(approval.isBuyToLet) {
 					btl_ltv.addValue(100.0*approval.principal/housePrice);
 					double icr = house.region.regionalRentalMarketStats.getExpAvFlowYield()*approval.purchasePrice/
@@ -145,13 +150,13 @@ public class CreditSupply extends CollectorBase {
 	public DescriptiveStatistics oo_ltv;
 	public DescriptiveStatistics btl_ltv;
 	public DescriptiveStatistics btl_icr;
-	public DescriptiveStatistics downpayments;
+	public DescriptiveStatistics downpayments; // TODO: This quantity only includes downpayments when the principal of the loan is > 0
 	public int mortgageCounter;
 	public int ftbCounter;	
 	public int btlCounter;	
 	public int nApprovedMortgages; // total number of new mortgages
 	public int nFTBMortgages; // number of new first time buyer mortgages given
-	public int nBTLMortgages; // number of new buy to let mortages given
+	public int nBTLMortgages; // number of new buy to let mortgages given
 	public double totalBTLCredit = 0.0; // buy to let mortgage credit
 	public double totalOOCredit = 0.0; // owner-occupier mortgage credit	
 	public double netCreditGrowth; // rate of change of credit per month as percentage
