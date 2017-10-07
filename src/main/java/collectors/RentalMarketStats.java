@@ -105,9 +105,9 @@ public class RentalMarketStats extends HousingMarketStats {
             avOccupancyPerQuality[q] = config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
                     + expAvMonthsOnMarketPerQuality[q]);
             // ... average flow gross rental yield per quality band (stick to previous value if no sales)
-            if (housingMarketStats.getAvSalePriceForQuality(q) > 0) {
-                avFlowYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
-                        *avOccupancyPerQuality[q]/housingMarketStats.getAvSalePriceForQuality(q);
+            if (housingMarketStats.getExpAvSalePriceForQuality(q) > 0) {
+                avFlowYieldPerQuality[q] = getExpAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
+                        *avOccupancyPerQuality[q]/housingMarketStats.getExpAvSalePriceForQuality(q);
             }
             // ... average flow gross rental yield (for all quality bands)
             avFlowYieldCount += avFlowYieldPerQuality[q]*getnSalesForQuality(q);

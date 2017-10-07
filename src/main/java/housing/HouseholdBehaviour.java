@@ -122,13 +122,13 @@ public class HouseholdBehaviour implements Serializable {
 	 * @param principal Amount of principal left on any mortgage on this house
 	 */
 	double getInitialSalePrice(Region region, int quality, double principal) {
-		double exponent = config.SALE_MARKUP
-                + Math.log(region.regionalHousingMarketStats.getAvSalePriceForQuality(quality) + 1.0)
+        double exponent = config.SALE_MARKUP
+                + Math.log(region.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality) + 1.0)
                 - config.SALE_WEIGHT_DAYS_ON_MARKET*Math.log((region.regionalHousingMarketStats.getExpAvDaysOnMarket()
-                    + 1.0)/(config.constants.DAYS_IN_MONTH + 1.0))
+                + 1.0)/(config.constants.DAYS_IN_MONTH + 1.0))
                 + config.SALE_EPSILON*rand.nextGaussian();
-		// TODO: Average days on market should probably be computed for each quality band so as to use here only the correct one
-		return Math.max(Math.exp(exponent), principal);
+        // TODO: ExpAv days on market should probably be computed for each quality band so as to use here only the correct one
+        return Math.max(Math.exp(exponent), principal);
 	}
 
 	/**
@@ -222,7 +222,7 @@ public class HouseholdBehaviour implements Serializable {
         if (newHouseQuality < 0) return false; // can't afford a house anyway
         double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR
 				- purchasePrice*getLongTermHPAExpectation(region);
-        double costOfRent = region.regionalRentalMarketStats.getAvSalePriceForQuality(newHouseQuality)
+        double costOfRent = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(newHouseQuality)
                 *config.constants.MONTHS_IN_YEAR;
         return rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
                 + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse));
@@ -256,7 +256,7 @@ public class HouseholdBehaviour implements Serializable {
 			System.out.println("Strange: deciding to sell investment property that I don't own");
 			return(false);
 		}
-		double marketPrice = h.region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getQuality());
+		double marketPrice = h.region.regionalHousingMarketStats.getExpAvSalePriceForQuality(h.getQuality());
 		// TODO: Why to call this "equity"? It is called "downpayment" in the article!
         double equity = Math.max(0.01, marketPrice - mortgage.principal); // Dummy security parameter to avoid dividing by zero
 		double leverage = marketPrice/equity;
@@ -279,7 +279,7 @@ public class HouseholdBehaviour implements Serializable {
 
 	/**
 	 * How much rent does an investor decide to charge on a buy-to-let house? 
-	 * @param rbar average rent for house of this quality
+	 * @param rbar exponential average rent for house of this quality
 	 * @param d average days on market
 	 * @param h house being offered for rent
 	 */
@@ -292,7 +292,7 @@ public class HouseholdBehaviour implements Serializable {
                 + config.RENT_EPSILON*rand.nextGaussian();
 		double result = Math.exp(exponent);
         // TODO: The following contains a fudge (config.RENT_MAX_AMORTIZATION_PERIOD) to keep rental yield up
-		double minAcceptable = h.region.regionalHousingMarketStats.getAvSalePriceForQuality(h.getQuality())
+		double minAcceptable = h.region.regionalHousingMarketStats.getExpAvSalePriceForQuality(h.getQuality())
                 /(config.RENT_MAX_AMORTIZATION_PERIOD*config.constants.MONTHS_IN_YEAR);
 		if(result < minAcceptable) result = minAcceptable;
 		return(result);
@@ -328,7 +328,7 @@ public class HouseholdBehaviour implements Serializable {
 		// Compute maximum price I could pay (maximum mortgage I could get)
 		double maxPrice = Model.bank.getMaxMortgage(me, false);
 		// If my maximum price is below the average price for the lowest quality, then I won't even try
-		if (maxPrice < region.regionalHousingMarketStats.getAvSalePriceForQuality(0)) return false;
+		if (maxPrice < region.regionalHousingMarketStats.getExpAvSalePriceForQuality(0)) return false;
 
         // --- calculate expected yield on zero quality house
         double effectiveYield;
@@ -353,7 +353,7 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: It prevents wealthy investors from offering more than 10% above the average price of top quality houses
         // TODO: But also, it's going to lead to many BTL investors wanting to spend the same and focused on top qualities
 		return(Math.min(Model.bank.getMaxMortgage(me, false),
-                1.1*region.regionalHousingMarketStats.getAvSalePriceForQuality(config.N_QUALITY-1)));
+                1.1*region.regionalHousingMarketStats.getExpAvSalePriceForQuality(config.N_QUALITY-1)));
 	}
 
 	public boolean isPropertyInvestor() {

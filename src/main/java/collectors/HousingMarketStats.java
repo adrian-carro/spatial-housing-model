@@ -301,6 +301,7 @@ public class HousingMarketStats extends CollectorBase {
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
+    public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
     public double getAnnualHPA() { return annualHousePriceAppreciation; }
@@ -344,7 +345,7 @@ public class HousingMarketStats extends CollectorBase {
             return 0.0;
         }
     }
-    public double getAvDaysOnMarket() {
+    double getAvDaysOnMarket() {
         if (nSales > 0) {
             return sumDaysOnMarket/nSales;
         } else {
@@ -363,7 +364,6 @@ public class HousingMarketStats extends CollectorBase {
         }
         return avSalePricePerQuality;
     }
-
     public double getAvSalePriceForQuality(int quality) {
         if (nSalesPerQuality[quality] > 0) {
             return sumSalePricePerQuality[quality]/nSalesPerQuality[quality];

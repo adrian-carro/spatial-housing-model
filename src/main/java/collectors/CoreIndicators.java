@@ -1,6 +1,5 @@
 package collectors;
 
-import com.sun.org.apache.xpath.internal.operations.Mod;
 import housing.Config;
 import housing.Model;
 import utilities.MeanAboveMedian;

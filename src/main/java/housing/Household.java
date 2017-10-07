@@ -408,7 +408,7 @@ public class Household implements IHouseOwner, Serializable {
 
     private double buyToLetRent(House h) {
         return(behaviour.buyToLetRent(
-                h.region.regionalRentalMarketStats.getAvSalePriceForQuality(h.getQuality()),
+                h.region.regionalRentalMarketStats.getExpAvSalePriceForQuality(h.getQuality()),
                 h.region.regionalRentalMarketStats.getExpAvDaysOnMarket(), h));
     }
 
@@ -560,11 +560,11 @@ public class Household implements IHouseOwner, Serializable {
     }
     
     /***
-     * @return Current mark-to-market equity in this household's home.
+     * @return Current mark-to-market (with exponentially averaged prices per quality) equity in this household's home.
      */
     double getHomeEquity() {
         if(!isHomeowner()) return(0.0);
-        return home.region.regionalHousingMarketStats.getAvSalePriceForQuality(home.getQuality())
+        return home.region.regionalHousingMarketStats.getExpAvSalePriceForQuality(home.getQuality())
                 - mortgageFor(home).principal;
     }
     

@@ -56,7 +56,7 @@ public class HouseSaleRecord extends HousingMarketRecord {
         int q = house.getQuality();
         if (price > 0) {
             houseSpecificYield = region.regionalRentalMarketStats.getAvFlowYieldForQuality(q)
-                    *region.regionalHousingMarketStats.getAvSalePriceForQuality(q)
+                    *region.regionalHousingMarketStats.getExpAvSalePriceForQuality(q)
                     /price;
         }
     }

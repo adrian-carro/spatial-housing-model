@@ -199,16 +199,28 @@ public abstract class HousingMarket implements Serializable {
                 bids.addAll(offer.matchedBids.subList(0, winningBid));
                 bids.addAll(offer.matchedBids.subList(winningBid + 1, offer.matchedBids.size()));
                 // Remove this offer from the offers priority queue, offersPQ, underlying the record iterator
-                record.remove();
+                removeOfferFromQueues(record, offer);
+
             // If there is only one match...
             } else if (nBids == 1) {
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
                 completeTransaction(offer.matchedBids.get(0), offer);
                 // ...remove this offer from the offers priority queue, offersPQ, underlying the record iterator
-                record.remove();
+                removeOfferFromQueues(record, offer);
             }
             // Note that we skip the whole process if there are no matches
         }        
+    }
+
+    /**
+     * Extracts the removal of successfully matched and cleared offers from the priority queues from the clearMatches
+     * method, so that only this part can be overridden at HouseSaleMarket
+     *
+     * @param record Iterator over the HousingMarketRecord objects contained in offersPQ
+     * @param offer Offer to remove from queues
+     */
+    void removeOfferFromQueues(Iterator<HousingMarketRecord> record, HouseSaleRecord offer) {
+        record.remove();
     }
 
     /**

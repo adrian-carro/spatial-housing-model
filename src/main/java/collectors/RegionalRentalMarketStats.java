@@ -127,16 +127,16 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
             avOccupancyPerQuality[q] = config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
                     + expAvMonthsOnMarketPerQuality[q]);
             // ... average flow gross rental yield per quality band (stick to previous value if no sales)
-            if (regHousingMarketStats.getAvSalePriceForQuality(q) > 0) {
-                avFlowYieldPerQuality[q] = getAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
-                        *avOccupancyPerQuality[q]/regHousingMarketStats.getAvSalePriceForQuality(q);
+            if (regHousingMarketStats.getExpAvSalePriceForQuality(q) > 0) {
+                avFlowYieldPerQuality[q] = getExpAvSalePriceForQuality(q)*config.constants.MONTHS_IN_YEAR
+                        *avOccupancyPerQuality[q]/regHousingMarketStats.getExpAvSalePriceForQuality(q);
             }
             // ... average flow gross rental yield (for all quality bands)
             avFlowYieldCount += avFlowYieldPerQuality[q]*getnSalesForQuality(q);
         }
         // If no new rentals, then avFlowYield keeps its previous value
         if (getnSales() > 0) {
-            avFlowYield = avFlowYieldCount /getnSales();
+            avFlowYield = avFlowYieldCount/getnSales();
         }
         // ... a short and a long term exponential moving average of the average flow gross rental yield
         expAvFlowYield = expAvFlowYield*config.derivedParams.K + (1.0 - config.derivedParams.K)*avFlowYield;

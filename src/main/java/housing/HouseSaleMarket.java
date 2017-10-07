@@ -7,7 +7,7 @@ import utilities.PriorityQueue2D;
 /*******************************************************
  * Class that represents market for houses for-sale.
  * 
- * @author daniel
+ * @author daniel, Adrian Carro
  *
  *****************************************************/
 public class HouseSaleMarket extends HousingMarket {
@@ -26,18 +26,18 @@ public class HouseSaleMarket extends HousingMarket {
 	@Override
 	public void init() {
 		super.init();
-		if(offersPY != null) offersPY.clear();
+		offersPY.clear();
 	}
 		
 	/**
 	 * This method deals with doing all the stuff necessary whenever a house gets sold.
 	 */
 	public void completeTransaction(HouseBuyerRecord purchase, HouseSaleRecord sale) {
-	    // TODO: Revise if it makes sense to have recordTransaction as a separate method from recordSale
+        // TODO: Revise if it makes sense to have recordTransaction as a separate method from recordSale
 		region.regionalHousingMarketStats.recordTransaction(sale);
 		sale.house.saleRecord = null;
 		Household buyer = purchase.buyer;
-		if(buyer == sale.house.owner) return;
+		if(buyer == sale.house.owner) return; // TODO: Shouldn't this if be the first line in this method?
 		sale.house.owner.completeHouseSale(sale);
 		buyer.completeHousePurchase(sale);
         region.regionalHousingMarketStats.recordSale(purchase, sale);
@@ -83,6 +83,19 @@ public class HouseSaleMarket extends HousingMarket {
 			return super.getBestOffer(bid);
 		}
 	}
+
+    /**
+     * Overrides corresponding method at HousingMarket in order to remove successfully matched and cleared offers from
+     * the offersPY queue
+     *
+     * @param record Iterator over the HousingMarketRecord objects contained in offersPQ
+     * @param offer Offer to remove from queues
+     */
+	@Override
+    void removeOfferFromQueues(Iterator<HousingMarketRecord> record, HouseSaleRecord offer) {
+        record.remove();
+        offersPY.remove(offer);
+    }
 	
 	public Iterator<HousingMarketRecord> offersIterator() {
 		final PriorityQueue2D<HousingMarketRecord>.Iter underlyingIterator
@@ -111,6 +124,5 @@ public class HouseSaleMarket extends HousingMarket {
 	 * @param buyer The household that is making the bid.
 	 * @param maxPrice The maximum price that the household is willing to pay.
 	 ******************************************/
-	public void BTLbid(Household buyer, double maxPrice) {
-		bids.add(new BTLBuyerRecord(buyer, maxPrice)); }
+	void BTLbid(Household buyer, double maxPrice) { bids.add(new BTLBuyerRecord(buyer, maxPrice)); }
 }

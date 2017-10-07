@@ -306,6 +306,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     // Getters for other variables computed after market clearing
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
+    public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
     public double getAnnualHPA() { return annualHousePriceAppreciation; }
@@ -383,7 +384,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
      */
     public int getMaxQualityForPrice(double price) {
         int q = config.N_QUALITY - 1;
-        while(q >= 0 && getAvSalePriceForQuality(q) > price) --q;
+        while(q >= 0 && getExpAvSalePriceForQuality(q) > price) --q;
         return q;
     }
 }
