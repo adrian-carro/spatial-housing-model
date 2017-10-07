@@ -32,15 +32,17 @@ public class Household implements IHouseOwner, Serializable {
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
 
-    private double                          age; // Age of the household representative person
-    private double                          bankBalance;
-    private double                          monthlyPropertyIncome;
-    private boolean                         isFirstTimeBuyer;
-    private boolean                         isBankrupt;
+
+    private Region                          region;
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
     private Config                          config = Model.config; // Passes the Model's configuration parameters object to a private field
     private MersenneTwister                 rand; // Private field to contain the Model's random number generator
+    private double                          age; // Age of the household representative person
+    private double                          bankBalance;
+    private double                          monthlyPropertyIncome; // TODO: Check how this is computed and make sure it is OK
+    private boolean                         isFirstTimeBuyer;
+    private boolean                         isBankrupt;
 
     //------------------------//
     //----- Constructors -----//
@@ -51,7 +53,8 @@ public class Household implements IHouseOwner, Serializable {
      * will be a BTL investor). Households start off in social
      * housing and with their 'desired bank balance' in the bank.
      ********************************************************/
-    public Household(double householdAgeAtBirth) {
+    public Household(double householdAgeAtBirth, Region region) {
+        this.region = region;
         rand = Model.rand;    // Passes the Model's random number generator to a private field of each instance
         home = null;
         isFirstTimeBuyer = true;
@@ -60,7 +63,7 @@ public class Household implements IHouseOwner, Serializable {
         incomePercentile = rand.nextDouble();
         behaviour = new HouseholdBehaviour(incomePercentile);
         monthlyEmploymentIncome = annualIncome()/config.constants.MONTHS_IN_YEAR;
-        bankBalance = behaviour.desiredBankBalance(this);
+        bankBalance = behaviour.getDesiredBankBalance(this); // Desired bank balance is used as initial value for actual bank balance
         monthlyPropertyIncome = 0.0;
         isBankrupt =false;
     }
@@ -96,7 +99,6 @@ public class Household implements IHouseOwner, Serializable {
      ********************************************************/
     public void step() {
         double disposableIncome;
-//        House  house;
 
         age += 1.0/config.constants.MONTHS_IN_YEAR;
         monthlyEmploymentIncome = annualIncome()/config.constants.MONTHS_IN_YEAR;
@@ -107,45 +109,41 @@ public class Household implements IHouseOwner, Serializable {
         }
         
         // --- consume based on disposable income after house payments
+        // TODO: What? Does this mean only FTB consume?
         bankBalance += disposableIncome;
-        if(isFirstTimeBuyer() || !isInSocialHousing()) bankBalance -= behaviour.desiredConsumptionB(this); //getMonthlyPreTaxIncome(),bankBalance);
-        if(bankBalance < 0.0) { // Behaviour is household is bankrupt
+        // TODO: What is the purpose of this if condition?
+        if(isFirstTimeBuyer() || !isInSocialHousing()) bankBalance -= behaviour.getDesiredConsumption(this);
+        if(bankBalance < 0.0) { // Behaviour if household is bankrupt
             bankBalance = 1.0;    // TODO: cash injection for now...
             if (Model.getTime()>1000) {
                 if (!isBankrupt) bankruptcies += 1;
                 isBankrupt = true;
             }
         }
-
+        // TODO: Attention, here BTL agents might have properties in more than one region
         for(House h : housePayments.keySet()) {
             if(h.owner == this) manageHouse(h); // Manage all owned properties
-
         }
-        
+
+        // TODO: ATTENTION ---> Non-investor households always bid in the region where they already live!
+        // TODO: ATTENTION ---> For now, investor households also bid always in the region where they already live!
         if(isInSocialHousing()) {
-            bidForAHome();
+            bidForAHome(region); // When BTL households are born, they enter here the first time!
         } else if(isRenting()) {
             if(housePayments.get(home).nPayments == 0) { // end of rental period for renter
                 endTenancy();
-                bidForAHome();
+                bidForAHome(region);
             }            
         } else if(behaviour.isPropertyInvestor()) {
-//            for(House h : housePayments.keySet()) {
-//                manageHouse(h);
-//            }
-            if(config.BTL_ENABLED) {
-                if(behaviour.decideToBuyBuyToLet(this)) {
-                    Model.houseSaleMarkets.BTLbid(this, behaviour.btlPurchaseBid(this));
-                }
-            }        
-        } else if(isHomeowner()) {
-//            manageHouse(home);
-        } else {
+            // TODO: This needs to be broken up in two "decisions" (methods), one for quickly disqualifying investors
+            // TODO: who can't afford investing, and another one that, running through the regions, decides whether to
+            // TODO: invest there or not (decideToBuyToLetInRegion). How to choose between regions in unbiased manner?
+            if(behaviour.decideToBuyBuyToLet(this, region)) {
+                region.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, region));
+            }
+        } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
         }
-        
-        
-//        makeHousingDecision();
     }
 
     /***
@@ -181,22 +179,23 @@ public class Household implements IHouseOwner, Serializable {
         if(forSale != null) { // reprice house for sale
             newPrice = behaviour.rethinkHouseSalePrice(forSale);
             if(newPrice > mortgageFor(h).principal) {
-                Model.houseSaleMarkets.updateOffer(forSale, newPrice);
+                h.region.houseSaleMarket.updateOffer(forSale, newPrice);
             } else {
-                Model.houseSaleMarkets.removeOffer(forSale);
+                h.region.houseSaleMarket.removeOffer(forSale);
+                // TODO: First condition is redundant!
                 if(h != home && h.resident == null) {
-                    Model.houseRentalMarkets.offer(h, buyToLetRent(h));
+                    h.region.houseRentalMarket.offer(h, buyToLetRent(h));
                 }
             }
         } else if(decideToSellHouse(h)) { // put house on market?
-            if(h.isOnRentalMarket()) Model.houseRentalMarkets.removeOffer(h.getRentalRecord());
+            if(h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
             putHouseForSale(h);
         }
         
         forRent = h.getRentalRecord();
         if(forRent != null) { // reprice house for rent
             newPrice = behaviour.rethinkBuyToLetRent(forRent);
-            Model.houseRentalMarkets.updateOffer(forRent, newPrice);
+            h.region.houseRentalMarket.updateOffer(forRent, newPrice);
         }        
     }
 
@@ -213,11 +212,7 @@ public class Household implements IHouseOwner, Serializable {
         } else {
             principal = 0.0;
         }
-        Model.houseSaleMarkets.offer(h, behaviour.initialSalePrice(
-                Model.houseSaleMarkets.averageSalePrice[h.getQuality()],
-                Model.houseSaleMarkets.averageDaysOnMarket,
-                principal
-        ));
+        h.getRegion().houseSaleMarket.offer(h, behaviour.getInitialSalePrice(h.getRegion(), h.getQuality(), principal));
     }
 
     /////////////////////////////////////////////////////////
@@ -241,11 +236,10 @@ public class Household implements IHouseOwner, Serializable {
                 endTenancy();
             }
         }
-        MortgageAgreement mortgage = Model.bank.requestLoan(this, sale.getPrice(), behaviour.downPayment(this,sale.getPrice()), home == null, sale.house);
+        MortgageAgreement mortgage = Model.bank.requestLoan(this, sale.getPrice(), behaviour.decideDownPayment(this,sale.getPrice()), home == null, sale.house);
         if(mortgage == null) {
             // TODO: need to either provide a way for house sales to fall through or to ensure that pre-approvals are always satisfiable
             System.out.println("Can't afford to buy house: strange");
-//            System.out.println("Want "+sale.getPrice()+" but can only get "+bank.getMaxMortgage(this,home==null));
             System.out.println("Bank balance is "+bankBalance);
             System.out.println("Annual income is "+ monthlyEmploymentIncome*config.constants.MONTHS_IN_YEAR);
             if(isRenting()) System.out.println("Is renting");
@@ -255,17 +249,17 @@ public class Household implements IHouseOwner, Serializable {
             if(behaviour.isPropertyInvestor()) System.out.println("Is investor");
             System.out.println("House owner = "+sale.house.owner);
             System.out.println("me = "+this);
+        } else {
+            bankBalance -= mortgage.downPayment;
+            housePayments.put(sale.house, mortgage);
+            if (home == null) { // move in to house
+                home = sale.house;
+                sale.house.resident = this;
+            } else if (sale.house.resident == null) { // put empty buy-to-let house on rental market
+                sale.house.region.houseRentalMarket.offer(sale.house, buyToLetRent(sale.house));
+            }
+            isFirstTimeBuyer = false;
         }
-        bankBalance -= mortgage.downPayment;
-        housePayments.put(sale.house, mortgage);
-        if(home == null) { // move in to house
-            home = sale.house;
-            sale.house.resident = this;
-        } else if(sale.house.resident == null) { // put empty buy-to-let house on rental market
-            Model.houseRentalMarkets.offer(sale.house, buyToLetRent(sale.house));
-//            endOfLettingAgreement(sale.house);
-        }
-        isFirstTimeBuyer = false;
     }
 
     /********************************************************
@@ -276,7 +270,7 @@ public class Household implements IHouseOwner, Serializable {
         bankBalance += sale.getPrice();
         bankBalance -= mortgage.payoff(bankBalance);
         if(sale.house.isOnRentalMarket()) {
-            Model.houseRentalMarkets.removeOffer(sale);
+            sale.house.region.houseRentalMarket.removeOffer(sale);
         }
         if(mortgage.nPayments == 0) {
             housePayments.remove(sale.house);
@@ -309,7 +303,7 @@ public class Household implements IHouseOwner, Serializable {
 //        if(h.resident != null) System.out.println("Strange: renting out a house that has a resident");        
 //        if(h.resident != null && h.resident == h.owner) System.out.println("Strange: renting out a house that belongs to a homeowner");        
         if(h.isOnRentalMarket()) System.out.println("Strange: got endOfLettingAgreement on house on rental market");
-        if(!h.isOnMarket()) Model.houseRentalMarkets.offer(h, buyToLetRent(h));
+        if(!h.isOnMarket()) h.region.houseRentalMarket.offer(h, buyToLetRent(h));
     }
 
     /**********************************************************
@@ -372,16 +366,17 @@ public class Household implements IHouseOwner, Serializable {
      * COST_OF_RENTING being an intrinsic psychological cost of not
      * owning. 
      ********************************************************/
-    private void bidForAHome() {
+    private void bidForAHome(Region region) {
         double maxMortgage = Model.bank.getMaxMortgage(this, true);
-        double price = behaviour.desiredPurchasePrice(this, monthlyEmploymentIncome);
-        if(behaviour.rentOrPurchaseDecision(this, price)) {
+        double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, region);
+        if(behaviour.decideRentOrPurchase(this, region, price)) {
             if(price > maxMortgage - 1.0) {
+                // TODO: Why the need for the -1.0?
                 price = maxMortgage -1.0;
             }
-            Model.houseSaleMarkets.bid(this, price);
+            region.houseSaleMarket.bid(this, price);
         } else {
-            Model.houseRentalMarkets.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
+            region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
         }
     }
     
@@ -391,10 +386,10 @@ public class Household implements IHouseOwner, Serializable {
      ********************************************************/
     private boolean decideToSellHouse(House h) {
         if(h == home) {
-            return(behaviour.decideToSellHome(this));
+            return(behaviour.decideToSellHome(h));
+        } else {
+            return(behaviour.decideToSellInvestmentProperty(h, this));
         }
-        if(config.BTL_ENABLED) return(behaviour.decideToSellInvestmentProperty(h, this));
-        return(false);
     }
 
 
@@ -406,15 +401,15 @@ public class Household implements IHouseOwner, Serializable {
     @Override
     public void completeHouseLet(HouseSaleRecord sale) {
         if(sale.house.isOnMarket()) {
-            Model.houseSaleMarkets.removeOffer(sale.house.getSaleRecord());
+            sale.house.region.houseSaleMarket.removeOffer(sale.house.getSaleRecord());
         }
         monthlyPropertyIncome += sale.getPrice();
     }
 
     private double buyToLetRent(House h) {
         return(behaviour.buyToLetRent(
-                Model.houseRentalMarkets.getAverageSalePrice(h.getQuality()),
-                Model.houseRentalMarkets.averageDaysOnMarket,h));
+                h.region.regionalRentalMarketStats.getExpAvSalePriceForQuality(h.getQuality()),
+                h.region.regionalRentalMarketStats.getExpAvDaysOnMarket(), h));
     }
 
     /////////////////////////////////////////////////////////
@@ -429,7 +424,7 @@ public class Household implements IHouseOwner, Serializable {
      * @param beneficiary The household that will inherit the wealth
      */
     void transferAllWealthTo(Household beneficiary) {
-        if(beneficiary == this) System.out.println("Strange: I'm transfering all my wealth to myself");
+        if(beneficiary == this) System.out.println("Strange: I'm transferring all my wealth to myself");
         boolean isHome;
         Iterator<Entry<House, PaymentAgreement>> paymentIt = housePayments.entrySet().iterator();
         Entry<House, PaymentAgreement> entry;
@@ -447,8 +442,8 @@ public class Household implements IHouseOwner, Serializable {
                 isHome = false;
             }
             if(h.owner == this) {
-                if(h.isOnRentalMarket()) Model.houseRentalMarkets.removeOffer(h.getRentalRecord());
-                if(h.isOnMarket()) Model.houseSaleMarkets.removeOffer(h.getSaleRecord());
+                if(h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
+                if(h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
                 if(h.resident != null) h.resident.getEvicted();
                 beneficiary.inheritHouse(h, isHome);
             } else {
@@ -490,33 +485,14 @@ public class Household implements IHouseOwner, Serializable {
             home = h;
             h.resident = this;
         } else if(behaviour.isPropertyInvestor()) {
-            if(config.BTL_ENABLED) {
-                if(decideToSellHouse(h)) {
-                    putHouseForSale(h);
-                } else if(h.resident == null) {
-                    Model.houseRentalMarkets.offer(h, buyToLetRent(h));
-                }
-            } else {
-                if(wasHome) {
-                    putHouseForSale(h);
-                } else if(h.resident == null) {
-                    Model.houseRentalMarkets.offer(h, buyToLetRent(h));
-                }
+            if(decideToSellHouse(h)) {
+                putHouseForSale(h);
+            } else if(h.resident == null) {
+                h.region.houseRentalMarket.offer(h, buyToLetRent(h));
             }
         } else {
             // I'm an owner-occupier
-            if(config.BTL_ENABLED) {
-                putHouseForSale(h);
-            } else {
-                if(wasHome) {
-                    putHouseForSale(h);
-                } else {
-                    behaviour.setPropertyInvestor(true);
-                    if(h.resident == null) {
-                        Model.houseRentalMarkets.offer(h, buyToLetRent(h));
-                    }                    
-                }
-            }
+            putHouseForSale(h);
         }
     }
     
@@ -584,11 +560,12 @@ public class Household implements IHouseOwner, Serializable {
     }
     
     /***
-     * @return Current mark-to-market equity in this household's home.
+     * @return Current mark-to-market (with exponentially averaged prices per quality) equity in this household's home.
      */
     double getHomeEquity() {
         if(!isHomeowner()) return(0.0);
-        return(Model.houseSaleMarkets.getAverageSalePrice(home.getQuality()) - mortgageFor(home).principal);
+        return home.region.regionalHousingMarketStats.getExpAvSalePriceForQuality(home.getQuality())
+                - mortgageFor(home).principal;
     }
     
     public MortgageAgreement mortgageFor(House h) {
