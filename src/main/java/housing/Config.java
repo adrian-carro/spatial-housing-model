@@ -87,11 +87,11 @@ public class Config {
     double BUY_WEIGHT_HPA;                  // Weight given to house price appreciation when deciding how much to spend for buying a house
     double BUY_EPSILON;                     // Standard deviation of the noise
     // Household behaviour parameters: demand rent
-    double RENT_MARKUP;                     // Markup over average rent demanded for houses of the same quality
-    double RENT_EQ_MONTHS_ON_MARKET;        // Number of months on the market in an equilibrium situation
-    double RENT_EPSILON;                    // Standard deviation of the noise
-    double RENT_MAX_AMORTIZATION_PERIOD;    // Maximum period BTL investors are ready to wait to get back their investment, this determines their minimum demanded rent
-    double RENT_REDUCTION;                  // Percentage reduction of demanded rent for every month the property is in the market, not rented
+    double RENT_MARKUP;                         // Markup over average rent demanded for houses of the same quality
+    double RENT_EQ_MONTHS_ON_MARKET;            // Number of months on the market in an equilibrium situation
+    double RENT_EPSILON;                        // Standard deviation of the noise
+    public double RENT_MAX_AMORTIZATION_PERIOD; // Maximum period BTL investors are ready to wait to get back their investment, this determines their minimum demanded rent
+    double RENT_REDUCTION;                      // Percentage reduction of demanded rent for every month the property is in the market, not rented
     // Household behaviour parameters: downpayment
     double DOWNPAYMENT_FTB_SCALE;           // Scale parameter for the log-normal distribution of downpayments by first-time-buyers
     double DOWNPAYMENT_FTB_SHAPE;           // Shape parameter for the log-normal distribution of downpayments by first-time-buyers

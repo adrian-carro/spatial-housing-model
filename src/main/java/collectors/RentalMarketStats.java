@@ -50,6 +50,9 @@ public class RentalMarketStats extends HousingMarketStats {
         this.geography = geography;
         // TODO: The model's housingMarketStats object should be passed as a parameter or with a setter (in case of mutual dependence)
         this.housingMarketStats = Model.housingMarketStats;
+        referencePricePerQuality = new double[config.N_QUALITY];
+        System.arraycopy(data.HouseSaleMarket.getReferenceRentalPricePerQuality(), 0, referencePricePerQuality, 0,
+                config.N_QUALITY); // Copies reference rental prices from data/HouseSaleMarket
     }
 
     //-------------------//

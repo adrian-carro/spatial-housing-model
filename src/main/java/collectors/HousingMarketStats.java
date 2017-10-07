@@ -25,7 +25,7 @@ public class HousingMarketStats extends CollectorBase {
     private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     // Variables computed at initialisation
-    private double []               referencePricePerQuality;
+    double []                       referencePricePerQuality;
 
     // Variables computed before market clearing
     int                             nBuyers;

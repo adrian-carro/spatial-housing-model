@@ -47,6 +47,9 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
         super(market);
         setActive(true);
         this.regHousingMarketStats = regionalHousingMarketStats;
+        referencePricePerQuality = new double[config.N_QUALITY];
+        System.arraycopy(data.HouseSaleMarket.getReferenceRentalPricePerQuality(), 0, referencePricePerQuality, 0,
+                config.N_QUALITY); // Copies reference rental prices from data/HouseSaleMarket
     }
 
     //-------------------//

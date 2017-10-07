@@ -32,9 +32,19 @@ public class HouseSaleMarket {
 	/***
 	 * @return refPrice Array of doubles with the reference price for each quality band
 	 */
-	public static double [] getReferencePricePerQuality() {
-		return refPrice;
-	}
+	public static double [] getReferencePricePerQuality() { return refPrice; }
+
+    /***
+     * @return rentalRefPrice Array of doubles with the reference rental price for each quality band
+     */
+    // TODO: Replace this by a proper reference rental prices!!!
+    public static double [] getReferenceRentalPricePerQuality() {
+        double [] rentalRefPrice = new double[config.N_QUALITY];
+        for (int i = 0; i < config.N_QUALITY; i++) {
+            rentalRefPrice[i] = refPrice[i]/(config.RENT_MAX_AMORTIZATION_PERIOD*config.constants.MONTHS_IN_YEAR);
+        }
+        return rentalRefPrice;
+    }
 
 	/**
 	 * @return Set up initial reference prices for each house quality
