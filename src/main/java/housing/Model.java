@@ -24,7 +24,7 @@ import org.apache.commons.io.FileUtils;
  * -configFile <arg>    Configuration file to be used (address within project folder). By default,
  *                      'src/main/resources/config.properties' is used.
  * -outputFolder <arg>  Folder in which to collect all results (address within project folder). By
- *                      default, 'Results/<current date and time>/' is used. The folder will be
+ *                      default, 'results/<current date and time>/' is used. The folder will be
  *                      created if it does not exist.
  * -dev                 Removes security question before erasing the content inside output folder
  *                      (if the folder already exists).
@@ -219,7 +219,7 @@ public class Model {
         options.addOption("configFile", true, "Configuration file to be used (address within " +
                 "project folder). By default, 'src/main/resources/config.properties' is used.");
         options.addOption("outputFolder", true, "Folder in which to collect all results " +
-                "(address within project folder). By default, 'Results/<current date and time>/' is used. The " +
+                "(address within project folder). By default, 'results/<current date and time>/' is used. The " +
                 "folder will be created if it does not exist.");
         options.addOption("dev", false, "Removes security question before erasing the content" +
                 "inside output folder (if the folder already exists).");
@@ -262,7 +262,7 @@ public class Model {
                 if (!outputFolder.endsWith("/")) { outputFolder += "/"; }
             } else {
                 // If not, use the default value to initialise the respective member variable
-                outputFolder = "Results/" + Instant.now().toString().replace(":", "-") + "/";
+                outputFolder = "results/" + Instant.now().toString().replace(":", "-") + "/";
             }
         }
         catch(ParseException pex) {
