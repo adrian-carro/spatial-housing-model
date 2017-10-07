@@ -114,9 +114,7 @@ public class CreditSupply extends CollectorBase {
     }
     
 
-    public int getNRegisteredMortgages() {
-    	return(Model.bank.mortgages.size());
-    }
+    public int getnRegisteredMortgages() { return(Model.bank.mortgages.size()); }
 
 	public int getArchiveLength() {
 		return archiveLength;

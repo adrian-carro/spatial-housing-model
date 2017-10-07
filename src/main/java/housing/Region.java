@@ -48,9 +48,7 @@ public class Region {
         houseSaleMarket = new HouseSaleMarket(this);
         houseRentalMarket = new HouseRentalMarket(this);
         regionalHouseholdStats = new RegionalHouseholdStats(this);
-//        regionalHousingMarketStats = new RegionalHousingMarketStats(this);
         regionalHousingMarketStats = new RegionalHousingMarketStats(houseSaleMarket);
-//        regionalRentalMarketStats = new RegionalRentalMarketStats(this);
         regionalRentalMarketStats = new RegionalRentalMarketStats(regionalHousingMarketStats, houseRentalMarket);
     }
 
