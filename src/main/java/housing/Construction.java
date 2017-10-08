@@ -7,7 +7,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-
+/**************************************************************************************************
+ * Class to represent the building sector in the aggregate and encapsulate its decisions
+ *
+ * @author daniel, Adrian Carro
+ *
+ *************************************************************************************************/
 public class Construction implements IHouseOwner, Serializable {
     private static final long serialVersionUID = -6288390048595500248L;
 
@@ -23,6 +28,19 @@ public class Construction implements IHouseOwner, Serializable {
     private MersenneTwister             rand = Model.rand; // Passes the Model's random number generator to a private field
     private ArrayList<Region>           geography;
     private HashSet<House>              onMarket;
+
+    //#################################################################//
+    //##### HARDCODED PARAMETERS ##### TO BE MOVED TO CONFIG FILE #####//
+    //#################################################################//
+
+    private boolean     SMART_CONSTRUCTION = true;
+    private double      BUILDING_CAPACITY_PER_HOUSEHOLD = 0.001; // This sets the speed (per household) at which houses are built (UKnewHomesAYear/(UKhouseholds*12)) = 0.00044;
+    private double      BUILDING_COST_OVER_REFERENCE_PRICE = 0.8; // This sets the minimum level of HPI below which the construction sector stops building
+    private double []   LOCAL_AUTHORITY_POLICY = new double[]{0.33, 0.66, 1.0}; // Success rate of planning applications for each region
+
+    //#################################################################//
+    //#################################################################//
+    //#################################################################//
 
     //------------------------//
     //----- Constructors -----//
@@ -44,11 +62,86 @@ public class Construction implements IHouseOwner, Serializable {
 		onMarket.clear();
 	}
 
-	public void step() {
+    public void step() {
+	    if (SMART_CONSTRUCTION) {
+	        smartStep();
+        } else {
+            normalStep();
+        }
+    }
+
+    private void smartStep() {
+        // Initialise to zero the number of houses built this month
+        nNewBuild = 0;
+        // Update prices of properties put on the market on previous time steps and still unsold
+        for(House h : onMarket) {
+            h.region.houseSaleMarket.updateOffer(h.getSaleRecord(), h.getSaleRecord().getPrice()*0.95);
+        }
+        // Find the maximum number of houses the construction sector can build this month, given available resources (minimum set to 1)
+        int maxnNewBuild = Math.max(1, (int)(Model.demographics.getTotalPopulation()*BUILDING_CAPACITY_PER_HOUSEHOLD));
+        // Find the number of houses the construction sector would be willing to build in each region (assuming no
+        // resource constraint), looking at different economic and demographic variables
+        int [] nHousesToBuildPerRegion = new int[geography.size()];
+        int nHousesToBuild = 0;
+        for (int i = 0; i < geography.size(); i++) {
+            // TODO: Rethink this equation and discuss it with Doyne
+            // TODO: Another possibility would be to build always at full capacity but distribute houses according to HPI
+            double profitabilityIndex = geography.get(i).regionalHousingMarketStats.getHPI()
+                    - BUILDING_COST_OVER_REFERENCE_PRICE;
+            int supplyGap = (int)(geography.get(i).households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD)
+                    - geography.get(i).getHousingStock();
+            // Build only if profitabilityIndex is positive
+            if (profitabilityIndex > 0.0 && supplyGap > 0) {
+                nHousesToBuildPerRegion[i] = nextBinomial((int)(profitabilityIndex*supplyGap),
+                        LOCAL_AUTHORITY_POLICY[i]);
+            } else {
+                nHousesToBuildPerRegion[i] = 0;
+            }
+            nHousesToBuild += nHousesToBuildPerRegion[i];
+        }
+        // If too many houses are to be built...
+        if (nHousesToBuild > maxnNewBuild) {
+            nNewBuild = 0;
+            // ...cap proportionally to get a maximum of maxnNewBuild, write to nNewBuildPerRegion
+            for (int i = 0; i < geography.size(); i++) {
+                nNewBuildPerRegion.put(geography.get(i), (int)((double)(nHousesToBuildPerRegion[i]*maxnNewBuild)
+                        /nHousesToBuild+0.5));
+                // ...and set the number of units to be actually build during this month
+                nNewBuild += (int)((double)(nHousesToBuildPerRegion[i]*maxnNewBuild)/nHousesToBuild+0.5);
+            }
+        // Otherwise...
+        } else {
+            // ...keep number of units to be built, write to nNewBuildPerRegion
+            for (int i = 0; i < geography.size(); i++) {
+                nNewBuildPerRegion.put(geography.get(i), nHousesToBuildPerRegion[i]);
+            }
+            // ...and set the number of units to be actually build during this month
+            nNewBuild = nHousesToBuild;
+        }
+        // Finally, for each region, build the promised houses
+        for (Region region: geography) {
+            House newHouse;
+            for (int i = 0; i < nNewBuildPerRegion.get(region); i++) {
+                // ...create a new house with a random quality and with the construction sector as the owner
+                newHouse = new House(region, (int)(rand.nextDouble()*config.N_QUALITY));
+                newHouse.owner = this;
+                // ...put the house for sale in the regional house sale market at the reference price for that quality
+                region.houseSaleMarket.offer(newHouse,
+                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()));
+                // ...add the house to the portfolio of construction sector properties
+                onMarket.add(newHouse);
+                // ...and finally increase both regional and general housing stocks
+                region.increaseHousingStock();
+                ++housingStock;
+            }
+        }
+    }
+
+	private void normalStep() {
 	    // Initialise to zero the number of houses built this month
 	    nNewBuild = 0;
         // First update prices of properties put on the market on previous time steps and still unsold
-        for(House h : onMarket) {
+        for (House h : onMarket) {
             h.region.houseSaleMarket.updateOffer(h.getSaleRecord(), h.getSaleRecord().getPrice()*0.95);
         }
 	    // Then, for each region...
@@ -73,7 +166,7 @@ public class Construction implements IHouseOwner, Serializable {
             }
             // ...and while there is any shortfall...
             House newHouse;
-            while(shortFall > 0) {
+            while (shortFall > 0) {
                 // ...create a new house with a random quality and with the construction sector as the owner
                 newHouse = new House(region, (int)(rand.nextDouble()*config.N_QUALITY));
                 newHouse.owner = this;
@@ -112,4 +205,15 @@ public class Construction implements IHouseOwner, Serializable {
     public int getnNewBuildForRegion(Region region) { return nNewBuildPerRegion.get(region); }
 
     public int getnNewBuild() { return nNewBuild; }
+
+    //##### Binomial random numbers... #####// Todo: Replace with a proper implementation of this!
+    public int nextBinomial(int trials, double probability) {
+        int x = 0;
+        for (int i = 0; i < trials; i++) {
+            if (Math.random() < probability) {
+                x++;
+            }
+        }
+        return x;
+    }
 }
