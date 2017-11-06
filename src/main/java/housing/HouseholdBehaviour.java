@@ -100,7 +100,7 @@ public class HouseholdBehaviour implements Serializable {
 	}
 
 	/**
-     * Desired purchase price after having decided to buy a house
+     * Desired purchase price used to decide whether to buy a house
      *
 	 * @param monthlyIncome Monthly income of the household
 	 */
@@ -149,7 +149,7 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: This if implies BTL agents never sell their homes, need to explain in paper!
         return !isPropertyInvestor() && (rand.nextDouble() < config.derivedParams.MONTHLY_P_SELL*(1.0
                 + config.DECISION_TO_SELL_ALPHA*(config.DECISION_TO_SELL_HPC
-                - house.region.houseSaleMarket.getnHousesOnMarket()/house.region.households.size())
+                - (double)house.region.houseSaleMarket.getnHousesOnMarket()/house.region.households.size())
                 + config.DECISION_TO_SELL_BETA*(config.DECISION_TO_SELL_INTEREST
                 - Model.bank.getMortgageInterestRate())));
     }
@@ -185,7 +185,7 @@ public class HouseholdBehaviour implements Serializable {
     ///////////////////////////////////////////////////////////
 	///////////////////////// REVISED /////////////////////////
     ///////////////////////////////////////////////////////////
-	
+
 	/********************************************************
 	 * Decide how much to drop the list-price of a house if
 	 * it has been on the market for (another) month and hasn't
@@ -351,7 +351,6 @@ public class HouseholdBehaviour implements Serializable {
 	public double btlPurchaseBid(Household me, Region region) {
 	    // TODO: What is this 1.1 factor? Another fudge parameter???????????????????????????
         // TODO: It prevents wealthy investors from offering more than 10% above the average price of top quality houses
-        // TODO: But also, it's going to lead to many BTL investors wanting to spend the same and focused on top qualities
 		return(Math.min(Model.bank.getMaxMortgage(me, false),
                 1.1*region.regionalHousingMarketStats.getExpAvSalePriceForQuality(config.N_QUALITY-1)));
 	}
@@ -375,7 +374,7 @@ public class HouseholdBehaviour implements Serializable {
     }
 
 	/**
-     * @returns expectation value of HPI in one year's time divided by today's HPI
+     * @return expectation value of HPI in one year's time divided by today's HPI
      */
 	public double getLongTermHPAExpectation(Region region) {
 		// Dampening or multiplier factor, depending on its value being <1 or >1, for the current trend of HPA when
