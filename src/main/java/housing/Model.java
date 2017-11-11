@@ -1,9 +1,7 @@
 package housing;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.time.Instant;
@@ -177,6 +175,7 @@ public class Model {
         demographics.init();
 		construction.init();
 		bank.init();
+        centralBank.init();
 		housingMarketStats.init();
 		rentalMarketStats.init();
         for(Region r : geography) r.init();
