@@ -123,7 +123,7 @@ public class Household implements IHouseOwner, Serializable {
             // TODO: This needs to be broken up in two "decisions" (methods), one for quickly disqualifying investors
             // TODO: who can't afford investing, and another one that, running through the regions, decides whether to
             // TODO: invest there or not (decideToBuyToLetInRegion). How to choose between regions in unbiased manner?
-            if(behaviour.decideToBuyBuyToLet(this, region)) {
+            if(behaviour.decideToBuyInvestmentProperty(this, region)) {
                 region.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, region));
             }
         } else if (!isHomeowner()){
