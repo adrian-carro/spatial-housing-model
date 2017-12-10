@@ -1,12 +1,20 @@
 package housing;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.commons.math3.random.MersenneTwister;
+
+import collectors.HousingMarketStats;
+import utilities.Id;
+import utilities.Matrix;
+import data.Transport;
 
 /**************************************************************************************************
  * This represents a household who receives an income, consumes, saves and can buy, sell, let, and
@@ -27,13 +35,15 @@ public class Household implements IHouseOwner, Serializable {
     private static int          id_pool;
 
     public int                  id; // Only used for identifying households within the class MicroDataRecorder
+    public Id<Household>        householdId;// the unique household ID
     public double               monthlyEmploymentIncome;
+    public double               monthlyTravelCost;// the current travel cost
     public HouseholdBehaviour   behaviour; // Behavioural plugin
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
 
 
-    private Region                          region;
+    private Region                          region;// this is the initial region, the same as the region where its workplace is located  (the workplace is currently assumed to be fixed) 
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
     private Config                          config = Model.config; // Passes the Model's configuration parameters object to a private field
@@ -59,14 +69,18 @@ public class Household implements IHouseOwner, Serializable {
         home = null;
         isFirstTimeBuyer = true;
         id = ++id_pool;
+        this.householdId=Id.createHouseholdId(region.getRegionId().toString()+""+id);// householdId=regionId+id
         age = householdAgeAtBirth;
         incomePercentile = rand.nextDouble();
         behaviour = new HouseholdBehaviour(incomePercentile);
         monthlyEmploymentIncome = annualIncome()/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.getDesiredBankBalance(this); // Desired bank balance is used as initial value for actual bank balance
         monthlyPropertyIncome = 0.0;
+        monthlyTravelCost = 0.0;
         isBankrupt =false;
     }
+    
+
 
     //-------------------//
     //----- Methods -----//
@@ -83,6 +97,49 @@ public class Household implements IHouseOwner, Serializable {
     public Map<House, PaymentAgreement> getHousePayments() {
         return housePayments;
     }
+    
+    public Region getRegion() {
+        return region;
+    }
+    
+    /////////////////////////////////////////////////////////
+    //  Commute Behaviour 
+    /////////////////////////////////////////////////////////
+    
+    /**
+     * this method is used to calcualte the travle cost for one household from one region to another in each time step (or month)
+     * @param workplace
+     * @param home
+     */
+    public double calculateTravelCostPerStep(Region workplace,Region home, Transport transport){
+    	
+    	double travelCost=0;// it is assumed that the travel cost in the region is zero    	
+    	if(home!=null && workplace!=null && workplace.getRegionId()!=home.getRegionId()){
+    		Id<Region> workplaceId=workplace.getRegionId();
+    		Id<Region> homeId=home.getRegionId();
+    		Matrix travelTimeMatrix=transport.getTravelTimeMatrix();
+    		double travelTime=transport.getTravelTimeMatrix().getData(workplace.getRegionId().toString(),
+    				home.getRegionId().toString());// Unit: Hour
+    		double travelFee=transport.getTravelFeeMatrix().getData(workplace.getRegionId().toString(),
+    				home.getRegionId().toString());// Unit: GBP
+    		double timeValue=getTimeValue();
+    		
+    		travelCost=((travelTime*timeValue)+travelFee)*config.constants.WORKINGDAYS_IN_MONTH;//it is assumed that there are 20 working days in one month
+    	}    	
+    	
+    	return travelCost;
+    }
+    
+    /**
+     * 
+     * 
+     */
+    public double getTimeValue(){
+    	double workHours=config.constants.WORKINGDAYS_IN_MONTH*config.constants.WORKINGHOURS_IN_DAY;//it is assumed that each household member works eight hours per day and 20 days per month
+    	double timeValue=this.monthlyEmploymentIncome*1.0/workHours;
+    	return timeValue;
+    }
+    
 
     /////////////////////////////////////////////////////////
     // House market behaviour
@@ -97,7 +154,7 @@ public class Household implements IHouseOwner, Serializable {
      * - sell house if owner-occupier
      * - buy/sell/rent out properties if BTL investor
      ********************************************************/
-    public void step() {
+    public void step(ArrayList<Region> geography,Transport transport) {
         double disposableIncome;
 
         age += 1.0/config.constants.MONTHS_IN_YEAR;
@@ -127,23 +184,55 @@ public class Household implements IHouseOwner, Serializable {
 
         // TODO: ATTENTION ---> Non-investor households always bid in the region where they already live!
         // TODO: ATTENTION ---> For now, investor households also bid always in the region where they already live!
+        // first to check if the household wants to try to bid in its neighbouring region due to the specific number of failed bids 
+        // in the previous steps. If yes, a new candidate region will be selected at random among the @geography, apart from the present region
+        Region targetRegion=region;
+        boolean toTry=decideToTryNeighbouringRegion(geography,region);//to try its neighbouring region or not
+        if(toTry){
+        	targetRegion=selectNewCandidateRegionToBid(region,geography);// select a neighbouring region at random
+        }        
+        
         if(isInSocialHousing()) {
-            bidForAHome(region); // When BTL households are born, they enter here the first time!
+            bidForAHome(targetRegion,transport); // When BTL households are born, they enter here the first time!
         } else if(isRenting()) {
             if(housePayments.get(home).nPayments == 0) { // end of rental period for renter
                 endTenancy();
-                bidForAHome(region);
+                bidForAHome(targetRegion,transport);//TODO: Tony: not sure what happens if these renters fail to get any houses? will they become homeless?
             }            
         } else if(behaviour.isPropertyInvestor()) {
             // TODO: This needs to be broken up in two "decisions" (methods), one for quickly disqualifying investors
             // TODO: who can't afford investing, and another one that, running through the regions, decides whether to
             // TODO: invest there or not (decideToBuyToLetInRegion). How to choose between regions in unbiased manner?
-            if(behaviour.decideToBuyBuyToLet(this, region)) {
-                region.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, region));
+            if(behaviour.decideToBuyBuyToLet(this, targetRegion)) {
+            	targetRegion.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, targetRegion));
             }
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
         }
+    }
+    
+    /**
+     * it is assumed that households may try to bid in their neighbouring regions when they fail to get houses for a certain 
+     * number of steps (or months): maxNumOfStepsInPresentRegion  TODO: this parameter needs to be specified in the config file. 
+     * Currently, maxNumOfStepsInPresentRegion is fixed as 10, only for test purpose
+     * Each of these housholds is further assumed to choose a neighbouring region at radome
+     */
+    public boolean decideToTryNeighbouringRegion(ArrayList<Region> geography,Region presentRegion){  
+    	int maxNumOfStepsInPresentRegion=10;//TODO to be specfied in the config file.
+    	boolean toTry=false;//to try its neighbouringRegion
+    	if(geography.size()>1){// there are other optional regions, apart from the current one.
+    		toTry=presentRegion.decideToTryNeighbouringRegion(householdId, maxNumOfStepsInPresentRegion);    		
+    	}    	
+    	return toTry;
+    }
+    
+    public Region selectNewCandidateRegionToBid(Region presentRegion,ArrayList<Region> geography){ 
+    	//TODO: not sure if it is OK to reorder the region in the geography.
+        //geography.remove(presentRegion);// temporarily remove the present region that will be added to the list again after the target region is selected
+    	int index=this.rand.nextInt(geography.size());
+    	Region targetRegion=geography.get(index);
+    	//geography.add(presentRegion);
+    	return targetRegion;
     }
 
     /***
@@ -366,19 +455,41 @@ public class Household implements IHouseOwner, Serializable {
      * COST_OF_RENTING being an intrinsic psychological cost of not
      * owning. 
      ********************************************************/
-    private void bidForAHome(Region region) {
+//    private void bidForAHome(Region region) {
+//        double maxMortgage = Model.bank.getMaxMortgage(this, true);
+//        double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, region);
+//        if(behaviour.decideRentOrPurchase(this, region, price)) {
+//            if(price > maxMortgage - 1.0) {
+//                // TODO: Why the need for the -1.0?
+//                price = maxMortgage -1.0;
+//            }
+//            region.houseSaleMarket.bid(this, price);
+//        } else {
+//            region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
+//        }
+//    }
+    
+    /**
+     * it is assumed that bidders will take into account the travel cost if they bid accross regions
+     * Subtracting the travel cost from the desired purchase price, resulting in the final price
+     */
+    private void bidForAHome(Region homeRegion,Transport transport) {
         double maxMortgage = Model.bank.getMaxMortgage(this, true);
-        double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, region);
-        if(behaviour.decideRentOrPurchase(this, region, price)) {
+        double price = behaviour.getDesiredPurchasePrice(monthlyEmploymentIncome, homeRegion);
+        double travelCostPerStep=calculateTravelCostPerStep(region,homeRegion,transport);//monthly travel cost        
+        double travelCost=config.BUY_SCALE*config.constants.MONTHS_IN_YEAR* travelCostPerStep;// TODO a random term can be added
+        price = price-travelCost;//Subtracting the travel cost from the desired purchase price, resulting in the final price
+        if(behaviour.decideRentOrPurchase(this, homeRegion, price)) {
             if(price > maxMortgage - 1.0) {
                 // TODO: Why the need for the -1.0?
                 price = maxMortgage -1.0;
             }
-            region.houseSaleMarket.bid(this, price);
+            homeRegion.houseSaleMarket.bid(this, price);
         } else {
-            region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
+            homeRegion.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyEmploymentIncome));
         }
     }
+
     
     
     /********************************************************
@@ -503,6 +614,10 @@ public class Household implements IHouseOwner, Serializable {
     public double getAge() {
         return age;
     }
+    
+    public Id<Household> getHouseholdId() {
+        return this.householdId;
+    }
 
     public boolean isHomeowner() {
         if(home == null) return(false);
@@ -520,6 +635,16 @@ public class Household implements IHouseOwner, Serializable {
 
     boolean isFirstTimeBuyer() {
         return isFirstTimeBuyer;
+    }    
+      
+    public double getMonthlyTravelCost(Transport transport){
+    	if(home!=null && region!=null && home.getRegion()!=null){
+    		monthlyTravelCost=calculateTravelCostPerStep(region,home.getRegion(), transport);
+    	}
+    	else{
+    		monthlyTravelCost=0.0;
+    	}    	
+    	return monthlyTravelCost;
     }
     
     /***
@@ -582,5 +707,6 @@ public class Household implements IHouseOwner, Serializable {
             return(payment.monthlyPayment);
         }
         return(0.0);        
-    }
+    }   
+
 }

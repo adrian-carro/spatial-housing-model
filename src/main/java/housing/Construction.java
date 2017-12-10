@@ -48,6 +48,8 @@ public class Construction implements IHouseOwner, Serializable {
 	    // Initialise to zero the number of houses built this month
 	    nNewBuild = 0;
         // First update prices of properties put on the market on previous time steps and still unsold
+	    // Tony: why do we compute the price by multiplying the selling price by 0.95? should 0.95 be
+	    // a parameter to be set in the config file?
         for(House h : onMarket) {
             h.region.houseSaleMarket.updateOffer(h.getSaleRecord(), h.getSaleRecord().getPrice()*0.95);
         }

@@ -14,6 +14,9 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 
+import data.Transport;
+import utilities.Id;
+
 /**************************************************************************************************
  * This is the root object of the simulation. Upon creation it creates and initialises all the
  * agents in the model.
@@ -59,6 +62,7 @@ public class Model {
     public static MicroDataRecorder     transactionRecorder;
     public static int	                nSimulation; // To keep track of the simulation number
     public static int	                t; // To keep track of time (in months)
+    public static Transport             transport;
 
     static Government		            government;
 
@@ -84,9 +88,14 @@ public class Model {
         config = new Config(configFileName);
         rand = new MersenneTwister(config.SEED);
         geography = new ArrayList<>();
+        transport=new Transport(config);
 
+        int cntId=0;
         for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {
-            geography.add(new Region(targetPopulation));
+        	Id<Region> regionId=Id.createRegionId("Region"+cntId);
+        	cntId++;
+        	geography.add(new Region(targetPopulation,regionId,transport));
+            //geography.add(new Region(targetPopulation));
         }
 
         government = new Government();
@@ -94,6 +103,7 @@ public class Model {
         construction = new Construction(geography);
         centralBank = new CentralBank();
         bank = new Bank();
+        
 
         recorder = new collectors.Recorder(outputFolder);
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
@@ -117,6 +127,63 @@ public class Model {
 
         // Create an instance of Model in order to initialise it (reading config file)
         new Model(configFileName, outputFolder);
+
+        // Start data recorders for output
+        setupStatics();
+
+        // Open files for writing multiple runs results
+        recorder.openMultiRunFiles(config.recordCoreIndicators);
+
+        // Perform config.N_SIMS simulations        
+		for (nSimulation = 1; nSimulation <= config.N_SIMS; nSimulation += 1) {
+
+            // For each simulation, open files for writing single-run results
+            recorder.openSingleRunFiles(nSimulation);
+
+		    // For each simulation, initialise both houseSaleMarket and houseRentalMarket variables (including HPI)
+            init();
+
+            // For each simulation, run config.N_STEPS time steps
+			for (t = 0; t <= config.N_STEPS; t += 1) {
+
+                // Steps model and stores sale and rental markets bid and offer prices, and their averages, into their
+                // respective variables
+                modelStep();
+
+//                if (t >= config.TIME_TO_START_RECORDING) {
+                    // Write results of this time step and run to both multi- and single-run files
+                    recorder.writeTimeStampResults(config.recordCoreIndicators, t);
+//                }
+
+                // Print time information to screen
+                if (t % 100 == 0) {
+                    System.out.println("Simulation: " + nSimulation + ", time: " + t);
+                }
+            }
+
+			// Finish each simulation within the recorders (closing single-run files, changing line in multi-run files)
+            recorder.finishRun(config.recordCoreIndicators);
+            // TODO: Check what this is actually doing and if it is necessary
+            if(config.recordMicroData) transactionRecorder.endOfSim();
+		}
+
+        // After the last simulation, clean up
+        recorder.finish(config.recordCoreIndicators);
+        if(config.recordMicroData) transactionRecorder.finish();
+
+        //Stop the program when finished
+//        System.out.println("Demographics: " + durationDemo/(double)1000000000);
+
+		System.exit(0);
+	}
+	
+    /**
+     * Tony: this method enables users to run the model outside the package. 
+     * I copied the codes from the Main.
+     * @param configFileName String with the address of the configuration file
+     * @param outputFolder String with the address of the folder for storing results
+     */
+	public void run(){       
 
         // Start data recorders for output
         setupStatics();
@@ -182,13 +249,34 @@ public class Model {
         for(Region r : geography) r.init();
 	}
 
+//	private static void modelStep() {
+//        // Update population with births and deaths in each region
+//        demographics.step();
+//        // Update number of houses in each region
+//        construction.step();
+//        // Update, for each region, its households, market statistics collectors and markets
+//        for(Region r : geography) r.step();
+//        // Update all sale market statistics by collecting and aggregating results from the regions
+//        housingMarketStats.collectRegionalRecords();
+//        // Update all rental market statistics by collecting and aggregating results from the regions
+//        rentalMarketStats.collectRegionalRecords();
+//        // Update all household statistics by collecting and aggregating results from the regions
+//        householdStats.collectRegionalRecords();
+//        // Update all credit supply statistics // TODO: Check what this actually does and if it should go elsewhere!
+//        creditSupply.step();
+//		// Update bank and interest rate for new mortgages
+//		bank.step(demographics.getTotalPopulation());
+//        // Update central bank policies (currently empty!)
+//		centralBank.step(coreIndicators);
+//	}
+	
 	private static void modelStep() {
         // Update population with births and deaths in each region
         demographics.step();
         // Update number of houses in each region
         construction.step();
         // Update, for each region, its households, market statistics collectors and markets
-        for(Region r : geography) r.step();
+        for(Region r : geography) r.step(geography,transport);
         // Update all sale market statistics by collecting and aggregating results from the regions
         housingMarketStats.collectRegionalRecords();
         // Update all rental market statistics by collecting and aggregating results from the regions

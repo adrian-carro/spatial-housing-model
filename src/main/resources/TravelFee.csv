@@ -1,0 +1,5 @@
+RegionId,Region0,Region1,Region2,Region3
+Region0,0,10,15,8
+Region1,10,0,9,11
+Region2,15,9,0,20
+Region3,8,11,20,0

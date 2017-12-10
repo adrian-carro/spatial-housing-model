@@ -4,7 +4,11 @@ import housing.*;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+import utilities.Id;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**************************************************************************************************
  * Class to aggregate all regional sale market statistics
@@ -53,7 +57,8 @@ public class HousingMarketStats extends CollectorBase {
     private DescriptiveStatistics   HPIRecord;
     private double                  annualHousePriceAppreciation;
     private double                  longTermHousePriceAppreciation;
-
+    
+   
     //------------------------//
     //----- Constructors -----//
     //------------------------//
@@ -69,7 +74,7 @@ public class HousingMarketStats extends CollectorBase {
         referencePricePerQuality = new double[config.N_QUALITY];
         System.arraycopy(data.HouseSaleMarket.getReferencePricePerQuality(), 0, referencePricePerQuality, 0,
                 config.N_QUALITY); // Copies reference prices from data/HouseSaleMarket into referencePricePerQuality
-        HPIRecord = new DescriptiveStatistics(config.derivedParams.HPI_RECORD_LENGTH);
+        HPIRecord = new DescriptiveStatistics(config.derivedParams.HPI_RECORD_LENGTH);        
     }
 
     //-------------------//
@@ -98,6 +103,7 @@ public class HousingMarketStats extends CollectorBase {
         sumDaysOnMarket = 0;
         sumSalePricePerQuality = new double[config.N_QUALITY];
         nSalesPerQuality = new int[config.N_QUALITY];
+        
 
         // Set initial values for other variables computed (regionally) after market clearing
         expAvDaysOnMarket = config.constants.DAYS_IN_MONTH; // TODO: Make this initialisation explicit in the paper! Is 30 days similar to the final simulated value?
@@ -371,5 +377,7 @@ public class HousingMarketStats extends CollectorBase {
             return 0.0;
         }
     }
+
+    		
 
 }

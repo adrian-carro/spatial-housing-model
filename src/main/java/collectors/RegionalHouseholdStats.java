@@ -1,6 +1,9 @@
 package collectors;
 
+import data.Transport;
+import utilities.Id;
 import housing.Config;
+import housing.House;
 import housing.Household;
 import housing.Model;
 import housing.Region;
@@ -21,6 +24,7 @@ public class RegionalHouseholdStats extends CollectorBase {
     // General fields
     private Config  config = Model.config; // Passes the Model's configuration parameters object to a private field
     private Region  region;
+    private Transport transport;
 
     // Fields for counting numbers of the different types of households and household conditions
     private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
@@ -30,6 +34,9 @@ public class RegionalHouseholdStats extends CollectorBase {
     private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
     private int     nRenting; // Number of (by definition, non-BTL) households renting their home
     private int     nNonBTLHomeless; // Number of homeless non-BTL households
+    private int     nFailedBidder;// Number of failed bidders
+    private double  nFailedBidTimes;// Average number of times bidders fail to get offers
+    private int     nCommuter;// Number of commuter travling from one region to antother
 
     // Fields for summing annualised total incomes
     private double  activeBTLAnnualisedTotalIncome;
@@ -39,6 +46,7 @@ public class RegionalHouseholdStats extends CollectorBase {
 
     // Other fields
     private double  sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private double  aveMonthlyTravelCost;  //Average monthly travel cost
 
     //------------------------//
     //----- Constructors -----//
@@ -52,6 +60,12 @@ public class RegionalHouseholdStats extends CollectorBase {
     public RegionalHouseholdStats(Region region) {
         setActive(true);
         this.region = region;
+    }
+    
+    public RegionalHouseholdStats(Region region,Transport transport) {
+        setActive(true);
+        this.region = region;
+        this.transport=transport;
     }
 
     //-------------------//
@@ -74,6 +88,10 @@ public class RegionalHouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        nFailedBidder= 0;
+        nFailedBidTimes = 0.0;
+        nCommuter = 0;
+        aveMonthlyTravelCost = 0.0;
     }
 
     public void record() {
@@ -90,6 +108,12 @@ public class RegionalHouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        nFailedBidder= 0;
+        nFailedBidTimes= 0.0;
+        nCommuter = 0;
+        aveMonthlyTravelCost = 0.0;
+        double sumMonthlyTravelCost = 0.0;
+        int cntVaildMonthlyTravelCost=0;
         // TODO: Print to screen and check all these numbers!
         // Run through all households counting population in each type and summing their gross incomes
         for (Household h : region.households) {
@@ -129,7 +153,36 @@ public class RegionalHouseholdStats extends CollectorBase {
                     homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
                 }
             }
+            // check if the househld is a commuter travelling from one region to another
+            House home=h.getHome();
+            Region region=h.getRegion();
+            if(region!=null && home !=null){
+            	if(home.getRegion().getRegionId()!=region.getRegionId()){
+            		this.nCommuter++;
+            	}
+            }
+            // sum the monthly travl cost of each household who need to commute
+            double monthlyTravelCost=h.getMonthlyTravelCost(transport);
+            if(monthlyTravelCost>0){
+            	sumMonthlyTravelCost+=monthlyTravelCost;
+            	cntVaildMonthlyTravelCost++;
+            }
+            
         }
+        // Monthly Travel Cost;
+        if(cntVaildMonthlyTravelCost>0){
+        	this.aveMonthlyTravelCost=sumMonthlyTravelCost*1.0/cntVaildMonthlyTravelCost;
+        }
+        // Failed Bidders
+        nFailedBidder=region.getFailedBidderCounter().size();
+        double sum=0;
+        for(Id<Household> householdId:region.getFailedBidderCounter().keySet()){
+        	sum+=region.getFailedBidderCounter().get(householdId);
+        }
+        nFailedBidTimes=0;
+        if(nFailedBidder>0){
+        	nFailedBidTimes=sum*1.0/nFailedBidder;
+        }        
         // Annualise monthly income data
         activeBTLAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
         ownerOccupierAnnualisedTotalIncome *= config.constants.MONTHS_IN_YEAR;
@@ -150,6 +203,10 @@ public class RegionalHouseholdStats extends CollectorBase {
     public int getnOwnerOccupier() { return nBTLOwnerOccupier + nNonBTLOwnerOccupier; }
     public int getnHomeless() { return nBTLHomeless + nNonBTLHomeless; }
     public int getnNonOwner() { return nRenting + getnHomeless(); }
+    public int getnFailedBidder() { return nFailedBidder; }
+    public double getnFailedBidTimes() { return nFailedBidTimes; }
+    public int getnCommuter() { return nCommuter; }
+    
 
     // Getters for annualised income variables
     public double getActiveBTLAnnualisedTotalIncome() { return activeBTLAnnualisedTotalIncome; }
@@ -181,6 +238,8 @@ public class RegionalHouseholdStats extends CollectorBase {
         return ((double)(getnEmptyHouses() - region.regionalHousingMarketStats.getnUnsoldNewBuild()
                 + nRenting))/region.getHousingStock();
     }
+    
+    public double getAveMonthlyTravelCost() { return aveMonthlyTravelCost; }
 
 //    // Array with ages of all households
 //    public double [] getAgeDistribution() {

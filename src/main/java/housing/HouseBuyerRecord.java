@@ -32,12 +32,18 @@ public class HouseBuyerRecord extends HousingMarketRecord {
 	
 
 	/////////////////////////////////////////////////////////////////
-	
+	//TODO: this is not exact, as the so-called buyer could be either purchaser and renter
+	// this class has been used in both sale and rental markets. 
+	// Shall we change it to bidder? -Tony
 	public Household buyer; // Who wants to buy the house
 
 	@Override
 	public int getQuality() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+	
+	public Household getBuyer(){
+		return buyer;
 	}
 }

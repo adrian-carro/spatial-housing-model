@@ -99,7 +99,8 @@ public class Recorder {
             outfile.println("Model time, "
                     // Number of households of each type
                     + "nNonBTLHomeless, nBTLHomeless, nHomeless, nRenting, nNonOwner, "
-                    + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, TotalPopulation, "
+                    + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, nFailedBidder,"
+                    + " nFailedBidTimes, nCommuter, aveMonthlyTravelCost, TotalPopulation, "
                     // Numbers of houses of each type
                     + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                     // House sale market data
@@ -115,12 +116,15 @@ public class Recorder {
         }
         for (int i = 0; i < Model.geography.size(); i++) {
             try {
-                regionalOutfiles[i] = new PrintWriter(outputFolder + "Output-region" + i + "-run" + nRun + ".csv",
-                        "UTF-8");
+//                regionalOutfiles[i] = new PrintWriter(outputFolder + "Output-region" + i + "-run" + nRun + ".csv",
+//                        "UTF-8");
+                regionalOutfiles[i] = new PrintWriter(outputFolder + "Output-" + Model.geography.get(i).getRegionId().toString()
+                		+ "-run" + nRun + ".csv","UTF-8");// We can use the exact region Id/name here
                 regionalOutfiles[i].println("Model time, "
                         // Number of households of each type
                         + "nNonBTLHomeless, nBTLHomeless, nHomeless, nRenting, nNonOwner, "
-                        + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, TotalPopulation, "
+                        + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, nFailedBidder,"
+                        + " nFailedBidTimes, nCommuter, aveMonthlyTravelCost, TotalPopulation, "
                         // Numbers of houses of each type
                         + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                         // House sale market data
@@ -185,6 +189,10 @@ public class Recorder {
                 Model.householdStats.getnOwnerOccupier() + ", " +
                 Model.householdStats.getnActiveBTL() + ", " +
                 Model.householdStats.getnBTL() + ", " +
+                Model.householdStats.getnFailedBidder() + ", " +
+                Model.householdStats.getnFailedBidTimes() + ", " +
+                Model.householdStats.getnCommuter() + ", " +
+                Model.householdStats.getAveMonthlyTravelCost() + ", " +
                 Model.demographics.getTotalPopulation() + ", " +
                 // Numbers of houses of each type
                 Model.construction.getHousingStock() + ", " +
@@ -233,6 +241,10 @@ public class Recorder {
                     region.regionalHouseholdStats.getnOwnerOccupier() + ", " +
                     region.regionalHouseholdStats.getnActiveBTL() + ", " +
                     region.regionalHouseholdStats.getnBTL() + ", " +
+                    region.regionalHouseholdStats.getnFailedBidder() + ", " +
+                    region.regionalHouseholdStats.getnFailedBidTimes() + ", " +
+                    region.regionalHouseholdStats.getnCommuter() + ", " +
+                    region.regionalHouseholdStats.getAveMonthlyTravelCost() + ", " +
                     region.households.size() + ", " +
                     // Numbers of houses of each type
                     region.getHousingStock() + ", " +

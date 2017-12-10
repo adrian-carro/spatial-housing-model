@@ -29,7 +29,7 @@ public class Config {
     int N_STEPS;				            // Simulation duration in time steps
     int TIME_TO_START_RECORDING;	        // Time steps before recording statistics (initialisation time)
     int N_SIMS; 					        // Number of simulations to run (monte-carlo)
-    boolean recordCoreIndicators;		    // True to write time series for each core indicator
+    boolean recordCoreIndicators;	        // True to write time series for each core indicator
     boolean recordMicroData;			    // True to write micro data for each transaction made
 
     // House parameters
@@ -155,6 +155,10 @@ public class Config {
     public String DATA_HOUSEHOLD_AGE_AT_BIRTH_PDF;  // Address for pdf of household representative person's age at household birth
     public String DATA_DEATH_PROB_GIVEN_AGE;        // Address for data on the probability of death given the age of the household representative person
     public String DATA_REAL_POPULATION_PER_REGION;  // Address for data on real population per region
+    
+    // Data addresses: Transport
+    public String DATA_TRAVEL_FEE;                  // Address for travel fee beween any two regions
+    public String DATA_TRAVEL_TIME;                 // Address for travel time beween any two regions
 
     /** Construction of objects to contain derived parameters and constants **/
 
@@ -210,6 +214,8 @@ public class Config {
      */
     public class Constants {
         final public int DAYS_IN_MONTH = 30;
+        final public int WORKINGDAYS_IN_MONTH = 20;
+        final public int WORKINGHOURS_IN_DAY = 8;
         final public int MONTHS_IN_YEAR = 12;
     }
 

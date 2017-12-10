@@ -7,6 +7,7 @@ import java.util.Iterator;
 import org.apache.commons.math3.distribution.GeometricDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 
+import collectors.HousingMarketStats;
 import utilities.PriorityQueue2D;
 
 /**************************************************************************************************
@@ -30,6 +31,7 @@ public abstract class HousingMarket implements Serializable {
     private PriorityQueue2D<HousingMarketRecord>    offersPQ;
 
     ArrayList<HouseBuyerRecord>                     bids;
+   
 
     //------------------------//
     //----- Constructors -----//
@@ -44,6 +46,8 @@ public abstract class HousingMarket implements Serializable {
         // TODO: normal arrays
         bids = new ArrayList<>(config.TARGET_POPULATION/16);
     }
+    
+
 
     //----------------------//
     //----- Subclasses -----//
@@ -122,6 +126,7 @@ public abstract class HousingMarket implements Serializable {
             clearMatches(); // Step 2: iterate through offers
             i++; // Previously absent
         }
+        this.region.countFailedBidder(bids);// record the failed bidders, as those bidders who fail to get offers for a specfic number of steps will try to bid in their neighbouring regions.
         bids.clear();
     }
 
@@ -159,6 +164,7 @@ public abstract class HousingMarket implements Serializable {
         double pSuccessfulBid;
         double salePrice;
         int winningBid;
+        HouseBuyerRecord winningBuyer = null;
         int enoughBids; // Upper bounded number of bids on one house
         Iterator<HousingMarketRecord> record = getOffersIterator();
         while(record.hasNext()) {
@@ -194,6 +200,7 @@ public abstract class HousingMarket implements Serializable {
                 // ...update price for the offer
                 offer.setPrice(salePrice, authority);
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
+                winningBuyer=offer.matchedBids.get(winningBid);
                 completeTransaction(offer.matchedBids.get(winningBid), offer);
                 // Put the rest of the bids for this property (failed bids) back on bids array
                 bids.addAll(offer.matchedBids.subList(0, winningBid));
@@ -204,11 +211,16 @@ public abstract class HousingMarket implements Serializable {
             // If there is only one match...
             } else if (nBids == 1) {
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
+            	winningBuyer=offer.matchedBids.get(0);
                 completeTransaction(offer.matchedBids.get(0), offer);
                 // ...remove this offer from the offers priority queue, offersPQ, underlying the record iterator
                 removeOfferFromQueues(record, offer);
             }
             // Note that we skip the whole process if there are no matches
+        } 
+        // remove the winningBuyer from the list of the failed bidder if it failed in previous steps. 
+        if(winningBuyer!=null){
+        	this.region.removeSuccessfulBidder(winningBuyer.getBuyer().getHouseholdId());
         }        
     }
 

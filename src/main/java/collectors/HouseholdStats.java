@@ -29,6 +29,9 @@ public class HouseholdStats extends CollectorBase {
     private int                 nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
     private int                 nRenting; // Number of (by definition, non-BTL) households renting their home
     private int                 nNonBTLHomeless; // Number of homeless non-BTL households
+    private int                 nFailedBidder;// Number of failed bidders
+    private double              nFailedBidTimes;// Average number of times bidders fail to get offers
+    private int                 nCommuter;// Number of commuter travling from one region to antother
 
     // Fields for summing annualised total incomes
     private double              activeBTLAnnualisedTotalIncome;
@@ -38,6 +41,7 @@ public class HouseholdStats extends CollectorBase {
 
     // Other fields
     private double              sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private double              aveMonthlyTravelCost;  //Average monthly travel cost
 
     //------------------------//
     //----- Constructors -----//
@@ -73,6 +77,10 @@ public class HouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        nFailedBidder= 0;
+        nFailedBidTimes = 0.0;
+        nCommuter = 0;
+        aveMonthlyTravelCost = 0.0;
     }
 
     /**
@@ -93,6 +101,12 @@ public class HouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        nFailedBidder=0;
+        nFailedBidTimes = 0.0;
+        double sumFailedBidTimes = 0.0;
+        nCommuter = 0;
+        aveMonthlyTravelCost = 0.0;
+        double sumMonthlyTravelCost = 0.0;
         // Run through regions summing
         for (Region region : geography) {
             nBTL += region.regionalHouseholdStats.getnBTL();
@@ -107,7 +121,13 @@ public class HouseholdStats extends CollectorBase {
             rentingAnnualisedTotalIncome += region.regionalHouseholdStats.getRentingAnnualisedTotalIncome();
             homelessAnnualisedTotalIncome += region.regionalHouseholdStats.getHomelessAnnualisedTotalIncome();
             sumStockYield += region.regionalHouseholdStats.getSumStockYield();
+            nFailedBidder +=region.regionalHouseholdStats.getnFailedBidder();
+            sumFailedBidTimes+=region.regionalHouseholdStats.getnFailedBidTimes();
+            nCommuter += region.regionalHouseholdStats.getnCommuter();
+            sumMonthlyTravelCost+=region.regionalHouseholdStats.getAveMonthlyTravelCost();
         }
+        nFailedBidTimes = sumFailedBidTimes*1.0/geography.size();
+        aveMonthlyTravelCost = sumMonthlyTravelCost*1.0/geography.size();
     }
 
     //----- Getter/setter methods -----//
@@ -123,6 +143,9 @@ public class HouseholdStats extends CollectorBase {
     int getnOwnerOccupier() { return nBTLOwnerOccupier + nNonBTLOwnerOccupier; }
     int getnHomeless() { return nBTLHomeless + nNonBTLHomeless; }
     int getnNonOwner() { return nRenting + getnHomeless(); }
+    int getnFailedBidder() { return nFailedBidder; }
+    public double getnFailedBidTimes() { return nFailedBidTimes; }
+    public int getnCommuter() { return nCommuter; }
 
     // Getters for annualised income variables
     double getActiveBTLAnnualisedTotalIncome() { return activeBTLAnnualisedTotalIncome; }
@@ -154,7 +177,9 @@ public class HouseholdStats extends CollectorBase {
     double getBTLStockFraction() {
         return ((double)(getnEmptyHouses() - Model.housingMarketStats.getnUnsoldNewBuild()
                 + nRenting))/Model.construction.getHousingStock();
-    }
+    }    
+
+    public double getAveMonthlyTravelCost() { return aveMonthlyTravelCost; }
 
 //    // Array with ages of all households
 //    public double [] getAgeDistribution() {
