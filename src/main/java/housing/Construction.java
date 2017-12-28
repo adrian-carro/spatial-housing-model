@@ -71,8 +71,6 @@ public class Construction implements IHouseOwner, Serializable {
     }
 
     private void smartStep() {
-        // Initialise to zero the number of houses built this month
-        nNewBuild = 0;
         // Update prices of properties put on the market on previous time steps and still unsold
         for(House h : onMarket) {
             h.region.houseSaleMarket.updateOffer(h.getSaleRecord(), h.getSaleRecord().getPrice()*0.95);
@@ -88,11 +86,15 @@ public class Construction implements IHouseOwner, Serializable {
             // TODO: Another possibility would be to build always at full capacity but distribute houses according to HPI
             double profitabilityIndex = geography.get(i).regionalHousingMarketStats.getHPI()
                     - BUILDING_COST_OVER_REFERENCE_PRICE;
-            int supplyGap = (int)(geography.get(i).households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD)
-                    - geography.get(i).getHousingStock();
-            // Build only if profitabilityIndex is positive
+            // This is the actual supply gap for the region to have the "expected" number of houses given its population
+//            int supplyGap = (int)(geography.get(i).households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD)
+//                    - geography.get(i).getHousingStock();
+            // Not supply gap, but number of houses that would be built this month in this region if profitabilityIndex would be 1 (RegionPopulation*UKnewHouses/(12*UKpopulation))
+            int supplyGap = 5;
+            // Build only if it is profitable!
             if (profitabilityIndex > 0.0 && supplyGap > 0) {
-                nHousesToBuildPerRegion[i] = nextBinomial((int)(profitabilityIndex*supplyGap),
+//                supplyGap = (int)(5*supplyGap/(geography.get(i).households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD));
+                nHousesToBuildPerRegion[i] = nextBinomial((int)(profitabilityIndex*supplyGap + 0.5),
                         LOCAL_AUTHORITY_POLICY[i]);
             } else {
                 nHousesToBuildPerRegion[i] = 0;
@@ -127,7 +129,8 @@ public class Construction implements IHouseOwner, Serializable {
                 newHouse.owner = this;
                 // ...put the house for sale in the regional house sale market at the reference price for that quality
                 region.houseSaleMarket.offer(newHouse,
-                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()));
+                        region.regionalHousingMarketStats.getExpAvSalePriceForQuality(newHouse.getQuality()));
+//                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()));
                 // ...add the house to the portfolio of construction sector properties
                 onMarket.add(newHouse);
                 // ...and finally increase both regional and general housing stocks
@@ -207,7 +210,7 @@ public class Construction implements IHouseOwner, Serializable {
     public int getnNewBuild() { return nNewBuild; }
 
     //##### Binomial random numbers... #####// Todo: Replace with a proper implementation of this!
-    public int nextBinomial(int trials, double probability) {
+    private int nextBinomial(int trials, double probability) {
         int x = 0;
         for (int i = 0; i < trials; i++) {
             if (Math.random() < probability) {
