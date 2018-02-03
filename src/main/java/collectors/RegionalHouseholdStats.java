@@ -22,14 +22,16 @@ public class RegionalHouseholdStats extends CollectorBase {
     private Config  config = Model.config; // Passes the Model's configuration parameters object to a private field
     private Region  region;
 
-    // Fields for counting numbers of the different types of households and household conditions
-    private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
-    private int     nActiveBTL; // Number of BTL households with, at least, one BTL property
-    private int     nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
-    private int     nBTLHomeless; // Number of homeless BTL households
-    private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
-    private int     nRenting; // Number of (by definition, non-BTL) households renting their home
-    private int     nNonBTLHomeless; // Number of homeless non-BTL households
+	// Fields for counting numbers of the different types of households and household conditions
+	private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
+	private int     nActiveBTL; // Number of BTL households with, at least, one BTL property
+	private int     nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
+	private int     nBTLHomeless; // Number of homeless BTL households
+    private int     nBTLBankruptcies; // Number of BTL households going bankrupt in a given time step
+	private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
+	private int     nRenting; // Number of (by definition, non-BTL) households renting their home
+	private int     nNonBTLHomeless; // Number of homeless non-BTL households
+    private int     nNonBTLBankruptcies; // Number of non-BTL households going bankrupt in a given time step
 
     // Fields for summing annualised total incomes
     private double  activeBTLAnnualisedTotalIncome;
@@ -66,9 +68,11 @@ public class RegionalHouseholdStats extends CollectorBase {
         nActiveBTL = 0;
         nBTLOwnerOccupier = 0;
         nBTLHomeless = 0;
+        nBTLBankruptcies = 0;
         nNonBTLOwnerOccupier = 0;
         nRenting = 0;
         nNonBTLHomeless = 0;
+        nNonBTLBankruptcies = 0;
         activeBTLAnnualisedTotalIncome = 0.0;
         ownerOccupierAnnualisedTotalIncome = 0.0;
         rentingAnnualisedTotalIncome = 0.0;
@@ -82,41 +86,44 @@ public class RegionalHouseholdStats extends CollectorBase {
         nActiveBTL = 0;
         nBTLOwnerOccupier = 0;
         nBTLHomeless = 0;
+        nBTLBankruptcies = 0;
         nNonBTLOwnerOccupier = 0;
         nRenting = 0;
         nNonBTLHomeless = 0;
+        nNonBTLBankruptcies = 0;
         activeBTLAnnualisedTotalIncome = 0.0;
         ownerOccupierAnnualisedTotalIncome = 0.0;
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
-        // TODO: Print to screen and check all these numbers!
         // Run through all households counting population in each type and summing their gross incomes
         for (Household h : region.households) {
             if (h.behaviour.isPropertyInvestor()) {
                 ++nBTL;
+                if (h.isBankrupt()) nBTLBankruptcies += 1;
                 // Active BTL investors
                 if (h.nInvestmentProperties() > 0) {
                     ++nActiveBTL;
-                    activeBTLAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                // Inactive BTL investors who own their house
+                    activeBTLAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                    // Inactive BTL investors who own their house
                 } else if (h.nInvestmentProperties() == 0) {
                     ++nBTLOwnerOccupier;
-                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                // Inactive BTL investors in social housing
+                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                    // Inactive BTL investors in social housing
                 } else {
                     ++nBTLHomeless;
-                    homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    homelessAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                 }
             } else {
+                if (h.isBankrupt()) nNonBTLBankruptcies += 1;
                 // Non-BTL investors who own their house
                 if (h.isHomeowner()) {
                     ++nNonBTLOwnerOccupier;
-                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                // Non-BTL investors renting
+                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                    // Non-BTL investors renting
                 } else if (h.isRenting()) {
                     ++nRenting;
-                    rentingAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    rentingAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                     if (region.regionalHousingMarketStats.getExpAvSalePriceForQuality(h.getHome().getQuality()) > 0) {
                         sumStockYield += h.getHousePayments().get(h.getHome()).monthlyPayment
                                 *config.constants.MONTHS_IN_YEAR
@@ -126,7 +133,7 @@ public class RegionalHouseholdStats extends CollectorBase {
                 } else if (h.isInSocialHousing()) {
                     // TODO: Once numbers are checked, this "else if" can be replaced by an "else"
                     ++nNonBTLHomeless;
-                    homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    homelessAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                 }
             }
         }
@@ -144,9 +151,11 @@ public class RegionalHouseholdStats extends CollectorBase {
     public int getnActiveBTL() { return nActiveBTL; }
     public int getnBTLOwnerOccupier() { return nBTLOwnerOccupier; }
     public int getnBTLHomeless() { return nBTLHomeless; }
+    public int getnBTLBankruptcies() { return nBTLBankruptcies; }
     public int getnNonBTLOwnerOccupier() { return nNonBTLOwnerOccupier; }
     public int getnRenting() { return nRenting; }
     public int getnNonBTLHomeless() { return nNonBTLHomeless; }
+    public int getnNonBTLBankruptcies() { return nNonBTLBankruptcies; }
     public int getnOwnerOccupier() { return nBTLOwnerOccupier + nNonBTLOwnerOccupier; }
     public int getnHomeless() { return nBTLHomeless + nNonBTLHomeless; }
     public int getnNonOwner() { return nRenting + getnHomeless(); }
@@ -244,7 +253,7 @@ public class RegionalHouseholdStats extends CollectorBase {
 //        double [] result = new double[region.households.size()];
 //        int i = 0;
 //        for(Household h : region.households) {
-//            result[i++] = Math.log(h.annualEmploymentIncome());
+//            result[i++] = Math.log(h.getAnnualGrossEmploymentIncome());
 //        }
 //        return(result);
 //    }

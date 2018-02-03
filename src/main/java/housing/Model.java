@@ -1,9 +1,7 @@
 package housing;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.time.Instant;
@@ -65,11 +63,6 @@ public class Model {
     private static Recorder             recorder;
     private static String               configFileName;
     private static String               outputFolder;
-
-    // Temporary stuff
-//    static long startTime;
-//    static long endTime;
-//    static long durationDemo = 0;
 
     //------------------------//
     //----- Constructors -----//
@@ -162,8 +155,6 @@ public class Model {
         if(config.recordMicroData) transactionRecorder.finish();
 
         //Stop the program when finished
-//        System.out.println("Demographics: " + durationDemo/(double)1000000000);
-
 		System.exit(0);
 	}
 
@@ -177,8 +168,10 @@ public class Model {
         demographics.init();
 		construction.init();
 		bank.init();
-		housingMarketStats.init();
-		rentalMarketStats.init();
+		centralBank.init();
+        housingMarketStats.init();
+        rentalMarketStats.init();
+        householdStats.init();
         for(Region r : geography) r.init();
 	}
 

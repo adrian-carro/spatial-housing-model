@@ -99,17 +99,22 @@ public class Recorder {
             outfile.println("Model time, "
                     // Number of households of each type
                     + "nNonBTLHomeless, nBTLHomeless, nHomeless, nRenting, nNonOwner, "
-                    + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, TotalPopulation, "
+                    + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, nNonBTLBankrupt, "
+                    + "nBTLBankrupt, TotalPopulation, "
                     // Numbers of houses of each type
                     + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                     // House sale market data
-                    + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, Sale AvDaysOnMarket, "
-                    + "Sale nBuyers, Sale nSellers, Sale nSales, Sale BTLSalesProportion, Sale FTBSalesProportion, "
+                    + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
+                    + "Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, Sale nSellers, "
+                    + "Sale nNewSellers, Sale nBTLSellers, Sale nSales, Sale BTLSalesProportion, "
+                    + "Sale FTBSalesProportion, "
                     // Rental market data
-                    + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, Rental AvDaysOnMarket, "
-                    + "Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
+                    + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
+                    + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
                     // Credit data
-                    + "nRegisteredMortgages");
+                    + "nRegisteredMortgages, "
+                    // Stuff to remove
+                    + "ExAvSalePrice");
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -120,15 +125,22 @@ public class Recorder {
                 regionalOutfiles[i].println("Model time, "
                         // Number of households of each type
                         + "nNonBTLHomeless, nBTLHomeless, nHomeless, nRenting, nNonOwner, "
-                        + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, TotalPopulation, "
+                        + "nNonBTLOwnerOccupier, nBTLOwnerOccupier, nOwnerOccupier, nActiveBTL, nBTL, nNonBTLBankrupt, "
+                        + "nBTLBankrupt, TotalPopulation, "
                         // Numbers of houses of each type
                         + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                         // House sale market data
-                        + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, Sale AvDaysOnMarket, "
-                        + "Sale nBuyers, Sale nSellers, Sale nSales, Sale BTLSalesProportion, Sale FTBSalesProportion, "
+                        + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
+                        + "Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, Sale nSellers, "
+                        + "Sale nNewSellers, Sale nBTLSellers, Sale nSales, Sale BTLSalesProportion, "
+                        + "Sale FTBSalesProportion, "
                         // Rental market data
-                        + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, Rental AvDaysOnMarket, "
-                        + "Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield");
+                        + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
+                        + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
+                        // Credit data
+                        + "nRegisteredMortgages, "
+                        // Stuff to remove
+                        + "ExAvSalePrice");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -185,6 +197,8 @@ public class Recorder {
                 Model.householdStats.getnOwnerOccupier() + ", " +
                 Model.householdStats.getnActiveBTL() + ", " +
                 Model.householdStats.getnBTL() + ", " +
+                Model.householdStats.getnNonBTLBankruptcies() + ", " +
+                Model.householdStats.getnBTLBankruptcies() + ", " +
                 Model.demographics.getTotalPopulation() + ", " +
                 // Numbers of houses of each type
                 Model.construction.getHousingStock() + ", " +
@@ -199,8 +213,12 @@ public class Recorder {
                 Model.housingMarketStats.getAvOfferPrice() + ", " +
                 Model.housingMarketStats.getAvSalePrice() + ", " +
                 Model.housingMarketStats.getAvDaysOnMarket() + ", " +
+                Model.housingMarketStats.getExpAvDaysOnMarket() + ", " +
                 Model.housingMarketStats.getnBuyers() + ", " +
+                Model.housingMarketStats.getnBTLBuyers() + ", " +
                 Model.housingMarketStats.getnSellers() + ", " +
+                Model.housingMarketStats.getnNewSellers() + ", " +
+                Model.housingMarketStats.getnBTLSellers() + ", " +
                 Model.housingMarketStats.getnSales() + ", " +
                 Model.housingMarketStats.getBTLSalesProportion() + ", " +
                 Model.housingMarketStats.getFTBSalesProportion() + ", " +
@@ -216,7 +234,9 @@ public class Recorder {
                 Model.rentalMarketStats.getnSales() + ", " +
                 Model.rentalMarketStats.getExpAvFlowYield() + ", " +
                 // Credit data
-                Model.creditSupply.getnRegisteredMortgages());
+                Model.creditSupply.getnRegisteredMortgages() + ", " +
+                // Stuff to remove
+                Model.housingMarketStats.getExpAvSalePrice());
 
         // Write general output results for each region
         int i = 0;
@@ -233,6 +253,8 @@ public class Recorder {
                     region.regionalHouseholdStats.getnOwnerOccupier() + ", " +
                     region.regionalHouseholdStats.getnActiveBTL() + ", " +
                     region.regionalHouseholdStats.getnBTL() + ", " +
+                    region.regionalHouseholdStats.getnNonBTLBankruptcies() + ", " +
+                    region.regionalHouseholdStats.getnBTLBankruptcies() + ", " +
                     region.households.size() + ", " +
                     // Numbers of houses of each type
                     region.getHousingStock() + ", " +
@@ -248,7 +270,10 @@ public class Recorder {
                     region.regionalHousingMarketStats.getAvSalePrice() + ", " +
                     region.regionalHousingMarketStats.getAvDaysOnMarket() + ", " +
                     region.regionalHousingMarketStats.getnBuyers() + ", " +
+                    region.regionalHousingMarketStats.getnBTLBuyers() + ", " +
                     region.regionalHousingMarketStats.getnSellers() + ", " +
+                    region.regionalHousingMarketStats.getnNewSellers() + ", " +
+                    region.regionalHousingMarketStats.getnBTLSellers() + ", " +
                     region.regionalHousingMarketStats.getnSales() + ", " +
                     region.regionalHousingMarketStats.getBTLSalesProportion() + ", " +
                     region.regionalHousingMarketStats.getFTBSalesProportion() + ", " +
@@ -262,7 +287,9 @@ public class Recorder {
                     region.regionalRentalMarketStats.getnBuyers() + ", " +
                     region.regionalRentalMarketStats.getnSellers() + ", " +
                     region.regionalRentalMarketStats.getnSales() + ", " +
-                    region.regionalRentalMarketStats.getExpAvFlowYield());
+                    region.regionalRentalMarketStats.getExpAvFlowYield() + ", " +
+                    // Stuff to remove
+                    region.regionalRentalMarketStats.getExpAvSalePrice());
             i++;
         }
     }

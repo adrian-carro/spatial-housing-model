@@ -58,19 +58,20 @@ public class CreditSupply extends CollectorBase {
 		double housePrice;
 		if(config.isMortgageDiagnosticsActive()) {
 			housePrice = approval.principal + approval.downPayment;
+			// TODO: Check with Arzu, Marc if monthly gross income used here should include total income or just employment income (as of now)
 			affordability = config.derivedParams.getAffordabilityDecay()*affordability +
                     (1.0-config.derivedParams.getAffordabilityDecay())*approval.monthlyPayment/
-                            (h.monthlyEmploymentIncome);
+                            (h.getMonthlyGrossEmploymentIncome());
 			// TODO: This condition is redundant, as the method is only called when approval.principal > 0
 			if(approval.principal > 0.0) {
 				if(approval.isBuyToLet) {
 					btl_ltv.addValue(100.0*approval.principal/housePrice);
 					double icr = house.region.regionalRentalMarketStats.getExpAvFlowYield()*approval.purchasePrice/
-                            (approval.principal*config.getCentralBankBTLStressedInterest());
+                            (approval.principal*Model.centralBank.getInterestCoverRatioStressedRate(false));
 					btl_icr.addValue(icr);
 				} else {
 					oo_ltv.addValue(100.0*approval.principal/housePrice);
-					oo_lti.addValue(approval.principal/h.annualEmploymentIncome());
+					oo_lti.addValue(approval.principal/h.getAnnualGrossEmploymentIncome());
 				}
 				downpayments.addValue(approval.downPayment);
 			}
@@ -83,12 +84,6 @@ public class CreditSupply extends CollectorBase {
     //TODO: Check which of these functions should be kept and which removed!
 	// ---- Mason stuff
 	// ----------------
-	public double getBaseRate() {
-		return Model.bank.getBaseRate();
-	}
-	public void setBaseRate(double rate) {
-		Model.bank.setBaseRate(rate);
-	}
 	
     public double [] getOOLTVDistribution() {return(oo_ltv.getValues());}
     public double [] getOOLTIDistribution() {return(oo_lti.getValues());}

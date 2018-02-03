@@ -117,12 +117,14 @@ public class Config {
     int MORTGAGE_DURATION_YEARS;            // Mortgage duration in years
     double BANK_INITIAL_BASE_RATE;          // Bank initial base-rate (currently remains unchanged)
     double BANK_CREDIT_SUPPLY_TARGET;       // Bank's target supply of credit per household per month
+    double BANK_MAX_FTB_LTV;                // Maximum LTV ratio that the private bank would allow for first-time-buyers
+    double BANK_MAX_OO_LTV;                 // Maximum LTV ratio that the private bank would allow for owner-occupiers
+    double BANK_MAX_BTL_LTV;                // Maximum LTV ratio that the private bank would allow for BTL investors
+    double BANK_MAX_FTB_LTI;                // Maximum LTI ratio that the private bank would allow for first-time-buyers (private bank's hard limit)
+    double BANK_MAX_OO_LTI;                 // Maximum LTI ratio that the private bank would allow for owner-occupiers (private bank's hard limit)
+
 
     // Central bank parameters
-    double CENTRAL_BANK_MAX_FTB_LTV;		    // Maximum LTV ratio that the bank would allow for first-time-buyers when not regulated
-    double CENTRAL_BANK_MAX_OO_LTV;		        // Maximum LTV ratio that the bank would allow for owner-occupiers when not regulated
-    double CENTRAL_BANK_MAX_BTL_LTV;	        // Maximum LTV ratio that the bank would allow for BTL investors when not regulated
-    double CENTRAL_BANK_FRACTION_OVER_MAX_LTV;  // Maximum fraction of mortgages that the bank can give over the LTV ratio limit
     double CENTRAL_BANK_MAX_FTB_LTI;		    // Maximum LTI ratio that the bank would allow for first-time-buyers when not regulated
     double CENTRAL_BANK_MAX_OO_LTI;		        // Maximum LTI ratio that the bank would allow for owner-occupiers when not regulated
     double CENTRAL_BANK_FRACTION_OVER_MAX_LTI;  // Maximum fraction of mortgages that the bank can give over the LTI ratio limit
@@ -134,8 +136,8 @@ public class Config {
     double CONSTRUCTION_HOUSES_PER_HOUSEHOLD;   // Target ratio of houses per household
 
     // Government parameters
-    double GOVERNMENT_PERSONAL_ALLOWANCE_LIMIT; // Maximum personal allowance
-    double GOVERNMENT_INCOME_SUPPORT;           // Minimum monthly earnings for a married couple from income support
+    double GOVERNMENT_PERSONAL_ALLOWANCE_LIMIT;         // Maximum personal allowance
+    public double GOVERNMENT_MONTHLY_INCOME_SUPPORT;    // Minimum monthly earnings for a married couple from income support
 
     // Collectors parameters
     double UK_HOUSEHOLDS;                       // Approximate number of households in UK, used to scale up results for core indicators
@@ -147,7 +149,7 @@ public class Config {
     public String DATA_TAX_RATES;                   // Address for tax bands and rates data
     public String DATA_NATIONAL_INSURANCE_RATES;    // Address for national insurance bands and rates data
 
-    // Data addresses: Lifecycle
+    // Data addresses: EmploymentIncome
     public String DATA_INCOME_GIVEN_AGE;            // Address for conditional probability of income band given age band
 
     // Data addresses: Demographics
@@ -235,10 +237,6 @@ public class Config {
 
     public boolean isMortgageDiagnosticsActive() {
         return MORTGAGE_DIAGNOSTICS_ACTIVE;
-    }
-
-    public double getCentralBankBTLStressedInterest() {
-        return CENTRAL_BANK_BTL_STRESSED_INTEREST;
     }
 
     public double getUKHouseholds() {
@@ -363,7 +361,7 @@ public class Config {
     private void setDerivedParams() {
         // Housing market parameters
         derivedParams.HPI_RECORD_LENGTH = HPA_YEARS_TO_CHECK*constants.MONTHS_IN_YEAR + 3;  // Plus three months in a quarter
-        derivedParams.MONTHS_UNDER_OFFER = DAYS_UNDER_OFFER/constants.DAYS_IN_MONTH;
+        derivedParams.MONTHS_UNDER_OFFER = (double)DAYS_UNDER_OFFER/constants.DAYS_IN_MONTH;
         derivedParams.T = 0.02*TARGET_POPULATION;                   // TODO: Clarify where does this 0.2 come from, and provide explanation for this formula
         derivedParams.E = Math.exp(-1.0/derivedParams.T);           // TODO: Provide explanation for this formula
         derivedParams.G = Math.exp(-N_QUALITY/derivedParams.T);     // TODO: Provide explanation for this formula
