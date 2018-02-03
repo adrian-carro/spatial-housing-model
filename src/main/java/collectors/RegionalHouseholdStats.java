@@ -104,26 +104,26 @@ public class RegionalHouseholdStats extends CollectorBase {
                 // Active BTL investors
                 if (h.nInvestmentProperties() > 0) {
                     ++nActiveBTL;
-                    activeBTLAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                // Inactive BTL investors who own their house
+                    activeBTLAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                    // Inactive BTL investors who own their house
                 } else if (h.nInvestmentProperties() == 0) {
                     ++nBTLOwnerOccupier;
-                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                // Inactive BTL investors in social housing
+                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                    // Inactive BTL investors in social housing
                 } else {
                     ++nBTLHomeless;
-                    homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    homelessAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                 }
             } else {
                 if (h.isBankrupt()) nNonBTLBankruptcies += 1;
                 // Non-BTL investors who own their house
                 if (h.isHomeowner()) {
                     ++nNonBTLOwnerOccupier;
-                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
-                // Non-BTL investors renting
+                    ownerOccupierAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                    // Non-BTL investors renting
                 } else if (h.isRenting()) {
                     ++nRenting;
-                    rentingAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    rentingAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                     if (region.regionalHousingMarketStats.getExpAvSalePriceForQuality(h.getHome().getQuality()) > 0) {
                         sumStockYield += h.getHousePayments().get(h.getHome()).monthlyPayment
                                 *config.constants.MONTHS_IN_YEAR
@@ -133,7 +133,7 @@ public class RegionalHouseholdStats extends CollectorBase {
                 } else if (h.isInSocialHousing()) {
                     // TODO: Once numbers are checked, this "else if" can be replaced by an "else"
                     ++nNonBTLHomeless;
-                    homelessAnnualisedTotalIncome += h.getMonthlyPreTaxIncome();
+                    homelessAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                 }
             }
         }
@@ -253,7 +253,7 @@ public class RegionalHouseholdStats extends CollectorBase {
 //        double [] result = new double[region.households.size()];
 //        int i = 0;
 //        for(Household h : region.households) {
-//            result[i++] = Math.log(h.annualEmploymentIncome());
+//            result[i++] = Math.log(h.getAnnualGrossEmploymentIncome());
 //        }
 //        return(result);
 //    }

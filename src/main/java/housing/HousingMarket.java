@@ -111,10 +111,14 @@ public abstract class HousingMarket implements Serializable {
      * Main simulation step. For a number of rounds, matches bids with offers and clears the matches.
      */
     void clearMarket() {
+        // Before any use, priorities must be sorted by filling in the uncoveredElements TreeSet at the corresponding
+        // PriorityQueue2D
+        offersPQ.sortPriorities();
         // offersPQ contains Price-Quality 2D-priority queue of offers
         // offersPY contains Price-Yield 2D-priority queue of offers
         // bids contains bids (HouseBuyerRecords) in an array
         // TODO: This number of rounds needs more thinking... this is just a cheap fix for the moment
+        // TODO: This needs to be correctly described in the paper!!!
         int rounds = Math.max(10, region.households.size()/50); // Previously, int rounds = Math.min(config.TARGET_POPULATION/1000, 1 + (offersPQ.size() + bids.size())/500);
         int i = 0;
         while (i < rounds && bids.size() > 0 && offersPQ.size() > 0) { // Previously, for(int i=0, i<rounds, i++) {
@@ -191,6 +195,9 @@ public abstract class HousingMarket implements Serializable {
                     winningBid = nBids - 1;
                     salePrice = offer.matchedBids.get(winningBid).getPrice(); // This chooses the highest bid if all of them are below the new price
                 }
+                // Remove this offer from the offers priority queue, offersPQ, underlying the record iterator (and, for HouseSaleMarket, also from the PY queue)
+                // Note that this needs to be done before modifying offer, so that it can be also found in the PY queue for the HouseSaleMarket case
+                removeOfferFromQueues(record, offer);
                 // ...update price for the offer
                 offer.setPrice(salePrice, authority);
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
@@ -198,8 +205,6 @@ public abstract class HousingMarket implements Serializable {
                 // Put the rest of the bids for this property (failed bids) back on bids array
                 bids.addAll(offer.matchedBids.subList(0, winningBid));
                 bids.addAll(offer.matchedBids.subList(winningBid + 1, offer.matchedBids.size()));
-                // Remove this offer from the offers priority queue, offersPQ, underlying the record iterator
-                removeOfferFromQueues(record, offer);
             // If there is only one match...
             } else if (nBids == 1) {
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats

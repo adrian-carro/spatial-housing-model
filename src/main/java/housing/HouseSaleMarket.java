@@ -65,7 +65,19 @@ public class HouseSaleMarket extends HousingMarket {
 		super.updateOffer(hsr, newPrice);
 		offersPY.add(hsr);
 	}
-	
+
+    /**
+     * This method overrides the main simulation step in order to sort the price-yield priorities.
+     */
+    @Override
+    void clearMarket() {
+        // Before any use, priorities must be sorted by filling in the uncoveredElements TreeSet at the corresponding
+        // PriorityQueue2D. In particular, we sort here the price-yield priorities
+        offersPY.sortPriorities();
+        // Then continue with the normal HousingMarket clearMarket mechanism
+        super.clearMarket();
+    }
+
 	@Override
 	protected HouseSaleRecord getBestOffer(HouseBuyerRecord bid) {
 		if(bid.getClass() == BTLBuyerRecord.class) { // BTL buyer (yield driven)
@@ -73,8 +85,7 @@ public class HouseSaleMarket extends HousingMarket {
 			if(bestOffer != null) {
 					double minDownpayment = bestOffer.getPrice()*(1.0
                             - region.regionalRentalMarketStats.getExpAvFlowYield()/
-							(Model.centralBank.getInterestCoverRatioLimit(false)*
-									config.CENTRAL_BANK_BTL_STRESSED_INTEREST));
+                            (Model.centralBank.getInterestCoverRatioLimit(false)*config.CENTRAL_BANK_BTL_STRESSED_INTEREST));
 					if(bid.buyer.getBankBalance() >= minDownpayment) {
 						return(bestOffer);
 					}
@@ -97,26 +108,6 @@ public class HouseSaleMarket extends HousingMarket {
         record.remove();
         offersPY.remove(offer);
     }
-	
-	public Iterator<HousingMarketRecord> offersIterator() {
-		final PriorityQueue2D<HousingMarketRecord>.Iter underlyingIterator
-				= (PriorityQueue2D<HousingMarketRecord>.Iter)super.getOffersIterator();
-		return(new Iterator<HousingMarketRecord>() {
-			@Override
-			public boolean hasNext() {
-				return underlyingIterator.hasNext();
-			}
-			@Override
-			public HousingMarketRecord next() {
-				return underlyingIterator.next();
-			}
-			@Override
-			public void remove() {
-				underlyingIterator.remove();
-				if(underlyingIterator.last != null) HouseSaleMarket.this.offersPY.remove(underlyingIterator.last);
-			}
-		});
-	}
 
 	/*******************************************
 	 * Make a bid on the market as a Buy-to-let investor

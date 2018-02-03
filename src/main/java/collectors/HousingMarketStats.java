@@ -28,12 +28,15 @@ public class HousingMarketStats extends CollectorBase {
     double []                       referencePricePerQuality;
 
     // Variables computed before market clearing
-    int                             nBuyers;
-    int                             nSellers;
-    double                          sumBidPrices;
-    double                          sumOfferPrices;
-    double []                       offerPrices;
-    double []                       bidPrices;
+    int                     nBuyers;
+    int                     nBTLBuyers;
+    int                     nSellers;
+    int                     nNewSellers;
+    int                     nBTLSellers;
+    double                  sumBidPrices;
+    double                  sumOfferPrices;
+    double []               offerPrices;
+    double []               bidPrices;
 
     // Variables computed after market clearing to keep the previous values during the clearing
     int                             nSales; // Number of sales
@@ -82,7 +85,10 @@ public class HousingMarketStats extends CollectorBase {
     public void init() {
         // Set zero initial value for variables computed (regionally) before market clearing
         nBuyers = 0;
+        nBTLBuyers = 0;
         nSellers = 0;
+        nNewSellers = 0;
+        nBTLSellers = 0;
         nUnsoldNewBuild = 0;
         sumBidPrices = 0.0;
         sumOfferPrices = 0.0;
@@ -117,7 +123,10 @@ public class HousingMarketStats extends CollectorBase {
     public void collectRegionalRecords() {
         // Re-initiate to zero variables to sum over regions
         nBuyers = 0;
+        nBTLBuyers = 0;
         nSellers = 0;
+        nNewSellers = 0;
+        nBTLSellers = 0;
         nUnsoldNewBuild = 0;
         sumBidPrices = 0.0;
         sumOfferPrices = 0.0;
@@ -190,7 +199,10 @@ public class HousingMarketStats extends CollectorBase {
         // Run through regions summing
         for (Region region : geography) {
             nBuyers += region.regionalHousingMarketStats.getnBuyers();
+            nBTLBuyers += region.regionalHousingMarketStats.getnBTLBuyers();
             nSellers += region.regionalHousingMarketStats.getnSellers();
+            nNewSellers += region.regionalHousingMarketStats.getnNewSellers();
+            nBTLSellers += region.regionalHousingMarketStats.getnBTLSellers();
             nUnsoldNewBuild += region.regionalHousingMarketStats.getnUnsoldNewBuild();
             sumBidPrices += region.regionalHousingMarketStats.getSumBidPrices();
             sumOfferPrices += region.regionalHousingMarketStats.getSumOfferPrices();
@@ -279,7 +291,10 @@ public class HousingMarketStats extends CollectorBase {
 
     // Getters for variables computed before market clearing
     int getnBuyers() { return nBuyers; }
+    int getnBTLBuyers() { return nBTLBuyers; }
     int getnSellers() { return nSellers; }
+    int getnNewSellers() { return nNewSellers; }
+    int getnBTLSellers() { return nBTLSellers; }
     int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
     public double getSumBidPrices() { return sumBidPrices; }
     public double getSumOfferPrices() { return sumOfferPrices; }
@@ -302,6 +317,15 @@ public class HousingMarketStats extends CollectorBase {
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
     public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
+    public double getExpAvSalePrice() {
+        double sum = 0.0;
+        int n = 0;
+        for (double element: expAvSalePricePerQuality) {
+            sum += element;
+            n++;
+        }
+        return sum/n;
+    }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
     public double getAnnualHPA() { return annualHousePriceAppreciation; }

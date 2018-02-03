@@ -24,13 +24,16 @@ public class RegionalHousingMarketStats extends CollectorBase {
     // Variables computed at initialisation
     double []                       referencePricePerQuality;
 
-    // Variables computed before market clearing
-    private int                     nBuyers;
-    private int                     nSellers;
-    private double                  sumBidPrices;
-    private double                  sumOfferPrices;
-    private double []               offerPrices;
-    private double []               bidPrices;
+	// Variables computed before market clearing
+	private int                     nBuyers;
+    private int                     nBTLBuyers;
+	private int                     nSellers;
+    private int                     nNewSellers;
+    private int                     nBTLSellers;
+	private double                  sumBidPrices;
+	private double                  sumOfferPrices;
+	private double []               offerPrices;
+	private double []               bidPrices;
 
     // Variables computed during market clearing, counters
     private int                     salesCount; // Dummy variable to count sales
@@ -140,7 +143,27 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
         // Re-initialise to zero variables computed before market clearing
         nBuyers = market.getBids().size();
+        nBTLBuyers = 0;
+        for (HouseBuyerRecord bid: market.getBids()) {
+            if (bid.buyer.behaviour.isPropertyInvestor() && bid.buyer.getHome() != null) {
+                nBTLBuyers++;
+            }
+        }
         nSellers = market.getOffersPQ().size();
+        nNewSellers = 0;
+        nBTLSellers = 0;
+        for (HousingMarketRecord element: market.getOffersPQ()) {
+            HouseSaleRecord offer = (HouseSaleRecord)element;
+            if (offer.tInitialListing == Model.getTime()) {
+                nNewSellers++;
+            }
+            if (offer.house.owner != Model.construction) {
+                Household h = (Household)offer.house.owner;
+                if (h.behaviour.isPropertyInvestor()) {
+                    nBTLSellers++;
+                }
+            }
+        }
         sumBidPrices = 0.0;
         sumOfferPrices = 0.0;
         offerPrices = new double[nSellers];
@@ -273,6 +296,22 @@ public class RegionalHousingMarketStats extends CollectorBase {
         return(Math.pow(HPI/oldHPI, 1.0/nYears) - 1.0);
     }
 
+    /**
+     * This method computes the quarter on quarter appreciation in house price index by comparing the most recent
+     * quarter (previous 3 months, to smooth changes) to the previous one and computing the percentage change
+     *
+     * @return Quarter on quarter house price growth
+     */
+    double getQoQHousePriceGrowth() {
+        double HPI = HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 1)
+                + HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 2)
+                + HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 3);
+        double oldHPI = HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 4)
+                + HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 5)
+                + HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 6);
+        return(100.0*(HPI - oldHPI)/oldHPI);
+    }
+
     //----- Getter/setter methods -----//
 
     // Note that, for security reasons, getters should never give counter variables, as their value changes during
@@ -284,7 +323,10 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
     // Getters for variables computed before market clearing
     int getnBuyers() { return nBuyers; }
+    int getnBTLBuyers() { return nBTLBuyers; }
     int getnSellers() { return nSellers; }
+    int getnNewSellers() { return nNewSellers; }
+    int getnBTLSellers() { return nBTLSellers; }
     int getnUnsoldNewBuild() { return nUnsoldNewBuild; }
     double getSumBidPrices() { return sumBidPrices; }
     double getSumOfferPrices() { return sumOfferPrices; }
@@ -307,6 +349,15 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
     public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
+    public double getExpAvSalePrice() {
+        double sum = 0.0;
+        int n = 0;
+        for (double element: expAvSalePricePerQuality) {
+            sum += element;
+            n++;
+        }
+        return sum/n;
+    }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
     public double getAnnualHPA() { return annualHousePriceAppreciation; }
