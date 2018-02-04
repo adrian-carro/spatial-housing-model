@@ -29,11 +29,11 @@ public class Construction implements IHouseOwner, Serializable {
     private ArrayList<Region>           geography;
     private HashSet<House>              onMarket;
 
-    //#################################################################//
-    //##### HARDCODED PARAMETERS ##### TO BE MOVED TO CONFIG FILE #####//
-    //#################################################################//
+    //#####################################################################################################//
+    //##### HARDCODED PARAMETERS ##### TO BE MOVED TO CONFIG FILE ONCE NEW IMPLEMENTATION IS FINISHED #####//
+    //#####################################################################################################//
 
-    private boolean     SMART_CONSTRUCTION = false;
+    private boolean     SMART_CONSTRUCTION = false; // True for the new dynamic building sector implementation, false for the old one
     private double      BUILDING_CAPACITY_PER_HOUSEHOLD = 0.001; // This sets the speed (per household) at which houses are built (UKnewHomesAYear/(UKhouseholds*12)) = 0.00044;
     private double      BUILDING_COST_OVER_REFERENCE_PRICE = 0.8; // This sets the minimum level of HPI below which the construction sector stops building
     private double []   LOCAL_AUTHORITY_POLICY = new double[]{0.33, 0.66, 1.0}; // Success rate of planning applications for each region
@@ -70,6 +70,11 @@ public class Construction implements IHouseOwner, Serializable {
         }
     }
 
+    /**
+     * This method implements a more dynamic building sector, with a certain building capacity per time step, responding
+     * to the spatial distribution of prices, and dependent on local policy via the random approval of planning
+     * applications by the different regions
+     */
     private void smartStep() {
         // Update prices of properties put on the market on previous time steps and still unsold
         for(House h : onMarket) {
@@ -140,6 +145,10 @@ public class Construction implements IHouseOwner, Serializable {
         }
     }
 
+    /**
+     * This method implements a less dynamic building sector, which simply seeks to match a certain number of houses per
+     * household in each region, thus throwing houses to the market as they are needed to match this number
+     */
 	private void normalStep() {
 	    // Initialise to zero the number of houses built this month
 	    nNewBuild = 0;
