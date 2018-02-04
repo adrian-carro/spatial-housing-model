@@ -32,7 +32,6 @@ public class Household implements IHouseOwner, Serializable {
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
 
-
     private Region                          region;
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
@@ -531,7 +530,7 @@ public class Household implements IHouseOwner, Serializable {
     public double getAnnualGrossEmploymentIncome() { return annualGrossEmploymentIncome; }
 
     public double getMonthlyGrossEmploymentIncome() { return monthlyGrossEmploymentIncome; }
-    
+
     /***
      * @return Number of properties this household currently has on the sale market
      */
@@ -542,7 +541,7 @@ public class Household implements IHouseOwner, Serializable {
         }
         return(n);
     }
-    
+  
     public int nInvestmentProperties() { return housePayments.size() - 1; }
     
     /***

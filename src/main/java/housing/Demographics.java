@@ -59,7 +59,7 @@ public class Demographics {
             double pDeath;
             // TODO: ATTENTION ---> fudge parameter so that population approaches the target value
             //double multFactor = (double)region.households.size()/region.getTargetPopulation();
-            double multFactor = 0.05;
+            double multFactor = 0.02;
             Iterator<Household> iterator = region.households.iterator();
             while(iterator.hasNext()) {
                 Household h = iterator.next();

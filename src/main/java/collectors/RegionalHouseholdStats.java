@@ -22,15 +22,15 @@ public class RegionalHouseholdStats extends CollectorBase {
     private Config  config = Model.config; // Passes the Model's configuration parameters object to a private field
     private Region  region;
 
-	// Fields for counting numbers of the different types of households and household conditions
-	private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
-	private int     nActiveBTL; // Number of BTL households with, at least, one BTL property
-	private int     nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
-	private int     nBTLHomeless; // Number of homeless BTL households
+    // Fields for counting numbers of the different types of households and household conditions
+    private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
+    private int     nActiveBTL; // Number of BTL households with, at least, one BTL property
+    private int     nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
+    private int     nBTLHomeless; // Number of homeless BTL households
     private int     nBTLBankruptcies; // Number of BTL households going bankrupt in a given time step
-	private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
-	private int     nRenting; // Number of (by definition, non-BTL) households renting their home
-	private int     nNonBTLHomeless; // Number of homeless non-BTL households
+    private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
+    private int     nRenting; // Number of (by definition, non-BTL) households renting their home
+    private int     nNonBTLHomeless; // Number of homeless non-BTL households
     private int     nNonBTLBankruptcies; // Number of non-BTL households going bankrupt in a given time step
 
     // Fields for summing annualised total incomes

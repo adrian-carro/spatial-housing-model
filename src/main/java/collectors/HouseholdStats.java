@@ -8,7 +8,7 @@ import java.util.ArrayList;
 /**************************************************************************************************
  * Class to aggregate all regional household statistics
  *
- * @author danial, Adrian Carro
+ * @author daniel, Adrian Carro
  *
  *************************************************************************************************/
 public class HouseholdStats extends CollectorBase {
