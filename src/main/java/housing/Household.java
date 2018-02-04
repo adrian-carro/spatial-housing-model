@@ -541,7 +541,7 @@ public class Household implements IHouseOwner, Serializable {
         }
         return(n);
     }
-
+  
     public int nInvestmentProperties() { return housePayments.size() - 1; }
     
     /***
