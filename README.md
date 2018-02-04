@@ -1,11 +1,13 @@
-Agent-Based Model of the UK Housing Market
-==========================================
+A Spatial Agent-Based Model of the UK Housing Market
+====================================================
 
-This is an agent-based model of the UK housing market written by the Institute of New Economic Thinking at the
-University of Oxford, in collaboration with the Bank of England. It is intended for use as a tool for informing central
-bank regulation policy.
+This is a spatial agent-based model of the UK housing market written by the Institute of New Economic Thinking (INET)
+at the Oxford Martin School, University of Oxford. It is based on a previous non-spatial model developed by INET in
+collaboration with the Bank of England. A detailed description of this initial non-spatial model can be found as a
+[Staff Working Paper of the Bank of England ](http://www.bankofengland.co.uk/research/Pages/workingpapers/2016/swp619.aspx).
 
-The model incorporates owner-occupiers, renters, buy-to-let investors, a housing market, a rental market, banks, a
-central bank and a government. A more detailed description of the model can be found at this
-[Bank of England Working Paper](http://www.bankofengland.co.uk/research/Pages/workingpapers/2016/swp619.aspx) and at the
-ModelDescriptionFeb16.pdf file.
+The spatial model, while keeping the same agents as in the non-spatial version (owner-occupiers, renters, buy-to-let
+investors, a private bank, a central bank, a construction sector, and a government), incorporates a number of spatial
+features with their corresponding agent behaviours. Namely, households have to decide where to bid for housing given a
+certain spatial distribution of prices and commuting costs. These decisions, in turn, feed back into the market
+mechanism, possibly modifying the spatial distribution of prices.

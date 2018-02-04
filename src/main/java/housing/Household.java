@@ -26,8 +26,6 @@ public class Household implements IHouseOwner, Serializable {
     private static int          id_pool;
 
     public int                  id; // Only used for identifying households within the class MicroDataRecorder
-    private double              annualGrossEmploymentIncome;
-    private double              monthlyGrossEmploymentIncome;
     public HouseholdBehaviour   behaviour; // Behavioural plugin
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
@@ -39,6 +37,8 @@ public class Household implements IHouseOwner, Serializable {
     private MersenneTwister                 rand; // Private field to contain the Model's random number generator
     private double                          age; // Age of the household representative person
     private double                          bankBalance;
+    private double                          annualGrossEmploymentIncome;
+    private double                          monthlyGrossEmploymentIncome;
     private double                          monthlyGrossRentalIncome; // Keeps track of monthly rental income, as only tenants keep a reference to the rental contract, not landlords
     private boolean                         isFirstTimeBuyer;
     private boolean                         isBankrupt;

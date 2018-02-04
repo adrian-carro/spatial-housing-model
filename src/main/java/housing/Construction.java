@@ -33,7 +33,7 @@ public class Construction implements IHouseOwner, Serializable {
     //##### HARDCODED PARAMETERS ##### TO BE MOVED TO CONFIG FILE #####//
     //#################################################################//
 
-    private boolean     SMART_CONSTRUCTION = true;
+    private boolean     SMART_CONSTRUCTION = false;
     private double      BUILDING_CAPACITY_PER_HOUSEHOLD = 0.001; // This sets the speed (per household) at which houses are built (UKnewHomesAYear/(UKhouseholds*12)) = 0.00044;
     private double      BUILDING_COST_OVER_REFERENCE_PRICE = 0.8; // This sets the minimum level of HPI below which the construction sector stops building
     private double []   LOCAL_AUTHORITY_POLICY = new double[]{0.33, 0.66, 1.0}; // Success rate of planning applications for each region
