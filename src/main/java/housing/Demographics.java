@@ -1,6 +1,5 @@
 package housing;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.commons.math3.random.MersenneTwister;
@@ -13,7 +12,7 @@ public class Demographics {
 
     private Config	            config; // Private field to receive the Model's configuration parameters object
     private MersenneTwister     rand; // Private field to receive the Model's random number generator
-    private ArrayList<Region>   geography;
+    private Geography           geography;
     private int                 totalPopulation;
 
     //------------------------//
@@ -25,7 +24,7 @@ public class Demographics {
      *
      * @param geography Geography of region where the demographic processes occur
      */
-    public Demographics(Config config, MersenneTwister rand, ArrayList<Region> geography) {
+    public Demographics(Config config, MersenneTwister rand, Geography geography) {
         this.config = config;
         this.rand = rand;
         this.geography = geography;
@@ -38,9 +37,7 @@ public class Demographics {
     /**
      * Sets initial values for all relevant variables
      */
-    public void init() {
-        totalPopulation = 0;
-    }
+    public void init() { totalPopulation = 0; }
 
 
     /***
@@ -48,7 +45,7 @@ public class Demographics {
 	 */
 	public void step() {
 	    // For each region...
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             // Birth: Add households in proportion to target population and monthly birth rate of first-time-buyers
             // TODO: Shouldn't this include also new renters? Review the whole method...
             int nBirths = (int)(region.getTargetPopulation()*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR

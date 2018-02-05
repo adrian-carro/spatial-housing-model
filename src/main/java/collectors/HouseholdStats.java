@@ -1,9 +1,8 @@
 package collectors;
 
+import housing.Geography;
 import housing.Model;
 import housing.Region;
-
-import java.util.ArrayList;
 
 /**************************************************************************************************
  * Class to aggregate all regional household statistics
@@ -19,7 +18,7 @@ public class HouseholdStats extends CollectorBase {
     //------------------//
 
     // General fields
-    private ArrayList<Region>   geography;
+    private Geography           geography;
 
     // Fields for counting numbers of the different types of households and household conditions
     private int                 nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
@@ -50,7 +49,7 @@ public class HouseholdStats extends CollectorBase {
      *
      * @param geography Reference to the whole geography of regions
      */
-    public HouseholdStats(ArrayList<Region> geography) {
+    public HouseholdStats(Geography geography) {
         setActive(true);
         this.geography = geography;
     }
@@ -100,7 +99,7 @@ public class HouseholdStats extends CollectorBase {
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
         // Run through regions summing
-        for (Region region : geography) {
+        for (Region region : geography.getRegions()) {
             nBTL += region.regionalHouseholdStats.getnBTL();
             nActiveBTL += region.regionalHouseholdStats.getnActiveBTL();
             nBTLOwnerOccupier += region.regionalHouseholdStats.getnBTLOwnerOccupier();

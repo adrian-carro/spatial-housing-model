@@ -3,7 +3,6 @@ package housing;
 import org.apache.commons.math3.random.MersenneTwister;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -26,7 +25,7 @@ public class Construction implements IHouseOwner, Serializable {
 
     private Config	                    config; // Private field to receive the Model's configuration parameters object
     private MersenneTwister             rand; // Private field to receive the Model's random number generator
-    private ArrayList<Region>           geography;
+    private Geography                   geography;
     private HashSet<House>              onMarket;
 
     //#####################################################################################################//
@@ -46,7 +45,7 @@ public class Construction implements IHouseOwner, Serializable {
     //----- Constructors -----//
     //------------------------//
 
-	public Construction(Config config, MersenneTwister rand, ArrayList<Region> geography) {
+	public Construction(Config config, MersenneTwister rand, Geography geography) {
 	    this.config = config;
         this.rand = rand;
         this.geography = geography;
@@ -60,7 +59,7 @@ public class Construction implements IHouseOwner, Serializable {
 
 	public void init() {
         housingStock = 0;
-        for (Region region: geography) nNewBuildPerRegion.put(region, 0);
+        for (Region region: geography.getRegions()) nNewBuildPerRegion.put(region, 0);
 		onMarket.clear();
 	}
 
@@ -86,12 +85,12 @@ public class Construction implements IHouseOwner, Serializable {
         int maxnNewBuild = Math.max(1, (int)(Model.demographics.getTotalPopulation()*BUILDING_CAPACITY_PER_HOUSEHOLD));
         // Find the number of houses the construction sector would be willing to build in each region (assuming no
         // resource constraint), looking at different economic and demographic variables
-        int [] nHousesToBuildPerRegion = new int[geography.size()];
+        int [] nHousesToBuildPerRegion = new int[geography.getRegions().size()];
         int nHousesToBuild = 0;
-        for (int i = 0; i < geography.size(); i++) {
+        for (int i = 0; i < geography.getRegions().size(); i++) {
             // TODO: Rethink this equation and discuss it with Doyne
             // TODO: Another possibility would be to build always at full capacity but distribute houses according to HPI
-            double profitabilityIndex = geography.get(i).regionalHousingMarketStats.getHPI()
+            double profitabilityIndex = geography.getRegions().get(i).regionalHousingMarketStats.getHPI()
                     - BUILDING_COST_OVER_REFERENCE_PRICE;
             // This is the actual supply gap for the region to have the "expected" number of houses given its population
 //            int supplyGap = (int)(geography.get(i).households.size()*config.CONSTRUCTION_HOUSES_PER_HOUSEHOLD)
@@ -112,8 +111,9 @@ public class Construction implements IHouseOwner, Serializable {
         if (nHousesToBuild > maxnNewBuild) {
             nNewBuild = 0;
             // ...cap proportionally to get a maximum of maxnNewBuild, write to nNewBuildPerRegion
-            for (int i = 0; i < geography.size(); i++) {
-                nNewBuildPerRegion.put(geography.get(i), (int)((double)(nHousesToBuildPerRegion[i]*maxnNewBuild)
+            for (int i = 0; i < geography.getRegions().size(); i++) {
+                nNewBuildPerRegion.put(geography.getRegions().get(i),
+                        (int)((double)(nHousesToBuildPerRegion[i]*maxnNewBuild)
                         /nHousesToBuild+0.5));
                 // ...and set the number of units to be actually build during this month
                 nNewBuild += (int)((double)(nHousesToBuildPerRegion[i]*maxnNewBuild)/nHousesToBuild+0.5);
@@ -121,14 +121,14 @@ public class Construction implements IHouseOwner, Serializable {
         // Otherwise...
         } else {
             // ...keep number of units to be built, write to nNewBuildPerRegion
-            for (int i = 0; i < geography.size(); i++) {
-                nNewBuildPerRegion.put(geography.get(i), nHousesToBuildPerRegion[i]);
+            for (int i = 0; i < geography.getRegions().size(); i++) {
+                nNewBuildPerRegion.put(geography.getRegions().get(i), nHousesToBuildPerRegion[i]);
             }
             // ...and set the number of units to be actually build during this month
             nNewBuild = nHousesToBuild;
         }
         // Finally, for each region, build the promised houses
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             House newHouse;
             for (int i = 0; i < nNewBuildPerRegion.get(region); i++) {
                 // ...create a new house with a random quality and with the construction sector as the owner
@@ -159,7 +159,7 @@ public class Construction implements IHouseOwner, Serializable {
             h.region.houseSaleMarket.updateOffer(h.getSaleRecord(), h.getSaleRecord().getPrice()*0.95);
         }
 	    // Then, for each region...
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             // ...compute target housing stock dependent on current and target population for the region
             int targetStock;
             if(region.households.size() < region.targetPopulation) {

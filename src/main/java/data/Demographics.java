@@ -172,4 +172,9 @@ public class Demographics {
         }
         return realPopulationPerRegion;
     }
+
+    //----- Getter/setter methods -----//
+
+    public static ArrayList<Integer> getTargetPopulationPerRegion() { return targetPopulationPerRegion; }
+
 }

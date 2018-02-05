@@ -5,6 +5,8 @@ import collectors.RegionalHousingMarketStats;
 import collectors.RegionalRentalMarketStats;
 import org.apache.commons.math3.random.MersenneTwister;
 
+import utilities.PriorityQueue2D;
+
 import java.util.ArrayList;
 
 /**************************************************************************************************
@@ -30,18 +32,14 @@ public class Region {
     public int                          targetPopulation;
     private int                         housingStock;
 
-    // Temporary stuff
-//    static long startTime;
-//    static long endTime;
-//    static long durationDemo = 0;
+    PriorityQueue2D<HousingMarketRecord>    regionsPQ; // PriorityQueue2D of regions (ordered by price and quality)
 
     //------------------------//
     //----- Constructors -----//
     //------------------------//
 
     /**
-     * Initialises the region with a sales market, a rental market, and space for storing
-     * households
+     * Constructs the region with a sales market, a rental market, and space for storing households
      */
     public Region(Config config, MersenneTwister rand, int targetPopulation) {
         this.targetPopulation = targetPopulation;
@@ -52,12 +50,16 @@ public class Region {
         regionalHousingMarketStats = new RegionalHousingMarketStats(config, houseSaleMarket);
         regionalRentalMarketStats = new RegionalRentalMarketStats(config, regionalHousingMarketStats,
                                                                   houseRentalMarket);
+        regionsPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); // Comparator based on price and quality
     }
 
     //-------------------//
     //----- Methods -----//
     //-------------------//
 
+    /**
+     * Initialises the region by clearing the array of households and initialising the other internal variables
+     */
     public void init() {
         households.clear();
         houseSaleMarket.init();
@@ -68,9 +70,13 @@ public class Region {
         housingStock = 0;
     }
 
+    /**
+     * Main method of the class: loops through the households updating their bids and then clears both markets,
+     * recording data as appropriate
+     */
     public void step() {
         // Updates regional households consumption, housing decisions, and corresponding regional bids and offers
-        for(Household h : households) h.step();
+        for (Household h : households) h.step();
         // Stores regional sale market bid and offer prices and averages before bids are matched by clearing the market
         regionalHousingMarketStats.preClearingRecord();
         // Clears regional sale market and updates the HPI
@@ -89,7 +95,7 @@ public class Region {
 
     //----- Getter/setter methods -----//
 
-    public int getTargetPopulation() { return targetPopulation; }
+    int getTargetPopulation() { return targetPopulation; }
 
     public int getHousingStock() { return housingStock; }
 

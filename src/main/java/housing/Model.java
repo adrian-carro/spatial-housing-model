@@ -48,7 +48,7 @@ public class Model {
     public static Construction		    construction;
     public static CentralBank		    centralBank;
     public static Bank 				    bank;
-    public static ArrayList<Region>     geography;
+    public static Geography             geography;
     public static CreditSupply          creditSupply;
     public static CoreIndicators        coreIndicators;
     public static HouseholdStats        householdStats;
@@ -76,19 +76,14 @@ public class Model {
         // TODO: Check that random numbers are working properly!
         config = new Config(configFileName);
         rand = new MersenneTwister(config.SEED);
-        geography = new ArrayList<>();
-
-        for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {
-            geography.add(new Region(config, rand, targetPopulation));
-        }
-
+        geography = new Geography(config, rand);
         government = new Government(config);
         demographics = new Demographics(config, rand, geography);
         construction = new Construction(config, rand, geography);
         centralBank = new CentralBank(config);
         bank = new Bank(config);
 
-        recorder = new collectors.Recorder(outputFolder);
+        recorder = new collectors.Recorder(outputFolder, geography);
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
         creditSupply = new collectors.CreditSupply(outputFolder);
         coreIndicators = new collectors.CoreIndicators();
@@ -172,7 +167,7 @@ public class Model {
         housingMarketStats.init();
         rentalMarketStats.init();
         householdStats.init();
-        for(Region r : geography) r.init();
+        geography.init();
 	}
 
 	private static void modelStep() {
@@ -181,7 +176,7 @@ public class Model {
         // Update number of houses in each region
         construction.step();
         // Update, for each region, its households, market statistics collectors and markets
-        for(Region r : geography) r.step();
+        geography.step();
         // Update all sale market statistics by collecting and aggregating results from the regions
         housingMarketStats.collectRegionalRecords();
         // Update all rental market statistics by collecting and aggregating results from the regions

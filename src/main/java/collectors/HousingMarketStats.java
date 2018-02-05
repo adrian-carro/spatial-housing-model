@@ -4,8 +4,6 @@ import housing.*;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import java.util.ArrayList;
-
 /**************************************************************************************************
  * Class to aggregate all regional sale market statistics
  *
@@ -21,7 +19,7 @@ public class HousingMarketStats extends CollectorBase {
     //------------------//
 
     // General fields
-    private ArrayList<Region>       geography;
+    private Geography               geography;
     private Config                  config; // Private field to receive the Model's configuration parameters object
 
     // Variables computed at initialisation
@@ -66,7 +64,7 @@ public class HousingMarketStats extends CollectorBase {
      *
      * @param geography Reference to the whole geography of regions
      */
-    public HousingMarketStats(Config config, ArrayList<Region> geography) {
+    public HousingMarketStats(Config config, Geography geography) {
         setActive(true);
         this.config = config;
         this.geography = geography;
@@ -198,7 +196,7 @@ public class HousingMarketStats extends CollectorBase {
      */
     void runThroughRegionsSumming() {
         // Run through regions summing
-        for (Region region : geography) {
+        for (Region region : geography.getRegions()) {
             nBuyers += region.regionalHousingMarketStats.getnBuyers();
             nBTLBuyers += region.regionalHousingMarketStats.getnBTLBuyers();
             nSellers += region.regionalHousingMarketStats.getnSellers();
@@ -226,7 +224,7 @@ public class HousingMarketStats extends CollectorBase {
      */
 	void collectOfferPrices() {
 		int i = 0;
-		for (Region region: geography) {
+		for (Region region: geography.getRegions()) {
 		    for (double price: region.regionalHousingMarketStats.getOfferPrices()) {
                 offerPrices[i] = price;
                 ++i;
@@ -240,7 +238,7 @@ public class HousingMarketStats extends CollectorBase {
      */
 	void collectBidPrices() {
 		int i = 0;
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             for(double price: region.regionalHousingMarketStats.getBidPrices()) {
                 bidPrices[i] = price;
                 ++i;

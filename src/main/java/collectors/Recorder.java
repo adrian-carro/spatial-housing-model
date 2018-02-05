@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
+import housing.Geography;
 import housing.Model;
 import housing.Region;
 
@@ -20,6 +21,7 @@ public class Recorder {
     //------------------//
 
     private String outputFolder;
+    private Geography geography;
 
     private PrintWriter outfile;
 
@@ -44,9 +46,10 @@ public class Recorder {
     //----- Constructors -----//
     //------------------------//
 
-    public Recorder(String outputFolder) {
+    public Recorder(String outputFolder, Geography geography) {
         this.outputFolder = outputFolder;
-        regionalOutfiles = new PrintWriter[Model.geography.size()];
+        this.geography = geography;
+        regionalOutfiles = new PrintWriter[geography.getRegions().size()];
     }
 
     //-------------------//
@@ -118,7 +121,7 @@ public class Recorder {
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        for (int i = 0; i < Model.geography.size(); i++) {
+        for (int i = 0; i < geography.getRegions().size(); i++) {
             try {
                 regionalOutfiles[i] = new PrintWriter(outputFolder + "Output-region" + i + "-run" + nRun + ".csv",
                         "UTF-8");
@@ -240,7 +243,7 @@ public class Recorder {
 
         // Write general output results for each region
         int i = 0;
-        for (Region region: Model.geography) {
+        for (Region region: geography.getRegions()) {
             regionalOutfiles[i].println(time + ", " +
                     // Number of households of each type
                     region.regionalHouseholdStats.getnNonBTLHomeless() + ", " +
@@ -312,7 +315,7 @@ public class Recorder {
             interestRateSpread.println("");
         }
         outfile.close();
-        for (int i = 0; i < Model.geography.size(); i++) {
+        for (int i = 0; i < geography.getRegions().size(); i++) {
             regionalOutfiles[i].close();
         }
     }
