@@ -40,8 +40,11 @@ public class Demographics {
     public void init() { totalPopulation = 0; }
 
 
-    /***
-	 * Add newly 'born' households to the model and remove households that 'die'
+    /**
+	 * Adds newly "born" households to the model and removes households that "die". In particular, households are added
+     * to each region in proportion to the region's target population, which is a measure of the availability of
+     * employment opportunities (number of jobs) in that region. Furthermore, households get permanently assigned this
+     * region as their job region.
 	 */
 	public void step() {
 	    // For each region...

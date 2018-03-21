@@ -30,7 +30,7 @@ public class Household implements IHouseOwner, Serializable {
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
 
-    private Region                          region;
+    private Region                          jobRegion;
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
     private Config	                        config; // Private field to receive the Model's configuration parameters object
@@ -51,10 +51,10 @@ public class Household implements IHouseOwner, Serializable {
      * Initialises behaviour (determine whether the household will be a BTL investor). Households start off in social
      * housing and with their "desired bank balance" in the bank
      */
-    public Household(Config config, MersenneTwister rand, double householdAgeAtBirth, Region region) {
+    public Household(Config config, MersenneTwister rand, double householdAgeAtBirth, Region jobRegion) {
         this.config = config;
         this.rand = rand;
-        this.region = region;
+        this.jobRegion = jobRegion;
         home = null;
         isFirstTimeBuyer = true;
         isBankrupt = false;
@@ -104,22 +104,20 @@ public class Household implements IHouseOwner, Serializable {
             if (h.owner == this) manageHouse(h);
         }
         // Make housing decisions depending on current housing state
-
-        // TODO: ATTENTION ---> Non-investor households always bid in the region where they already live!
-        // TODO: ATTENTION ---> For now, investor households also bid always in the region where they already live!
         if (isInSocialHousing()) {
-            bidForAHome(region); // When BTL households are born, they enter here the first time!
+            // TODO: Method that takes jobRegion and gives bidRegion, which is introduced into bidForAHome
+            bidForAHome(jobRegion); // When BTL households are born, they enter here the first time!
         } else if (isRenting()) {
             if (housePayments.get(home).nPayments == 0) { // End of rental period for this tenant
                 endTenancy();
-                bidForAHome(region);
-            }            
+                bidForAHome(jobRegion);
+            }
         } else if (behaviour.isPropertyInvestor()) {
-            // TODO: This needs to be broken up in two "decisions" (methods), one for quickly disqualifying investors
-            // TODO: who can't afford investing, and another one that, running through the regions, decides whether to
-            // TODO: invest there or not (decideToBuyToLetInRegion). How to choose between regions in unbiased manner?
-            if (behaviour.decideToBuyInvestmentProperty(this, region)) {
-                region.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, region));
+            // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
+            // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
+            // TODO: between regions in unbiased manner?
+            if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
+                jobRegion.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, jobRegion));
             }
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
