@@ -1,8 +1,8 @@
 package data;
 
 import housing.Config;
-
 import housing.Model;
+
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 
 /**************************************************************************************************

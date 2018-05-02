@@ -1,5 +1,6 @@
 package data;
 
+import housing.Config;
 import housing.Model;
 
 import utilities.Pdf;
@@ -23,6 +24,8 @@ public class Demographics {
     //----- Fields -----//
     //------------------//
 
+    private static Config config = Model.config; // Passes the Model's configuration parameters object to a private field
+
     private static int  totalRealPopulation = 0;
 
 	/**
@@ -31,7 +34,7 @@ public class Demographics {
 	 * Calibrated against (LCFS 2012)
 	 */
 	// TODO: Clarify if this is needed. Remove parameter and data file if not.
-	public static Pdf pdfAge = new Pdf(Model.config.DATA_AGE_MARGINAL_PDF);
+	public static Pdf pdfAge = new Pdf(config.DATA_AGE_MARGINAL_PDF);
 
 	/**
 	 * Probability density by age of the representative householder given that
@@ -48,7 +51,7 @@ public class Demographics {
 //		}	
 //	});
 	// --- version to make correct age distribution at equilibrium demographics
-    public static Pdf pdfHouseholdAgeAtBirth = new Pdf(Model.config.DATA_HOUSEHOLD_AGE_AT_BIRTH_PDF, 800);
+    public static Pdf pdfHouseholdAgeAtBirth = new Pdf(config.DATA_HOUSEHOLD_AGE_AT_BIRTH_PDF, 800);
 
 	/**
 	 * Probability that a household 'dies' per year given age of the representative householder
@@ -58,7 +61,7 @@ public class Demographics {
 	 */
     // TODO: Clarify that the model was so far killing everybody over 105 with probability 1 per month
     public static ArrayList<Double[]> probDeathGivenAgeData =
-            readProbDeathGivenAge(Model.config.DATA_DEATH_PROB_GIVEN_AGE);
+            readProbDeathGivenAge(config.DATA_DEATH_PROB_GIVEN_AGE);
 
     /**
      * Target number of households for each region. Note that we are using Local Authority Districts as regions and that
@@ -67,7 +70,7 @@ public class Demographics {
      * District contains the same fraction of the total number of households as their fraction of the total population.
      */
     public static ArrayList<Integer> targetPopulationPerRegion =
-            getTargetPopulationPerRegion(Model.config.DATA_REAL_POPULATION_PER_REGION, Model.config.TARGET_POPULATION);
+            getTargetPopulationPerRegion(config.DATA_REAL_POPULATION_PER_REGION, config.TARGET_POPULATION);
 
     //-------------------//
     //----- Methods -----//
@@ -83,7 +86,7 @@ public class Demographics {
         for (Double[] band : probDeathGivenAgeData) {
             if(ageInYears<band[1]) return(band[2]);
         }
-        return(Model.config.constants.MONTHS_IN_YEAR);
+        return(config.constants.MONTHS_IN_YEAR);
     }
 
     /**

@@ -22,7 +22,7 @@ public class HousingMarketStats extends CollectorBase {
 
     // General fields
     private ArrayList<Region>       geography;
-    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private Config                  config; // Private field to receive the Model's configuration parameters object
 
     // Variables computed at initialisation
     double []                       referencePricePerQuality;
@@ -66,8 +66,9 @@ public class HousingMarketStats extends CollectorBase {
      *
      * @param geography Reference to the whole geography of regions
      */
-    public HousingMarketStats(ArrayList<Region> geography) {
+    public HousingMarketStats(Config config, ArrayList<Region> geography) {
         setActive(true);
+        this.config = config;
         this.geography = geography;
         referencePricePerQuality = new double[config.N_QUALITY];
         System.arraycopy(data.HouseSaleMarket.getReferencePricePerQuality(), 0, referencePricePerQuality, 0,

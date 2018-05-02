@@ -1,5 +1,6 @@
 package data;
 
+import housing.Config;
 import housing.Model;
 
 import java.io.FileReader;
@@ -23,14 +24,13 @@ import utilities.Pdf;
  *************************************************************************************************/
 public class EmploymentIncome {
 
-    //------------------//
-    //----- Fields -----//
-    //------------------//
+	//------------------//
+	//----- Fields -----//
+	//------------------//
 
-    /***
-     * Calibrated against LCFS 2012 data
-     */
-    static private BinnedData<Pdf> lnIncomeGivenAge = loadGrossEmploymentIncomePDFGivenAge();
+	private static Config config = Model.config; // Passes the Model's configuration parameters object to a private field
+
+    static private BinnedData<Pdf> lnIncomeGivenAge = loadGrossEmploymentIncomePDFGivenAge(); // Calibrated against LCFS 2012 data
 
     //-------------------//
     //----- Methods -----//
@@ -55,7 +55,7 @@ public class EmploymentIncome {
 		
 		Iterator<CSVRecord> records;
 		try {
-			Reader in = new FileReader(Model.config.DATA_INCOME_GIVEN_AGE);
+			Reader in = new FileReader(config.DATA_INCOME_GIVEN_AGE);
 			records = CSVFormat.EXCEL.withHeader().parse(in).iterator();
 			CSVRecord record;
 			if (records.hasNext()) {
@@ -103,8 +103,8 @@ public class EmploymentIncome {
         // Assign gross annual income according to the determined boundAge
         double income = Math.exp(lnIncomeGivenAge.getBinAt(boundAge).inverseCumulativeProbability(incomePercentile));
         // Impose a minimum income equivalent to the minimum government annual income support
-        if (income < Model.config.GOVERNMENT_MONTHLY_INCOME_SUPPORT*Model.config.constants.MONTHS_IN_YEAR) {
-            income = Model.config.GOVERNMENT_MONTHLY_INCOME_SUPPORT*Model.config.constants.MONTHS_IN_YEAR;
+        if (income < config.GOVERNMENT_MONTHLY_INCOME_SUPPORT*config.constants.MONTHS_IN_YEAR) {
+            income = config.GOVERNMENT_MONTHLY_INCOME_SUPPORT*config.constants.MONTHS_IN_YEAR;
         }
         return income;
     }

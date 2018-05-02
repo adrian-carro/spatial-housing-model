@@ -19,7 +19,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
     // General fields
     private HousingMarket           market; // Declared HousingMarket so that it can accommodate both sale and rental markets
-    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private Config                  config; // Private field to receive the Model's configuration parameters object
 
     // Variables computed at initialisation
     double []                       referencePricePerQuality;
@@ -75,14 +75,15 @@ public class RegionalHousingMarketStats extends CollectorBase {
      * @param market Reference to the sale or rental market of the region, depending on being called as a constructor
      *               for this class or as part of the construction of a RegionalRentalMarketStats
      */
-    public RegionalHousingMarketStats(HousingMarket market) {
+    public RegionalHousingMarketStats(Config config, HousingMarket market) {
         setActive(true);
+        this.config = config;
         this.market = market;
-        referencePricePerQuality = new double[config.N_QUALITY];
+        referencePricePerQuality = new double[this.config.N_QUALITY];
         // TODO: Attention, this is passing the national reference prices for each region! Each region should have its own!
         System.arraycopy(data.HouseSaleMarket.getReferencePricePerQuality(), 0, referencePricePerQuality, 0,
-                config.N_QUALITY); // Copies reference prices from data/HouseSaleMarket into referencePricePerQuality
-        HPIRecord = new DescriptiveStatistics(config.derivedParams.HPI_RECORD_LENGTH);
+                this.config.N_QUALITY); // Copies reference prices from data/HouseSaleMarket into referencePricePerQuality
+        HPIRecord = new DescriptiveStatistics(this.config.derivedParams.HPI_RECORD_LENGTH);
     }
 
     //-------------------//

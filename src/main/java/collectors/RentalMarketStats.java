@@ -1,7 +1,6 @@
 package collectors;
 
 import housing.Config;
-import housing.Model;
 import housing.Region;
 
 import java.util.ArrayList;
@@ -24,7 +23,7 @@ public class RentalMarketStats extends HousingMarketStats {
     // General fields
     private ArrayList<Region>   geography;
     private HousingMarketStats  housingMarketStats;
-    private Config              config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private Config              config; // Private field to receive the Model's configuration parameters object
 
     // Rental-specific variables computed after market clearing to keep the previous values during the clearing
     private double []           sumMonthsOnMarketPerQuality; // Sum of the months on market for each quality band for properties rented this month
@@ -44,12 +43,13 @@ public class RentalMarketStats extends HousingMarketStats {
      *
      * @param geography Reference to the whole geography of regions
      */
-    public RentalMarketStats(ArrayList<Region> geography) {
-        super(geography);
+    public RentalMarketStats(Config config, HousingMarketStats housingMarketStats, ArrayList<Region> geography) {
+        super(config, geography);
         setActive(true);
+        this.config = config;
         this.geography = geography;
         // TODO: The model's housingMarketStats object should be passed as a parameter or with a setter (in case of mutual dependence)
-        this.housingMarketStats = Model.housingMarketStats;
+        this.housingMarketStats = housingMarketStats;
         referencePricePerQuality = new double[config.N_QUALITY];
         System.arraycopy(data.HouseSaleMarket.getReferenceRentalPricePerQuality(), 0, referencePricePerQuality, 0,
                 config.N_QUALITY); // Copies reference rental prices from data/HouseSaleMarket

@@ -2,7 +2,6 @@ package collectors;
 
 import housing.Config;
 import housing.Household;
-import housing.Model;
 import housing.Region;
 
 /**************************************************************************************************
@@ -19,7 +18,7 @@ public class RegionalHouseholdStats extends CollectorBase {
     //------------------//
 
     // General fields
-    private Config  config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private Config  config; // Private field to receive the Model's configuration parameters object
     private Region  region;
 
     // Fields for counting numbers of the different types of households and household conditions
@@ -51,8 +50,9 @@ public class RegionalHouseholdStats extends CollectorBase {
      *
      * @param region Reference to the region owning both the market and the regional collector
      */
-    public RegionalHouseholdStats(Region region) {
+    public RegionalHouseholdStats(Config config, Region region) {
         setActive(true);
+        this.config = config;
         this.region = region;
     }
 

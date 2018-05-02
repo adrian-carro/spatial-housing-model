@@ -48,9 +48,10 @@ public class Region {
         households = new ArrayList<>(targetPopulation*2);
         houseSaleMarket = new HouseSaleMarket(config, rand, this);
         houseRentalMarket = new HouseRentalMarket(config, rand, this);
-        regionalHouseholdStats = new RegionalHouseholdStats(this);
-        regionalHousingMarketStats = new RegionalHousingMarketStats(houseSaleMarket);
-        regionalRentalMarketStats = new RegionalRentalMarketStats(regionalHousingMarketStats, houseRentalMarket);
+        regionalHouseholdStats = new RegionalHouseholdStats(config, this);
+        regionalHousingMarketStats = new RegionalHousingMarketStats(config, houseSaleMarket);
+        regionalRentalMarketStats = new RegionalRentalMarketStats(config, regionalHousingMarketStats,
+                                                                  houseRentalMarket);
     }
 
     //-------------------//

@@ -19,7 +19,7 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
 
     // General fields
     private RegionalHousingMarketStats  regHousingMarketStats;
-    private Config                      config = Model.config; // Passes the Model's configuration parameters object to a private field
+    private Config                      config; // Private field to receive the Model's configuration parameters object
 
     // Rental-specific variables computed during market clearing, counters
     private double []                   sumMonthsOnMarketPerQualityCount; // Dummy counter
@@ -43,9 +43,11 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
      * @param regionalHousingMarketStats Reference to the regional housing market collector
      * @param market Reference to the rental market of the region
      */
-    public RegionalRentalMarketStats(RegionalHousingMarketStats regionalHousingMarketStats, HouseRentalMarket market) {
-        super(market);
+    public RegionalRentalMarketStats(Config config, RegionalHousingMarketStats regionalHousingMarketStats,
+                                     HouseRentalMarket market) {
+        super(config, market);
         setActive(true);
+        this.config = config;
         this.regHousingMarketStats = regionalHousingMarketStats;
         referencePricePerQuality = new double[config.N_QUALITY];
         System.arraycopy(data.HouseSaleMarket.getReferenceRentalPricePerQuality(), 0, referencePricePerQuality, 0,

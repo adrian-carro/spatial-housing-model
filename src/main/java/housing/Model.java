@@ -93,8 +93,8 @@ public class Model {
         creditSupply = new collectors.CreditSupply(outputFolder);
         coreIndicators = new collectors.CoreIndicators();
         householdStats = new collectors.HouseholdStats(geography);
-        housingMarketStats = new collectors.HousingMarketStats(geography);
-        rentalMarketStats = new collectors.RentalMarketStats(geography);
+        housingMarketStats = new collectors.HousingMarketStats(config, geography);
+        rentalMarketStats = new collectors.RentalMarketStats(config, housingMarketStats, geography);
 
         nSimulation = 0;
     }

@@ -1,5 +1,6 @@
 package data;
 
+import housing.Config;
 import housing.Model;
 
 import java.io.BufferedReader;
@@ -8,21 +9,28 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/************************************************
- * Class to read all government calibration data,
- * namely tax and national insurance bands and
+/**************************************************************************************************
+ * Class to read all government calibration data, namely tax and national insurance bands and
  * rates, from external files
  *
  * @author Adrian Carro
  * @since 20/05/17
- *
- ************************************************/
+ *************************************************************************************************/
+
 public class Government {
 
-    /** Declarations and initialisations **/
+    //------------------//
+    //----- Fields -----//
+    //------------------//
 
-    public static BandsAndRates tax = readBandsAndRates(Model.config.DATA_TAX_RATES);
-    public static BandsAndRates nationalInsurance = readBandsAndRates(Model.config.DATA_NATIONAL_INSURANCE_RATES);
+    private static Config config = Model.config; // Passes the Model's configuration parameters object to a private field
+
+    public static BandsAndRates tax = readBandsAndRates(config.DATA_TAX_RATES);
+    public static BandsAndRates nationalInsurance = readBandsAndRates(config.DATA_NATIONAL_INSURANCE_RATES);
+
+    //-------------------//
+    //----- Methods -----//
+    //-------------------//
 
     /**
      * Class to group bands and rates arrays in a single object, such that it can be returned from methods
@@ -37,7 +45,7 @@ public class Government {
      * @param   fileName    String with name of file (address inside source folder)
      * @return  BandsAndRates object containing two arrays of Doubles, one with the bands and the other with the rates
      */
-    public static BandsAndRates readBandsAndRates(String fileName) {
+    private static BandsAndRates readBandsAndRates(String fileName) {
         BandsAndRates bandsAndRates = new BandsAndRates();
         List<Double> dummyBands = new ArrayList<>();
         List<Double> dummyRates = new ArrayList<>();
