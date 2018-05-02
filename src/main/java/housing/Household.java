@@ -33,8 +33,8 @@ public class Household implements IHouseOwner, Serializable {
     private Region                          region;
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
-    private Config                          config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister                 rand; // Private field to contain the Model's random number generator
+    private Config	                        config; // Private field to receive the Model's configuration parameters object
+    private MersenneTwister                 rand; // Private field to receive the Model's random number generator
     private double                          age; // Age of the household representative person
     private double                          bankBalance;
     private double                          annualGrossEmploymentIncome;
@@ -51,16 +51,17 @@ public class Household implements IHouseOwner, Serializable {
      * Initialises behaviour (determine whether the household will be a BTL investor). Households start off in social
      * housing and with their "desired bank balance" in the bank
      */
-    public Household(double householdAgeAtBirth, Region region) {
+    public Household(Config config, MersenneTwister rand, double householdAgeAtBirth, Region region) {
+        this.config = config;
+        this.rand = rand;
         this.region = region;
-        rand = Model.rand; // Passes the Model's random number generator to a private field of each instance
         home = null;
         isFirstTimeBuyer = true;
         isBankrupt = false;
         id = ++id_pool;
         age = householdAgeAtBirth;
-        incomePercentile = rand.nextDouble();
-        behaviour = new HouseholdBehaviour(incomePercentile);
+        incomePercentile = this.rand.nextDouble();
+        behaviour = new HouseholdBehaviour(this.config, this.rand, incomePercentile);
         // Find initial values for the annual and monthly gross employment income
         annualGrossEmploymentIncome = data.EmploymentIncome.getAnnualGrossEmploymentIncome(age, incomePercentile);
         monthlyGrossEmploymentIncome = annualGrossEmploymentIncome/config.constants.MONTHS_IN_YEAR;

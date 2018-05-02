@@ -1,5 +1,7 @@
 package housing;
 
+import org.apache.commons.math3.random.MersenneTwister;
+
 /**************************************************************************************************
  * Class to represent the rental market
  *
@@ -19,8 +21,8 @@ public class HouseRentalMarket extends HousingMarket {
     //----- Constructors -----//
     //------------------------//
 
-	public HouseRentalMarket(Region region) {
-        super(region);
+	public HouseRentalMarket(Config config, MersenneTwister rand, Region region) {
+        super(config, rand, region);
 		this.region = region;
 	}
 

@@ -18,8 +18,8 @@ public class HouseholdBehaviour implements Serializable {
     //----- Fields -----//
     //------------------//
 
-    private Config                  config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister	        rand = Model.rand; // Passes the Model's random number generator to a private field
+	private Config	            	config; // Private field to receive the Model's configuration parameters object
+	private MersenneTwister     	rand; // Private field to receive the Model's random number generator
     private boolean                 BTLInvestor;
     private double                  BTLCapGainCoefficient; // Sensitivity of BTL investors to capital gain, 0.0 cares only about rental yield, 1.0 cares only about cap gain
     private double                  propensityToSave;
@@ -37,7 +37,9 @@ public class HouseholdBehaviour implements Serializable {
 	 *
 	 * @param incomePercentile Fixed income percentile for the household (assumed constant over a lifetime)
      */
-	HouseholdBehaviour(double incomePercentile) {
+	HouseholdBehaviour(Config config, MersenneTwister rand, double incomePercentile) {
+		this.config = config;
+		this.rand = rand;
         // Set downpayment distributions for both first-time-buyers and owner-occupiers
         downpaymentDistFTB = new LogNormalDistribution(rand, config.DOWNPAYMENT_FTB_SCALE,
                 config.DOWNPAYMENT_FTB_SHAPE);

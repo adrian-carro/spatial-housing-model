@@ -43,12 +43,12 @@ public class Model {
     //------------------//
 
     public static Config                config;
+    public static MersenneTwister	    rand;
     public static Demographics		    demographics;
     public static Construction		    construction;
     public static CentralBank		    centralBank;
     public static Bank 				    bank;
     public static ArrayList<Region>     geography;
-    public static MersenneTwister	    rand;
     public static CreditSupply          creditSupply;
     public static CoreIndicators        coreIndicators;
     public static HouseholdStats        householdStats;
@@ -79,14 +79,14 @@ public class Model {
         geography = new ArrayList<>();
 
         for (int targetPopulation: data.Demographics.targetPopulationPerRegion) {
-            geography.add(new Region(targetPopulation));
+            geography.add(new Region(config, rand, targetPopulation));
         }
 
-        government = new Government();
-        demographics = new Demographics(geography);
-        construction = new Construction(geography);
-        centralBank = new CentralBank();
-        bank = new Bank();
+        government = new Government(config);
+        demographics = new Demographics(config, rand, geography);
+        construction = new Construction(config, rand, geography);
+        centralBank = new CentralBank(config);
+        bank = new Bank(config);
 
         recorder = new collectors.Recorder(outputFolder);
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);

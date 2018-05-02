@@ -11,8 +11,8 @@ public class Demographics {
 	//----- Fields -----//
 	//------------------//
 
-	private Config	            config = Model.config; // Passes the Model's configuration parameters object to a private field
-	private MersenneTwister     rand = Model.rand; // Passes the Model's random number generator to a private field
+    private Config	            config; // Private field to receive the Model's configuration parameters object
+    private MersenneTwister     rand; // Private field to receive the Model's random number generator
     private ArrayList<Region>   geography;
     private int                 totalPopulation;
 
@@ -25,7 +25,9 @@ public class Demographics {
      *
      * @param geography Geography of region where the demographic processes occur
      */
-    public Demographics(ArrayList<Region> geography) {
+    public Demographics(Config config, MersenneTwister rand, ArrayList<Region> geography) {
+        this.config = config;
+        this.rand = rand;
         this.geography = geography;
     }
 
@@ -52,7 +54,10 @@ public class Demographics {
             int nBirths = (int)(region.getTargetPopulation()*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR
                     + 0.5);
             while(nBirths-- > 0) {
-                region.households.add(new Household(data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(), region));
+                region.households.add(new Household(config,
+                                                    rand,
+                                                    data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(rand),
+                                                    region));
                 totalPopulation++;
             }
             // Death: Kill households with a probability dependent on their age and organise inheritance

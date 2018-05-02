@@ -18,7 +18,7 @@ public class Bank implements Serializable {
     //------------------//
 
 	// General fields
-	private Config	                    config = Model.config; // Passes the Model's configuration parameters object to a private field
+	private Config	            		config; // Private field to receive the Model's configuration parameters object
 
     // Bank fields
     public HashSet<MortgageAgreement>	mortgages; // all unpaid mortgage contracts supplied by the bank
@@ -47,7 +47,8 @@ public class Bank implements Serializable {
     //----- Constructors -----//
     //------------------------//
 
-	public Bank() {
+	public Bank(Config config) {
+		this.config = config;
 		mortgages = new HashSet<>();
 		init();
 	}

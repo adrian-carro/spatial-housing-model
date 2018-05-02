@@ -2,6 +2,7 @@ package housing;
 
 import java.util.Iterator;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import utilities.PriorityQueue2D;
 
 /*******************************************************
@@ -13,12 +14,13 @@ import utilities.PriorityQueue2D;
 public class HouseSaleMarket extends HousingMarket {
 	private static final long serialVersionUID = -2878118108039744432L;
 
-	private Config                                  config = Model.config; // Passes the Model's configuration parameters object to a private field
+	private Config	                    			config; // Private field to receive the Model's configuration parameters object
 	private Region                                  region;
     private PriorityQueue2D<HousingMarketRecord>    offersPY;
 
-	public HouseSaleMarket(Region region) {
-	    super(region);
+	HouseSaleMarket(Config config, MersenneTwister rand, Region region) {
+	    super(config, rand, region);
+	    this.config = config;
 	    this.region = region;
 		offersPY = new PriorityQueue2D<>(new HousingMarketRecord.PYComparator());
 	}

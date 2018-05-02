@@ -24,8 +24,8 @@ public class Construction implements IHouseOwner, Serializable {
     private int                         housingStock; // Total number of houses in the whole model
     private int                         nNewBuild; // Number of houses built this month
 
-    private Config	                    config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister             rand = Model.rand; // Passes the Model's random number generator to a private field
+    private Config	                    config; // Private field to receive the Model's configuration parameters object
+    private MersenneTwister             rand; // Private field to receive the Model's random number generator
     private ArrayList<Region>           geography;
     private HashSet<House>              onMarket;
 
@@ -46,8 +46,10 @@ public class Construction implements IHouseOwner, Serializable {
     //----- Constructors -----//
     //------------------------//
 
-	public Construction(ArrayList<Region> geography) {
-	    this.geography = geography;
+	public Construction(Config config, MersenneTwister rand, ArrayList<Region> geography) {
+	    this.config = config;
+        this.rand = rand;
+        this.geography = geography;
         nNewBuildPerRegion = new HashMap<>();
         onMarket = new HashSet<>();
 	}

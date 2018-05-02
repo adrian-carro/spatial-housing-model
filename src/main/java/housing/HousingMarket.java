@@ -24,8 +24,8 @@ public abstract class HousingMarket implements Serializable {
 
     private static Authority                        authority = new Authority();
 
-    private Config                                  config = Model.config; // Passes the Model's configuration parameters object to a private field
-    private MersenneTwister                         rand = Model.rand; // Passes the Model's random number generator to a private field
+    private Config	                                config; // Private field to receive the Model's configuration parameters object
+    private MersenneTwister                         rand; // Private field to receive the Model's random number generator
     private Region                                  region;
     private PriorityQueue2D<HousingMarketRecord>    offersPQ;
 
@@ -35,7 +35,9 @@ public abstract class HousingMarket implements Serializable {
     //----- Constructors -----//
     //------------------------//
 
-    HousingMarket(Region region) {
+    HousingMarket(Config config, MersenneTwister rand, Region region) {
+        this.config = config;
+        this.rand = rand;
         this.region = region;
         offersPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); //Priority Queue of (Price, Quality)
         // The integer passed to the ArrayList constructor is an initially declared capacity (for initial memory

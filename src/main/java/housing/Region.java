@@ -3,6 +3,7 @@ package housing;
 import collectors.RegionalHouseholdStats;
 import collectors.RegionalHousingMarketStats;
 import collectors.RegionalRentalMarketStats;
+import org.apache.commons.math3.random.MersenneTwister;
 
 import java.util.ArrayList;
 
@@ -42,11 +43,11 @@ public class Region {
      * Initialises the region with a sales market, a rental market, and space for storing
      * households
      */
-    public Region(int targetPopulation) {
+    public Region(Config config, MersenneTwister rand, int targetPopulation) {
         this.targetPopulation = targetPopulation;
         households = new ArrayList<>(targetPopulation*2);
-        houseSaleMarket = new HouseSaleMarket(this);
-        houseRentalMarket = new HouseRentalMarket(this);
+        houseSaleMarket = new HouseSaleMarket(config, rand, this);
+        houseRentalMarket = new HouseRentalMarket(config, rand, this);
         regionalHouseholdStats = new RegionalHouseholdStats(this);
         regionalHousingMarketStats = new RegionalHousingMarketStats(houseSaleMarket);
         regionalRentalMarketStats = new RegionalRentalMarketStats(regionalHousingMarketStats, houseRentalMarket);
