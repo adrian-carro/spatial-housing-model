@@ -439,4 +439,5 @@ public class RegionalHousingMarketStats extends CollectorBase {
         while(q >= 0 && getExpAvSalePriceForQuality(q) > price) --q;
         return q;
     }
+
 }

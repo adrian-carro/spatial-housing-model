@@ -16,7 +16,7 @@ public class HouseRentalMarket extends HousingMarket {
     //------------------//
 
 	private Region      region;
-
+	
     //------------------------//
     //----- Constructors -----//
     //------------------------//
@@ -54,4 +54,5 @@ public class HouseRentalMarket extends HousingMarket {
 		super.removeOffer(hsr);
 		hsr.house.resetRentalRecord();
 	}
+
 }

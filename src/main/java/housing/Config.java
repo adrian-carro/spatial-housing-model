@@ -71,6 +71,8 @@ public class Config {
     double HPA_EXPECTATION_FACTOR;              // Weight assigned to current trend when computing expectations
     public int HPA_YEARS_TO_CHECK;              // Number of years of the HPI record to check when computing the annual HPA
     double HOLD_PERIOD;                         // Average period, in years, for which owner-occupiers hold their houses
+    double A_IN_F;                              // The parameter a in the formula F = Q^a/(P+b) (need to adjust)
+    double B_IN_F;                              // The parameter b in the formula F = Q^a/(P+b) (need to adjust)
     // Household behaviour parameters: sale price reduction
     double P_SALE_PRICE_REDUCE;             // Monthly probability of reducing the price of a house on the market
     double REDUCTION_MU;                    // Mean percentage reduction for prices of houses on the market

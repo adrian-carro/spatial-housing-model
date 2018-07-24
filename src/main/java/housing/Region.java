@@ -33,6 +33,8 @@ public class Region {
     private int                         housingStock;
 
     PriorityQueue2D<HousingMarketRecord>    regionsPQ; // PriorityQueue2D of regions (ordered by price and quality)
+    PriorityQueue2D<HousingMarketRecord>    regionsPQNewForSale; // PriorityQueue2D of regions (ordered by price and FSale)
+    PriorityQueue2D<HousingMarketRecord>    regionsPQNewForRent; // PriorityQueue2D of regions (ordered by price and FRent)
 
     //------------------------//
     //----- Constructors -----//
@@ -50,7 +52,9 @@ public class Region {
         regionalHousingMarketStats = new RegionalHousingMarketStats(config, houseSaleMarket);
         regionalRentalMarketStats = new RegionalRentalMarketStats(config, regionalHousingMarketStats,
                                                                   houseRentalMarket);
-        regionsPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); // Comparator based on price and quality
+
+        regionsPQNewForSale = new PriorityQueue2D<>(new HousingMarketRecord.PFSaleComparator()); // Comparator based on price and F
+        regionsPQNewForRent = new PriorityQueue2D<>(new HousingMarketRecord.PFRentComparator()); // Comparator based on price and F
     }
 
     //-------------------//

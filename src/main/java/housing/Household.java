@@ -283,7 +283,7 @@ public class Household implements IHouseOwner, Serializable {
             home = null;
 //            bidOnHousingMarket(1.0);
         } else if(sale.house.resident != null) { // evict current renter
-            monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
+        	    monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
             sale.house.resident.getEvicted();
         }
     }
@@ -371,16 +371,18 @@ public class Household implements IHouseOwner, Serializable {
      ********************************************************/
     private void bidForAHome(Region region) {
         // Find household's desired housing expenditure
-        double price = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
+        double purchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
         // Cap this expenditure to the maximum mortgage available to the household
-        price = Math.min(price, Model.bank.getMaxMortgage(this, true));
+        purchasePrice = Math.min(purchasePrice, Model.bank.getMaxMortgage(this, true));
+        double rent = behaviour.desiredRent(this, monthlyGrossEmploymentIncome);
         // Compare costs to decide whether to buy or rent...
-        if(behaviour.decideRentOrPurchase(this, region, price)) {
+        RegionQualityRecord OptHouse = behaviour.decideOptHouse(this, region, purchasePrice, rent);
+        if(behaviour.decideRentOrPurchase(OptHouse)) {
             // ... if buying, bid in the house sale market for the capped desired price
-            region.houseSaleMarket.bid(this, price);
+            behaviour.decideHouseRegion(OptHouse).houseSaleMarket.bid(this, purchasePrice);
         } else {
             // ... if renting, bid in the house rental market for the desired rent price
-            region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyGrossEmploymentIncome));
+        		behaviour.decideHouseRegion(OptHouse).houseRentalMarket.bid(this, rent);
         }
     }
     
@@ -448,7 +450,7 @@ public class Household implements IHouseOwner, Serializable {
             if(h.owner == this) {
                 if(h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
                 if(h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
-                if(h.resident != null) h.resident.getEvicted();
+                if(h.resident != null && h.resident != this) h.resident.getEvicted();
                 beneficiary.inheritHouse(h, isHome);
             } else {
                 h.owner.endOfLettingAgreement(h, housePayments.get(h));

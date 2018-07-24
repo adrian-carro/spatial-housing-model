@@ -62,18 +62,24 @@ public class Geography {
         // For each region...
         for (Region origin : regions) {
             // ...first, clear the priority queue of region-quality bands
-            origin.regionsPQ.clear();
+            origin.regionsPQNewForSale.clear();
+            origin.regionsPQNewForRent.clear();
             // ...then, fill it in using current (exponential moving average) prices
             for (Region destination: regions) {
                 for(int quality = 0; quality < config.N_QUALITY; ++quality) {
                     // TODO: Add here commuting costs!
-                    double price = destination.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality);
-                    RegionQualityRecord record = new RegionQualityRecord(destination, quality, price);
-                    origin.regionsPQ.add(record);
+                	    double commutingCost = 0;
+                    double priceForSale = destination.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality);
+                    RegionQualityRecord recordForSale = new RegionQualityRecord(config, destination, quality, priceForSale, commutingCost, true);
+                    origin.regionsPQNewForSale.add(recordForSale);
+                    double priceForRent = destination.regionalRentalMarketStats.getExpAvSalePriceForQuality(quality);
+                    RegionQualityRecord recordForRent = new RegionQualityRecord(config, destination, quality, priceForRent, commutingCost, false);
+                    origin.regionsPQNewForRent.add(recordForRent);
                 }
             }
             // ...finally, sort priorities before any use
-            origin.regionsPQ.sortPriorities();
+            origin.regionsPQNewForSale.sortPriorities();
+            origin.regionsPQNewForRent.sortPriorities();
         }
         // Update, for each region, its households, market statistics collectors and markets
         for (Region r : regions) r.step();
