@@ -20,6 +20,7 @@ public class Geography {
     //------------------//
 
     private static ArrayList<Region>    regions;
+    private static double[][]           distanceMatrix; // The distance matrix
     private Config	                    config; // Private field to receive the Model's configuration parameters object
     // TODO: Bring commuting costs data into this class to be used for computing prices and filling in the priority queues
 
@@ -28,14 +29,17 @@ public class Geography {
     //------------------------//
 
     /**
-     * Constructs the geography with its regions and respective target populations
+     * Constructs the geography with its regions and respective target populations and distance between regions
      */
     Geography(Config config, MersenneTwister rand) {
         this.config = config;
-        regions = new ArrayList<>();
-        for (int targetPopulation: data.Demographics.getTargetPopulationPerRegion()) {
-            regions.add(new Region(this.config, rand, targetPopulation));
+        regions = new ArrayList<>(); 
+        int regionID = 0;
+        for (int targetPopulation: data.Demographics.getTargetPopulationPerRegion()) {        		
+            regions.add(new Region(this.config, rand, targetPopulation, regionID));
+            regionID++;
         }
+        distanceMatrix = data.Distance.getDistanceMatrix();
     }
 
     //-------------------//
@@ -68,7 +72,7 @@ public class Geography {
             for (Region destination: regions) {
                 for(int quality = 0; quality < config.N_QUALITY; ++quality) {
                     // TODO: Add here commuting costs!
-                	    double commutingCost = 0;
+                	    double commutingCost = 1000*distanceMatrix[origin.getRegionID()][destination.getRegionID()];
                     double priceForSale = destination.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality);
                     RegionQualityRecord recordForSale = new RegionQualityRecord(config, destination, quality, priceForSale, commutingCost, true);
                     origin.regionsPQNewForSale.add(recordForSale);

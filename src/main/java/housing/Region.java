@@ -30,6 +30,7 @@ public class Region {
     public RegionalHousingMarketStats   regionalHousingMarketStats;
     public RegionalRentalMarketStats    regionalRentalMarketStats;
     public int                          targetPopulation;
+    public int                          regionID;
     private int                         housingStock;
 
     PriorityQueue2D<HousingMarketRecord>    regionsPQ; // PriorityQueue2D of regions (ordered by price and quality)
@@ -43,8 +44,9 @@ public class Region {
     /**
      * Constructs the region with a sales market, a rental market, and space for storing households
      */
-    public Region(Config config, MersenneTwister rand, int targetPopulation) {
+    public Region(Config config, MersenneTwister rand, int targetPopulation, int regionID) {
         this.targetPopulation = targetPopulation;
+        this.regionID = regionID;
         households = new ArrayList<>(targetPopulation*2);
         houseSaleMarket = new HouseSaleMarket(config, rand, this);
         houseRentalMarket = new HouseRentalMarket(config, rand, this);
@@ -104,4 +106,6 @@ public class Region {
     public int getHousingStock() { return housingStock; }
 
     void increaseHousingStock () { housingStock++; }
+    
+    public int getRegionID() {return regionID;}
 }
