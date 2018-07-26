@@ -292,7 +292,7 @@ public class Household implements IHouseOwner, Serializable {
             home = null;
 //            bidOnHousingMarket(1.0);
         } else if(sale.house.resident != null) { // evict current renter
-        	    monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
+        		monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
             sale.house.resident.getEvicted();
         }
     }
@@ -450,6 +450,8 @@ public class Household implements IHouseOwner, Serializable {
             h = entry.getKey();
             payment = entry.getValue();
             if(h == home) {
+//          TODO: Check this!!!
+//          if(h.resident == this) {
                 isHome = true;
                 h.resident = null;
                 home = null;
