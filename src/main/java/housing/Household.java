@@ -70,6 +70,7 @@ public class Household implements IHouseOwner, Serializable {
         monthlyGrossEmploymentIncome = annualGrossEmploymentIncome/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.getDesiredBankBalance(getAnnualGrossTotalIncome()); // Desired bank balance is used as initial value for actual bank balance
         monthlyGrossRentalIncome = 0.0;
+        lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*this.rand.nextDouble();
     }
 
     //-------------------//
