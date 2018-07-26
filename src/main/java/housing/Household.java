@@ -450,6 +450,8 @@ public class Household implements IHouseOwner, Serializable {
             h = entry.getKey();
             payment = entry.getValue();
             if(h == home) {
+//            	TODO: Check this!!!
+//            	if(h.resident == this){
                 isHome = true;
                 h.resident = null;
                 home = null;
