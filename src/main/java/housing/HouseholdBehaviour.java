@@ -261,16 +261,7 @@ public class HouseholdBehaviour implements Serializable {
         		return optBuyChoice;
         } else return optRentChoice;
     }
- 
-    public Region decideCheapestRentRegion(Region region, double desiredRent) {
-     	RegionQualityRecord optRentChoice = null;
-    		while(optRentChoice == null)  {
-    			desiredRent = desiredRent + 100;
-    			RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY, desiredRent, 0, true);
-    			optRentChoice = (RegionQualityRecord) region.regionsPQNewForSale.peek(xGreatestBoundaryForRent);		
-    		}
-    		return optRentChoice.getRegion();
-    }
+
     public boolean decideRentOrPurchase(RegionQualityRecord OptHouse) {
         	return OptHouse.getSaleOrRent();
     }  	
