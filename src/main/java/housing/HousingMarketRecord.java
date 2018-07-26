@@ -69,7 +69,7 @@ public abstract class HousingMarketRecord implements Serializable {
             return Integer.signum(arg0.getQuality() - arg1.getQuality());
         }
     }
-    
+
     /**
      * Class that implements the comparators needed for inserting HousingMarketRecord objects into PriorityQueue2D. In
      * particular, this class implements the comparators for a price-yield priority queue.

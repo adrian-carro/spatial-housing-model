@@ -1,7 +1,6 @@
 package housing;
 
 import java.io.Serializable;
-
 import utilities.PriorityQueue2D;
 
 /**************************************************************************************************

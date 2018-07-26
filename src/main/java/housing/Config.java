@@ -162,6 +162,7 @@ public class Config {
     
     // Data addresses: Geography
     public String DISTANCE_BETWEEN_REGIONS;    //Address for data on distances between regions
+    
     /** Construction of objects to contain derived parameters and constants **/
 
     // Create object containing all constants

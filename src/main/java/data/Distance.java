@@ -9,17 +9,18 @@ import housing.Config;
 import housing.Model;
 
 public class Distance {
-	
+
+    //------------------//
+    //----- Fields -----//
+    //------------------//
+
 	private static Config config = Model.config; 
 	
 	private static double[][] distanceMatrix = readDistanceMatrix(config.DISTANCE_BETWEEN_REGIONS);
 
 	public static double[][] readDistanceMatrix(String fileName){
-
-		distanceMatrix = new double[10][10]; // create 2D array large enough to hold the distance matrix
-				
-		File matrix = new File(fileName);
-		
+		distanceMatrix = new double[10][10]; // create 2D array large enough to hold the distance matrix				
+		File matrix = new File(fileName);		
 		try(BufferedReader br = new BufferedReader(new FileReader(matrix))){		
 			int row = 0;		
 			String str = null;		
@@ -40,6 +41,10 @@ public class Distance {
 			}		
 		return distanceMatrix;
 		}
+
+    //-------------------//
+    //----- Methods -----//
+    //-------------------//
 
 	public static double[][] getDistanceMatrix(){
 		return distanceMatrix;
