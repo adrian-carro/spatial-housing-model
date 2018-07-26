@@ -235,9 +235,9 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
         // TODO: here query that particular region...
         RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY, purchasePrice, 0, true);
-        RegionQualityRecord optBuyChoice = (RegionQualityRecord) region.regionsPQNewForSale.peek(xGreatestBoundaryForPurchase);
+        RegionQualityRecord optBuyChoice = region.regionsPQNewForSale.peek(xGreatestBoundaryForPurchase);
         RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY, desiredRent, 0, false);
-        RegionQualityRecord optRentChoice = (RegionQualityRecord) region.regionsPQNewForRent.peek(xGreatestBoundaryForRent);
+        RegionQualityRecord optRentChoice = region.regionsPQNewForRent.peek(xGreatestBoundaryForRent);
         if(isPropertyInvestor()) return optBuyChoice;
         if (optBuyChoice == null) {
         		if(optRentChoice != null) return optRentChoice;
@@ -250,11 +250,14 @@ public class HouseholdBehaviour implements Serializable {
         MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, optBuyChoice.getPrice(),
                 decideDownPayment(me, optBuyChoice.getPrice()), true);
         double totalCostForBuying = decideDownPayment(me, optBuyChoice.getPrice())
-        		+ config.HOLD_PERIOD*mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR 
-        		+ config.HOLD_PERIOD*config.constants.MONTHS_IN_YEAR*optBuyChoice.getCommutingCost() 
-        		- optBuyChoice.getPrice()*config.HOLD_PERIOD*(1+getLongTermHPAExpectation(optBuyChoice.getRegion()));
+        		+ me.getLengthOfNextStay()*mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR 
+        		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optBuyChoice.getCommutingCost() 
+        		- optBuyChoice.getPrice()*me.getLengthOfNextStay()*(1+getLongTermHPAExpectation(optBuyChoice.getRegion()));
+        double totalCostForRenting = me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getPrice()
+        		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getCommutingCost();
         double FSaleNew = Math.pow(optBuyChoice.getQuality(), config.A_IN_F) / (totalCostForBuying + config.B_IN_F);
-        if (rand.nextDouble() < sigma(optRentChoice.getFRent() - FSaleNew)) {
+        double FRentNew = Math.pow(optRentChoice.getQuality(), config.A_IN_F) / (totalCostForRenting + config.B_IN_F);
+        if (rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(FRentNew - FSaleNew))) {
         		return optBuyChoice;
         } else return optRentChoice;
     }

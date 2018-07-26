@@ -39,10 +39,12 @@ public class Household implements IHouseOwner, Serializable {
     private double                          bankBalance;
     private double                          annualGrossEmploymentIncome;
     private double                          monthlyGrossEmploymentIncome;
+    private double                          lengthOfNextStay;
     private double                          monthlyGrossRentalIncome; // Keeps track of monthly rental income, as only tenants keep a reference to the rental contract, not landlords
     private boolean                         isFirstTimeBuyer;
     private boolean                         isBankrupt;
-
+    private boolean                         isHomelessLastMonth; // TODO: Delete it by refreshing lengthOfNextStay each time households get evicted or end contract or sell house.
+    
     //------------------------//
     //----- Constructors -----//
     //------------------------//
@@ -58,6 +60,7 @@ public class Household implements IHouseOwner, Serializable {
         home = null;
         isFirstTimeBuyer = true;
         isBankrupt = false;
+        isHomelessLastMonth = true;
         id = ++id_pool;
         age = householdAgeAtBirth;
         incomePercentile = this.rand.nextDouble();
@@ -103,6 +106,10 @@ public class Household implements IHouseOwner, Serializable {
         for (House h: housePayments.keySet()) {
             if (h.owner == this) manageHouse(h);
         }
+        // Decide length of next stay if just entered social housing status
+        if (!isHomelessLastMonth && isInSocialHousing()) {
+        		lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*rand.nextDouble(); // lengthOfNextStay is a random number between 1 and HOLD_PERIOD
+        }
         // Make housing decisions depending on current housing state
         if (isInSocialHousing()) {
             // TODO: Method that takes jobRegion and gives bidRegion, which is introduced into bidForAHome
@@ -122,6 +129,7 @@ public class Household implements IHouseOwner, Serializable {
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
         }
+        isHomelessLastMonth = isInSocialHousing(); //update the variable at the end of each month
     }
 
     /**
@@ -450,7 +458,7 @@ public class Household implements IHouseOwner, Serializable {
             if(h.owner == this) {
                 if(h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
                 if(h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
-                if(h.resident != null && h.resident != this) h.resident.getEvicted();
+                if(h.resident != null) h.resident.getEvicted();
                 beneficiary.inheritHouse(h, isHome);
             } else {
                 h.owner.endOfLettingAgreement(h, housePayments.get(h));
@@ -532,6 +540,8 @@ public class Household implements IHouseOwner, Serializable {
 
     public double getMonthlyGrossEmploymentIncome() { return monthlyGrossEmploymentIncome; }
 
+    public double getLengthOfNextStay() {return lengthOfNextStay;}
+    
     /***
      * @return Number of properties this household currently has on the sale market
      */

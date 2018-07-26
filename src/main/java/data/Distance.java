@@ -10,22 +10,19 @@ import housing.Model;
 
 public class Distance {
 	
-	private static Config config = Model.config; // Passes the Model's configuration parameters object to a private field
+	private static Config config = Model.config; 
 	
 	private static double[][] distanceMatrix = readDistanceMatrix(config.DISTANCE_BETWEEN_REGIONS);
 
 	public static double[][] readDistanceMatrix(String fileName){
 
 		distanceMatrix = new double[10][10]; // create 2D array large enough to hold the distance matrix
-		
-		
+				
 		File matrix = new File(fileName);
 		
-		try(BufferedReader br = new BufferedReader(new FileReader(matrix))){
-		
+		try(BufferedReader br = new BufferedReader(new FileReader(matrix))){		
 			int row = 0;		
-			String str = null;
-		
+			String str = null;		
 			int firstDigit = br.read();
 			while (firstDigit != -1) {
 				str =  (char)firstDigit + br.readLine();
@@ -36,13 +33,11 @@ public class Distance {
 				row++;
 				firstDigit = br.read();
 			}		
-			br.close();
-		
+			br.close();		
 		}catch (IOException ioe) {
 			System.out.println("Exception " + ioe + " while trying to read file '" + fileName + "'");
 			ioe.printStackTrace();
-			}
-		
+			}		
 		return distanceMatrix;
 		}
 
