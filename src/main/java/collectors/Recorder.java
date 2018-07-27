@@ -140,8 +140,6 @@ public class Recorder {
                         // Rental market data
                         + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
                         + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
-                        // Credit data
-                        + "nRegisteredMortgages, "
                         // Stuff to remove
                         + "ExAvSalePrice");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
@@ -272,6 +270,7 @@ public class Recorder {
                     region.regionalHousingMarketStats.getAvOfferPrice() + ", " +
                     region.regionalHousingMarketStats.getAvSalePrice() + ", " +
                     region.regionalHousingMarketStats.getAvDaysOnMarket() + ", " +
+                    region.regionalHousingMarketStats.getExpAvDaysOnMarket() + ", " +                 
                     region.regionalHousingMarketStats.getnBuyers() + ", " +
                     region.regionalHousingMarketStats.getnBTLBuyers() + ", " +
                     region.regionalHousingMarketStats.getnSellers() + ", " +
