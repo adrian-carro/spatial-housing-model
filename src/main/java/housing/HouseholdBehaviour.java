@@ -212,7 +212,7 @@ public class HouseholdBehaviour implements Serializable {
 	 *  is assumed to be the difference in rental price between the two qualities.
 	 *  @return true if we should buy a house, false if we should rent
 	 */
-    public boolean decideRentOrPurchase(Household me, Region region, double desiredPurchasePrice) {
+    public boolean decideRentOrPurchaseOld(Household me, Region region, double desiredPurchasePrice) {
         if(isPropertyInvestor()) return(true);
         double purchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(me, true));
         MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, purchasePrice,
@@ -228,7 +228,48 @@ public class HouseholdBehaviour implements Serializable {
         return rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
                 + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse));
     }
+    
+    public RegionQualityRecord decideOptHouse(Household me, Region region, double desiredPurchasePrice, double desiredRent) {
+        //if(isPropertyInvestor()) return(true);
+        double purchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(me, true));
+        // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
+        // TODO: here query that particular region...
+        RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY, purchasePrice, 0, true);
+        RegionQualityRecord optBuyChoice = region.regionsPQNewForSale.peek(xGreatestBoundaryForPurchase);
+        RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY, desiredRent, 0, false);
+        RegionQualityRecord optRentChoice = region.regionsPQNewForRent.peek(xGreatestBoundaryForRent);
+        if(isPropertyInvestor()) return optBuyChoice;
+        if (optBuyChoice == null) {
+        		if(optRentChoice != null) return optRentChoice;
+        		else {
+        			RegionQualityRecord tooPoorRentChoice = new RegionQualityRecord(config, region, 0, desiredRent, 0, false);
+        			return tooPoorRentChoice;
+        		}
+        }
+        if(optRentChoice == null) return optBuyChoice;
+        MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, optBuyChoice.getPrice(),
+                decideDownPayment(me, optBuyChoice.getPrice()), true);
+        double totalCostForBuying = decideDownPayment(me, optBuyChoice.getPrice())
+        		+ me.getLengthOfNextStay()*mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR 
+        		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optBuyChoice.getCommutingCost() 
+        		- optBuyChoice.getPrice()*me.getLengthOfNextStay()*(1+getLongTermHPAExpectation(optBuyChoice.getRegion()));
+        double totalCostForRenting = me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getPrice()
+        		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getCommutingCost();
+        double FSaleNew = Math.pow(optBuyChoice.getQuality(), config.A_IN_F) / (totalCostForBuying + config.B_IN_F);
+        double FRentNew = Math.pow(optRentChoice.getQuality(), config.A_IN_F) / (totalCostForRenting + config.B_IN_F);
+        if (rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(FRentNew - FSaleNew))) {
+        		return optBuyChoice;
+        } else return optRentChoice;
+    }
 
+    public boolean decideRentOrPurchase(RegionQualityRecord OptHouse) {
+        	return OptHouse.getSaleOrRent();
+    }  	
+    
+    public Region decideHouseRegion(RegionQualityRecord OptHouse) {
+    		return OptHouse.getRegion();
+    }
+    
 	/********************************************************
 	 * Decide how much to bid on the rental market
 	 * Source: Zoopla rental prices 2008-2009 (at Bank of England)

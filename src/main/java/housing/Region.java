@@ -30,9 +30,11 @@ public class Region {
     public RegionalHousingMarketStats   regionalHousingMarketStats;
     public RegionalRentalMarketStats    regionalRentalMarketStats;
     public int                          targetPopulation;
+    public int                          regionID;
     private int                         housingStock;
 
-    PriorityQueue2D<HousingMarketRecord>    regionsPQ; // PriorityQueue2D of regions (ordered by price and quality)
+    PriorityQueue2D<RegionQualityRecord>    regionsPQNewForSale; // PriorityQueue2D of regions (ordered by price and FSale)
+    PriorityQueue2D<RegionQualityRecord>    regionsPQNewForRent; // PriorityQueue2D of regions (ordered by price and FRent)
 
     //------------------------//
     //----- Constructors -----//
@@ -41,8 +43,9 @@ public class Region {
     /**
      * Constructs the region with a sales market, a rental market, and space for storing households
      */
-    public Region(Config config, MersenneTwister rand, int targetPopulation) {
+    public Region(Config config, MersenneTwister rand, int targetPopulation, int regionID) {
         this.targetPopulation = targetPopulation;
+        this.regionID = regionID;
         households = new ArrayList<>(targetPopulation*2);
         houseSaleMarket = new HouseSaleMarket(config, rand, this);
         houseRentalMarket = new HouseRentalMarket(config, rand, this);
@@ -50,7 +53,9 @@ public class Region {
         regionalHousingMarketStats = new RegionalHousingMarketStats(config, houseSaleMarket);
         regionalRentalMarketStats = new RegionalRentalMarketStats(config, regionalHousingMarketStats,
                                                                   houseRentalMarket);
-        regionsPQ = new PriorityQueue2D<>(new HousingMarketRecord.PQComparator()); // Comparator based on price and quality
+
+        regionsPQNewForSale = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
+        regionsPQNewForRent = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
     }
 
     //-------------------//
@@ -100,4 +105,6 @@ public class Region {
     public int getHousingStock() { return housingStock; }
 
     void increaseHousingStock () { housingStock++; }
+    
+    public int getRegionID() {return regionID;}
 }

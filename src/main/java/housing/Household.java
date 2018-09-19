@@ -39,10 +39,12 @@ public class Household implements IHouseOwner, Serializable {
     private double                          bankBalance;
     private double                          annualGrossEmploymentIncome;
     private double                          monthlyGrossEmploymentIncome;
+    private double                          lengthOfNextStay;
     private double                          monthlyGrossRentalIncome; // Keeps track of monthly rental income, as only tenants keep a reference to the rental contract, not landlords
     private boolean                         isFirstTimeBuyer;
     private boolean                         isBankrupt;
-
+    private boolean                         isHomelessLastMonth; // TODO: Delete it by refreshing lengthOfNextStay each time households get evicted or end contract or sell house.
+    
     //------------------------//
     //----- Constructors -----//
     //------------------------//
@@ -58,6 +60,7 @@ public class Household implements IHouseOwner, Serializable {
         home = null;
         isFirstTimeBuyer = true;
         isBankrupt = false;
+        isHomelessLastMonth = true;
         id = ++id_pool;
         age = householdAgeAtBirth;
         incomePercentile = this.rand.nextDouble();
@@ -67,6 +70,7 @@ public class Household implements IHouseOwner, Serializable {
         monthlyGrossEmploymentIncome = annualGrossEmploymentIncome/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.getDesiredBankBalance(getAnnualGrossTotalIncome()); // Desired bank balance is used as initial value for actual bank balance
         monthlyGrossRentalIncome = 0.0;
+        lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*this.rand.nextDouble();
     }
 
     //-------------------//
@@ -103,6 +107,10 @@ public class Household implements IHouseOwner, Serializable {
         for (House h: housePayments.keySet()) {
             if (h.owner == this) manageHouse(h);
         }
+        // Decide length of next stay if just entered social housing status
+        if (!isHomelessLastMonth && isInSocialHousing()) {
+        		lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*rand.nextDouble(); // lengthOfNextStay is a random number between 1 and HOLD_PERIOD
+        }
         // Make housing decisions depending on current housing state
         if (isInSocialHousing()) {
             // TODO: Method that takes jobRegion and gives bidRegion, which is introduced into bidForAHome
@@ -122,6 +130,7 @@ public class Household implements IHouseOwner, Serializable {
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
         }
+        isHomelessLastMonth = isInSocialHousing(); //update the variable at the end of each month
     }
 
     /**
@@ -283,7 +292,7 @@ public class Household implements IHouseOwner, Serializable {
             home = null;
 //            bidOnHousingMarket(1.0);
         } else if(sale.house.resident != null) { // evict current renter
-            monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
+        	    monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
             sale.house.resident.getEvicted();
         }
     }
@@ -371,16 +380,18 @@ public class Household implements IHouseOwner, Serializable {
      ********************************************************/
     private void bidForAHome(Region region) {
         // Find household's desired housing expenditure
-        double price = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
+        double purchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
         // Cap this expenditure to the maximum mortgage available to the household
-        price = Math.min(price, Model.bank.getMaxMortgage(this, true));
+        purchasePrice = Math.min(purchasePrice, Model.bank.getMaxMortgage(this, true));
+        double rent = behaviour.desiredRent(this, monthlyGrossEmploymentIncome);
         // Compare costs to decide whether to buy or rent...
-        if(behaviour.decideRentOrPurchase(this, region, price)) {
+        RegionQualityRecord OptHouse = behaviour.decideOptHouse(this, region, purchasePrice, rent);
+        if(behaviour.decideRentOrPurchase(OptHouse)) {
             // ... if buying, bid in the house sale market for the capped desired price
-            region.houseSaleMarket.bid(this, price);
+            behaviour.decideHouseRegion(OptHouse).houseSaleMarket.bid(this, purchasePrice);
         } else {
             // ... if renting, bid in the house rental market for the desired rent price
-            region.houseRentalMarket.bid(this, behaviour.desiredRent(this, monthlyGrossEmploymentIncome));
+        		behaviour.decideHouseRegion(OptHouse).houseRentalMarket.bid(this, rent);
         }
     }
     
@@ -439,6 +450,8 @@ public class Household implements IHouseOwner, Serializable {
             h = entry.getKey();
             payment = entry.getValue();
             if(h == home) {
+//            	TODO: Check this!!!
+//            	if(h.resident == this){
                 isHome = true;
                 h.resident = null;
                 home = null;
@@ -530,6 +543,8 @@ public class Household implements IHouseOwner, Serializable {
 
     public double getMonthlyGrossEmploymentIncome() { return monthlyGrossEmploymentIncome; }
 
+    public double getLengthOfNextStay() {return lengthOfNextStay;}
+    
     /***
      * @return Number of properties this household currently has on the sale market
      */
