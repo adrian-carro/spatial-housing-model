@@ -78,6 +78,15 @@ public class RegionQualityRecord extends HousingMarketRecord {
         }
 
         /**
+         * @return -1, 0 or 1 if arg0 has, respectively, less P than, equal P as, or greater P than
+         * arg1
+         */
+        @Override
+        public int XCompare(RegionQualityRecord arg0, RegionQualityRecord arg1) {
+            return Integer.signum((int) (((RegionQualityRecord) arg0).getPrice() - ((RegionQualityRecord) arg1).getPrice()));
+        }
+
+        /**
          * @return -1, 0 or 1 if arg0 has, respectively, less F than, equal F as, or greater F than
          * arg1
          */
