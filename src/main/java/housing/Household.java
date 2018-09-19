@@ -391,8 +391,11 @@ public class Household implements IHouseOwner, Serializable {
             behaviour.decideHouseRegion(OptHouse).houseSaleMarket.bid(this, purchasePrice);
         } else {
             // ... if renting, bid in the house rental market for the desired rent price
-        		behaviour.decideHouseRegion(OptHouse).houseRentalMarket.bid(this, rent);
+            behaviour.decideHouseRegion(OptHouse).houseRentalMarket.bid(this, rent);
         }
+        // Record the bid on householdStats for counting the number of bidders above exponential moving average sale price
+        // TODO: Rethink what this counter is recording: which region to use? which price to use?
+        behaviour.decideHouseRegion(OptHouse).regionalHouseholdStats.countBiddersAboveExpAvSalePrice(purchasePrice);
     }
     
     

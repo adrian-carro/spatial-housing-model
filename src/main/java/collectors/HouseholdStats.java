@@ -39,6 +39,7 @@ public class HouseholdStats extends CollectorBase {
 
     // Other fields
     private double              sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private int                 nBiddersAboveExpAvSalePrice; // Number of bidders with desired housing expenditure above the exponential moving average sale price
 
     //------------------------//
     //----- Constructors -----//
@@ -76,6 +77,7 @@ public class HouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        nBiddersAboveExpAvSalePrice = 0;
     }
 
     /**
@@ -98,6 +100,7 @@ public class HouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        nBiddersAboveExpAvSalePrice = 0;
         // Run through regions summing
         for (Region region : geography.getRegions()) {
             nBTL += region.regionalHouseholdStats.getnBTL();
@@ -114,6 +117,7 @@ public class HouseholdStats extends CollectorBase {
             rentingAnnualisedTotalIncome += region.regionalHouseholdStats.getRentingAnnualisedTotalIncome();
             homelessAnnualisedTotalIncome += region.regionalHouseholdStats.getHomelessAnnualisedTotalIncome();
             sumStockYield += region.regionalHouseholdStats.getSumStockYield();
+            nBiddersAboveExpAvSalePrice += region.regionalHouseholdStats.getnBiddersAboveExpAvSalePrice();
         }
     }
 
@@ -163,6 +167,10 @@ public class HouseholdStats extends CollectorBase {
     double getBTLStockFraction() {
         return ((double)(getnEmptyHouses() - Model.housingMarketStats.getnUnsoldNewBuild()
                 + nRenting))/Model.construction.getHousingStock();
+    }
+    // ... number of bidders with desired housing expenditure above the exponential moving average sale price
+    public int getnBiddersAboveExpAvSalePrice() {
+        return nBiddersAboveExpAvSalePrice;
     }
 
 //    // Array with ages of all households
