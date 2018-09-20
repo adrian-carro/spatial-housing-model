@@ -210,9 +210,8 @@ public class HouseholdBehaviour implements Serializable {
 	 *  is assumed to be the difference in rental price between the two qualities.
 	 *  @return true if we should buy a house, false if we should rent
 	 */
-    public boolean decideRentOrPurchaseOld(Household me, Region region, double desiredPurchasePrice) {
+    public boolean decideRentOrPurchaseOld(Household me, Region region, double purchasePrice) {
         if(isPropertyInvestor()) return(true);
-        double purchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(me, true));
         MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, purchasePrice,
                 decideDownPayment(me, purchasePrice), true);
         // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
@@ -227,9 +226,8 @@ public class HouseholdBehaviour implements Serializable {
                 + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse));
     }
     
-    RegionQualityRecord decideOptHouse(Household me, Region region, double desiredPurchasePrice, double desiredRent) {
-        //if(isPropertyInvestor()) return(true);
-        double purchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(me, true));
+    RegionQualityRecord decideOptHouse(Household me, Region region, double purchasePrice, double desiredRent) {
+        // TODO: Check that BTL investors are behaving according to design
         // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
         // TODO: here query that particular region...
         RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY, purchasePrice, 0, true);
