@@ -208,7 +208,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
                 btlSalesCount += 1;
             }
         }
-        // TODO: Attention, call to model from regional class: need to build regional recorders!
+        // TODO: Attention, call to model from regional class: need to understand if regional micro-data recorders would be needed!
         Model.transactionRecorder.recordSale(purchase, sale, mortgage, market);
     }
 
@@ -350,7 +350,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
     public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
-    public double getExpAvSalePrice() {
+    double getExpAvSalePrice() {
         double sum = 0.0;
         int n = 0;
         for (double element: expAvSalePricePerQuality) {
@@ -361,48 +361,36 @@ public class RegionalHousingMarketStats extends CollectorBase {
     }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
-    public double getAnnualHPA() { return annualHousePriceAppreciation; }
+    double getAnnualHPA() { return annualHousePriceAppreciation; }
     public double getLongTermHPA() {return longTermHousePriceAppreciation; }
 
     // Getters for derived variables
-    public double getAvBidPrice() {
+    double getAvBidPrice() {
         if (nBuyers > 0) {
             return sumBidPrices/nBuyers;
         } else {
             return 0.0;
         }
     }
-    public double getAvOfferPrice() {
+    double getAvOfferPrice() {
         if (nSellers > 0) {
             return sumOfferPrices/nSellers;
         } else {
             return 0.0;
         }
     }
-    public double getAvSalePrice() {
+    double getAvSalePrice() {
         if (nSales > 0) {
             return sumSoldPrice/nSales;
         } else {
             return 0.0;
         }
     }
-    // Proportion of monthly sales that are to first-time buyers
-    public double getFTBSalesProportion() {
-        if (nSales > 0) {
-            return (double)nFTBSales/nSales;
-        } else {
-            return 0.0;
-        }
-    }
-    // Proportion of monthly sales that are to buy-to-let investors
-    public double getBTLSalesProportion() {
-        if (nSales > 0) {
-            return (double)nBTLSales/nSales;
-        } else {
-            return 0.0;
-        }
-    }
-    public double getAvDaysOnMarket() {
+    // Number of monthly sales that are to first-time buyers
+    int getnSalesToFTB() { return nFTBSales; }
+    // Number of monthly sales that are to buy-to-let investors
+    int getnSalesToBTL() { return nBTLSales; }
+    double getAvDaysOnMarket() {
         if (nSales > 0) {
             return sumDaysOnMarket/nSales;
         } else {

@@ -114,18 +114,21 @@ public class Household implements IHouseOwner, Serializable {
         // Make housing decisions depending on current housing state
         if (isInSocialHousing()) {
             // TODO: Method that takes jobRegion and gives bidRegion, which is introduced into bidForAHome
-            bidForAHome(jobRegion); // When BTL households are born, they enter here the first time!
+            bidForAHome(jobRegion); // When BTL households are born, they enter here the first time and until they manage to buy a home!
         } else if (isRenting()) {
             if (housePayments.get(home).nPayments == 0) { // End of rental period for this tenant
                 endTenancy();
                 bidForAHome(jobRegion);
             }
-        } else if (behaviour.isPropertyInvestor()) {
+        } else if (behaviour.isPropertyInvestor()) { // Only BTL investors who already own a home enter here
             // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
             // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
             // TODO: between regions in unbiased manner?
+            double price = behaviour.btlPurchaseBid(this, jobRegion);
+            // TODO: Replace this jobRegion by the one the investor decides to invest in
+            jobRegion.regionalHouseholdStats.countBTLBidsAboveExpAvSalePrice(price);
             if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
-                jobRegion.houseSaleMarket.BTLbid(this, behaviour.btlPurchaseBid(this, jobRegion));
+                jobRegion.houseSaleMarket.BTLbid(this, price);
             }
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
@@ -168,9 +171,7 @@ public class Household implements IHouseOwner, Serializable {
         return monthlyGrossEmploymentIncome + monthlyGrossRentalIncome + bankBalance*config.RETURN_ON_FINANCIAL_WEALTH;
     }
 
-    double getAnnualGrossTotalIncome() {
-        return getMonthlyGrossTotalIncome()*config.constants.MONTHS_IN_YEAR;
-    }
+    double getAnnualGrossTotalIncome() { return getMonthlyGrossTotalIncome()*config.constants.MONTHS_IN_YEAR; }
 
     //----- Methods for house owners -----//
 
@@ -193,7 +194,7 @@ public class Household implements IHouseOwner, Serializable {
                 house.region.houseSaleMarket.updateOffer(forSale, newPrice);
             } else {
                 house.region.houseSaleMarket.removeOffer(forSale);
-                // TODO: First condition is redundant!
+                // TODO: Is first condition redundant?
                 if(house != home && house.resident == null) {
                     house.region.houseRentalMarket.offer(house, buyToLetRent(house));
                 }
@@ -383,7 +384,7 @@ public class Household implements IHouseOwner, Serializable {
         double purchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
         // Cap this expenditure to the maximum mortgage available to the household
         purchasePrice = Math.min(purchasePrice, Model.bank.getMaxMortgage(this, true));
-        double rent = behaviour.desiredRent(this, monthlyGrossEmploymentIncome);
+        double rent = behaviour.desiredRent(monthlyGrossEmploymentIncome);
         // Compare costs to decide whether to buy or rent...
         RegionQualityRecord OptHouse = behaviour.decideOptHouse(this, region, purchasePrice, rent);
         if(behaviour.decideRentOrPurchase(OptHouse)) {
@@ -395,7 +396,7 @@ public class Household implements IHouseOwner, Serializable {
         }
         // Record the bid on householdStats for counting the number of bidders above exponential moving average sale price
         // TODO: Rethink what this counter is recording: which region to use? which price to use?
-        behaviour.decideHouseRegion(OptHouse).regionalHouseholdStats.countBiddersAboveExpAvSalePrice(purchasePrice);
+        behaviour.decideHouseRegion(OptHouse).regionalHouseholdStats.countNonBTLBidsAboveExpAvSalePrice(purchasePrice);
     }
     
     
@@ -464,8 +465,8 @@ public class Household implements IHouseOwner, Serializable {
             if(h.owner == this) {
                 if(h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
                 if(h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
-                if(h.resident != null) h.resident.getEvicted();
-                beneficiary.inheritHouse(h, isHome);
+                if(h.resident != null) h.resident.getEvicted(); // TODO: Explain in paper that renters always get evicted, not just if heir needs the house
+                beneficiary.inheritHouse(h);
             } else {
                 h.owner.endOfLettingAgreement(h, housePayments.get(h));
             }
@@ -484,7 +485,7 @@ public class Household implements IHouseOwner, Serializable {
      * 
      * @param h House to inherit
      */
-    private void inheritHouse(House h, boolean wasHome) {
+    private void inheritHouse(House h) {
         MortgageAgreement nullMortgage = new MortgageAgreement(this,false);
         nullMortgage.nPayments = 0;
         nullMortgage.downPayment = 0.0;

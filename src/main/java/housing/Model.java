@@ -2,7 +2,6 @@ package housing;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Scanner;
 import java.time.Instant;
 
@@ -73,7 +72,6 @@ public class Model {
      * @param outputFolder String with the address of the folder for storing results
      */
     public Model(String configFileName, String outputFolder) {
-        // TODO: Check that random numbers are working properly!
         config = new Config(configFileName);
         rand = new MersenneTwister(config.SEED);
         geography = new Geography(config, rand);
@@ -296,16 +294,12 @@ public class Model {
 	/**
 	 * @return Simulated time in months
 	 */
-	static public int getTime() {
-		return t;
-	}
+	static public int getTime() { return t; }
 
     /**
      * @return Current month of the simulation
      */
-	static public int getMonth() {
-		return t%12 + 1;
-	}
+	static public int getMonth() { return t%12 + 1; }
 
     private static void setRecordGeneral() {
         creditSupply.setActive(true);
