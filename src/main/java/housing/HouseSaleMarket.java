@@ -12,7 +12,6 @@ import utilities.PriorityQueue2D;
  *
  *****************************************************/
 public class HouseSaleMarket extends HousingMarket {
-	private static final long serialVersionUID = -2878118108039744432L;
 
 	private Config	                    			config; // Private field to receive the Model's configuration parameters object
 	private Region                                  region;
