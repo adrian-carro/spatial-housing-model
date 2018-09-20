@@ -230,19 +230,34 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: Check that BTL investors are behaving according to design
         // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
         // TODO: here query that particular region...
-        RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY, purchasePrice, 0, true);
+        RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY,
+                purchasePrice, 0, true);
         RegionQualityRecord optBuyChoice = region.regionsPQNewForSale.peek(xGreatestBoundaryForPurchase);
-        RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY, desiredRent, 0, false);
+        RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY,
+                desiredRent, 0, false);
         RegionQualityRecord optRentChoice = region.regionsPQNewForRent.peek(xGreatestBoundaryForRent);
-        if(isPropertyInvestor()) return optBuyChoice;
-        if (optBuyChoice == null) {
-        		if(optRentChoice != null) return optRentChoice;
-        		else {
-        			RegionQualityRecord tooPoorRentChoice = new RegionQualityRecord(config, region, 0, desiredRent, 0, false);
-        			return tooPoorRentChoice;
-        		}
+        if (isPropertyInvestor()) {
+            // TODO: Probably change this to not buy if they are too poor to buy anywhere!
+            // TODO: Also, first change this to buy in their home, rather than job, region
+            // Property investors always try to buy, if they are too poor, they try in their home (job) region
+            if (optBuyChoice != null) {
+                return optBuyChoice;
+            } else {
+                return new RegionQualityRecord(config, region, 0, purchasePrice, 0,
+                        false);
+            }
         }
-        if(optRentChoice == null) return optBuyChoice;
+        // If too poor to buy...
+        if (optBuyChoice == null) {
+            // ...but not too poor to rent, then rent
+            if (optRentChoice != null) {
+                return optRentChoice;
+            // If too poor to rent too, then try to rent in home (job) region
+            } else {
+                return new RegionQualityRecord(config, region, 0, desiredRent, 0, false);
+            }
+        }
+        if(optRentChoice == null) return optBuyChoice; // If reached here, we know optBuyChoice is not null
         MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, optBuyChoice.getPrice(),
                 decideDownPayment(me, optBuyChoice.getPrice()), true);
         double totalCostForBuying = decideDownPayment(me, optBuyChoice.getPrice())
@@ -254,12 +269,14 @@ public class HouseholdBehaviour implements Serializable {
         double FSaleNew = Math.pow(optBuyChoice.getQuality(), config.A_IN_F) / (totalCostForBuying + config.B_IN_F);
         double FRentNew = Math.pow(optRentChoice.getQuality(), config.A_IN_F) / (totalCostForRenting + config.B_IN_F);
         if (rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(FRentNew - FSaleNew))) {
-        		return optBuyChoice;
-        } else return optRentChoice;
+            return optBuyChoice;
+        } else {
+            return optRentChoice;
+        }
     }
 
     boolean decideRentOrPurchase(RegionQualityRecord OptHouse) {
-        	return OptHouse.getSaleOrRent();
+        return OptHouse.getSaleOrRent();
     }  	
     
     Region decideHouseRegion(RegionQualityRecord OptHouse) {
