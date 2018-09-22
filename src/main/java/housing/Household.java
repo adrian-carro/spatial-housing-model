@@ -102,13 +102,26 @@ public class Household implements IHouseOwner, Serializable {
             bankBalance = 1.0;
             isBankrupt = true;
         }
+        // TODO: Repair this! Important to keep the payoff function so as to remove the loan from the bank
         // Manage all owned properties
         for (House h: housePayments.keySet()) {
-            if (h.owner == this) manageHouse(h);
+            if (h.owner == this) {
+                manageHouse(h);
+//            } else if (h.resident != this && housePayments.get(h).nPayments == 0) {
+//                // Second, find mortgage object and pay off as much outstanding debt as possible given bank balance
+//                MortgageAgreement mortgage = mortgageFor(sale.house);
+//                bankBalance -= mortgage.payoff(bankBalance);
+//                // Third, if there is no more outstanding debt, remove the house from the household's housePayments object
+//                if (mortgage.nPayments == 0) {
+//                    housePayments.remove(sale.house);
+//                }
+            } else if (h.resident != this) {
+                System.out.println("House is in my payments, but I don't own it nor do I live in it");
+            }
         }
         // Decide length of next stay if just entered social housing status
         if (!isHomelessLastMonth && isInSocialHousing()) {
-        		lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*rand.nextDouble(); // lengthOfNextStay is a random number between 1 and HOLD_PERIOD
+            lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*rand.nextDouble(); // lengthOfNextStay is a random number between 1 and HOLD_PERIOD
         }
         // Make housing decisions depending on current housing state
         if (isInSocialHousing()) {
@@ -120,13 +133,14 @@ public class Household implements IHouseOwner, Serializable {
                 bidForAHome(jobRegion);
             }
         } else if (behaviour.isPropertyInvestor()) { // Only BTL investors who already own a home enter here
-            // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
-            // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
-            // TODO: between regions in unbiased manner?
             double price = behaviour.btlPurchaseBid(this, jobRegion);
             // TODO: Replace this jobRegion by the one the investor decides to invest in
+            // TODO: Note this is counting all BTL investors as bids, regardless of decideToBuyInvestmentProperty
             jobRegion.regionalHouseholdStats.countBTLBidsAboveExpAvSalePrice(price);
             if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
+                // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
+                // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
+                // TODO: between regions in unbiased manner?
                 jobRegion.houseSaleMarket.BTLbid(this, price);
             }
         } else if (!isHomeowner()){
@@ -277,22 +291,31 @@ public class Household implements IHouseOwner, Serializable {
      * Do all stuff necessary when this household sells a house
      ********************************************************/
     public void completeHouseSale(HouseSaleRecord sale) {
-        MortgageAgreement mortgage = mortgageFor(sale.house);
+        // First, receive money from sale
         bankBalance += sale.getPrice();
+        // Second, find mortgage object and pay off as much outstanding debt as possible given bank balance
+        MortgageAgreement mortgage = mortgageFor(sale.house);
         bankBalance -= mortgage.payoff(bankBalance);
-        if(sale.house.isOnRentalMarket()) {
+        // Third, if there is no more outstanding debt, remove the house from the household's housePayments object
+        if (mortgage.nPayments == 0) {
+            housePayments.remove(sale.house);
+        } else {
+            // TODO: Warning, if bankBalance is not enough to pay mortgage back, then the house stays in housePayments, consequences to be checked!
+            System.out.println("Property not removed from housePayments of " + this);
+            System.exit(0);
+        }
+        // Fourth, if the house is still being offered on the rental market, withdraw the offer
+        if (sale.house.isOnRentalMarket()) {
             sale.house.region.houseRentalMarket.removeOffer(sale);
         }
-        // TODO: Warning, if bankBalance is not enough to pay mortgage back, then the house stays in housePayments, consequences to be checked!
-        if(mortgage.nPayments == 0) {
-            housePayments.remove(sale.house);
-        }
-        if(sale.house == home) { // move out of home and become (temporarily) homeless
+        // Fifth, if the house is the household's home, then the household moves out and becomes temporarily homeless...
+        if (sale.house == home) {
             home.resident = null;
             home = null;
-//            bidOnHousingMarket(1.0);
-        } else if(sale.house.resident != null) { // evict current renter
-        	    monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
+        // ...otherwise, if the house has a resident, if must be a renter, who must get evicted, also the rental income
+        // corresponding to this tenancy must be subtracted from the owner's monthly rental income
+        } else if (sale.house.resident != null) {
+            monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
             sale.house.resident.getEvicted();
         }
     }
@@ -328,7 +351,6 @@ public class Household implements IHouseOwner, Serializable {
         housePayments.remove(home);
         home.resident = null;
         home = null;
-    //    endOfTenancyAgreement(home, housePayments.remove(home));
     }
     
     /*** Landlord has told this household to get out: leave without informing landlord */
@@ -351,7 +373,12 @@ public class Household implements IHouseOwner, Serializable {
      * payment contract. At present we use a MortgageApproval).
      ********************************************************/
     void completeHouseRental(HouseSaleRecord sale) {
-        if(sale.house.owner != this) { // if renting own house, no need for contract
+        // If trying to rent own house, no need for contract
+        if (sale.house.owner == this) {
+            System.out.println("Strange: I'm renting a house I own");
+            System.exit(0);
+        // Otherwise, write a contract
+        } else {
             RentalAgreement rent = new RentalAgreement();
             rent.monthlyPayment = sale.getPrice();
             rent.nPayments = config.TENANCY_LENGTH_AVERAGE
@@ -359,15 +386,21 @@ public class Household implements IHouseOwner, Serializable {
 //            rent.principal = rent.monthlyPayment*rent.nPayments;
             housePayments.put(sale.house, rent);
         }
-        if(home != null) System.out.println("Strange: I'm renting a house but not homeless");
-        home = sale.house;
-        if(sale.house.resident != null) {
-            System.out.println("Strange: tenant moving into an occupied house");
-            if(sale.house.resident == this) System.out.println("...It's me!");
-            if(sale.house.owner == this) System.out.println("...It's my house!");
-            if(sale.house.owner == sale.house.resident) System.out.println("...It's a homeowner!");
+        if (home != null) {
+            System.out.println("Strange: I'm renting a house but not homeless");
+            System.exit(0);
+        } else {
+            home = sale.house;
         }
-        sale.house.resident = this;
+        if (sale.house.resident != null) {
+            System.out.println("Strange: tenant moving into an occupied house");
+            if(sale.house.resident == this) System.out.println("...and I'm the resident!");
+            if(sale.house.owner == this) System.out.println("...and I'm the owner!");
+            if(sale.house.owner == sale.house.resident) System.out.println("...and owner and resident are the same!");
+            System.exit(0);
+        } else {
+            sale.house.resident = this;
+        }
     }
 
 
@@ -383,6 +416,7 @@ public class Household implements IHouseOwner, Serializable {
         double purchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
         // Cap this expenditure to the maximum mortgage available to the household
         purchasePrice = Math.min(purchasePrice, Model.bank.getMaxMortgage(this, true));
+        // Find household's desired rent expenditure
         double rent = behaviour.desiredRent(monthlyGrossEmploymentIncome);
         // Compare costs to decide whether to buy or rent...
         RegionQualityRecord OptHouse = behaviour.decideOptHouse(this, region, purchasePrice, rent);
@@ -442,38 +476,49 @@ public class Household implements IHouseOwner, Serializable {
      * @param beneficiary The household that will inherit the wealth
      */
     void transferAllWealthTo(Household beneficiary) {
-        if(beneficiary == this) System.out.println("Strange: I'm transferring all my wealth to myself");
-        boolean isHome;
+        // Check if beneficiary is the same as the deceased household
+        if (beneficiary == this) { // TODO: I don't think this check is really necessary
+            System.out.println("Strange: I'm transferring all my wealth to myself");
+            System.exit(0);
+        }
+        // Create an iterator over the house-paymentAgreement pairs at the deceased household's housePayments object
         Iterator<Entry<House, PaymentAgreement>> paymentIt = housePayments.entrySet().iterator();
         Entry<House, PaymentAgreement> entry;
         House h;
         PaymentAgreement payment;
+        // Iterate over these house-paymentAgreement pairs
         while(paymentIt.hasNext()) {
             entry = paymentIt.next();
             h = entry.getKey();
             payment = entry.getValue();
-            if(h == home) {
-//            	TODO: Check this!!!
-//            	if(h.resident == this){
-                isHome = true;
+            // If the house is the deceased household's home, set both the house resident and household's home to null
+            if (h == home) {
                 h.resident = null;
                 home = null;
-            } else {
-                isHome = false;
             }
-            if(h.owner == this) {
-                if(h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
-                if(h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
-                if(h.resident != null) h.resident.getEvicted(); // TODO: Explain in paper that renters always get evicted, not just if heir needs the house
+            // If the deceased household owns the house, then...
+            if (h.owner == this) {
+                // ...first, withdraw the house from any market where it is currently being offered
+                if (h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
+                if (h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
+                // ...then, if there is a resident, then this resident must be a tenant, who must get evicted
+                if (h.resident != null) {
+                    h.resident.getEvicted(); // TODO: Explain in paper that renters always get evicted, not just if heir needs the house
+                }
+                // ...finally, transfer the property to the beneficiary household
                 beneficiary.inheritHouse(h);
+            // Otherwise, if the deceased household does not own the house, it must have been renting it: end the letting agreement
             } else {
                 h.owner.endOfLettingAgreement(h, housePayments.get(h));
             }
-            if(payment instanceof MortgageAgreement) {
+            // If payment agreement is a mortgage, then try to pay off as much as possible from the deceased household's bank balance
+            if (payment instanceof MortgageAgreement) {
                 bankBalance -= ((MortgageAgreement) payment).payoff();
             }
-            paymentIt.remove();
+            // Remove the house-paymentAgreement entry from the deceased household's housePayments object
+            paymentIt.remove(); // TODO: I don't think this is necessary
         }
+        // Finally, transfer all remaining liquid wealth to the beneficiary household
         beneficiary.bankBalance += Math.max(0.0, bankBalance);
     }
     
@@ -485,6 +530,7 @@ public class Household implements IHouseOwner, Serializable {
      * @param h House to inherit
      */
     private void inheritHouse(House h) {
+        // Create a null (zero payments) mortgage
         MortgageAgreement nullMortgage = new MortgageAgreement(this,false);
         nullMortgage.nPayments = 0;
         nullMortgage.downPayment = 0.0;
@@ -492,26 +538,34 @@ public class Household implements IHouseOwner, Serializable {
         nullMortgage.monthlyPayment = 0.0;
         nullMortgage.principal = 0.0;
         nullMortgage.purchasePrice = 0.0;
+        // Become the owner of the inherited house and include it in my housePayments list (with a null mortgage)
+        // TODO: Make sure the paper correctly explains that no debt is inherited
         housePayments.put(h, nullMortgage);
         h.owner = this;
-        if(h.resident != null) {
+        // Check for residents in the inherited house
+        if (h.resident != null) {
             System.out.println("Strange: inheriting a house with a resident");
+            System.exit(0);
         }
-        if(!isHomeowner()) {
-            // move into house if renting or homeless
-            if(isRenting()) {
+        // If renting or homeless, move into the inherited house
+        if (!isHomeowner()) {
+            // If renting, first cancel my current tenancy
+            if (isRenting()) {
                 endTenancy();                
             }
             home = h;
             h.resident = this;
-        } else if(behaviour.isPropertyInvestor()) {
-            if(decideToSellHouse(h)) {
+        // If owning a home and having the BTL gene...
+        } else if (behaviour.isPropertyInvestor()) {
+            // ...decide whether to sell the inherited house
+            if (decideToSellHouse(h)) {
                 putHouseForSale(h);
-            } else if(h.resident == null) {
+            // ...or rent it out
+            } else {
                 h.region.houseRentalMarket.offer(h, buyToLetRent(h));
             }
+        // If being an owner-occupier, put inherited house for sale
         } else {
-            // I'm an owner-occupier
             putHouseForSale(h);
         }
     }
