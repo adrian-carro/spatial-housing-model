@@ -24,13 +24,15 @@ public class Region {
     //------------------//
 
     public ArrayList<Household>         households;
-    public HouseSaleMarket              houseSaleMarket;
-    public HouseRentalMarket            houseRentalMarket;
     public RegionalHouseholdStats       regionalHouseholdStats;
     public RegionalHousingMarketStats   regionalHousingMarketStats;
     public RegionalRentalMarketStats    regionalRentalMarketStats;
-    public int                          targetPopulation;
-    public int                          regionID;
+
+    HouseSaleMarket                     houseSaleMarket;
+    HouseRentalMarket                   houseRentalMarket;
+    int                                 targetPopulation;
+
+    private int                         regionID;
     private int                         housingStock;
 
     PriorityQueue2D<RegionQualityRecord>    regionsPQNewForSale; // PriorityQueue2D of regions (ordered by price and FSale)
@@ -76,25 +78,30 @@ public class Region {
     }
 
     /**
-     * Main method of the class: loops through the households updating their bids and then clears both markets,
-     * recording data as appropriate
+     * One of the two main methods of the class: loops through the households updating their bids
      */
-    public void step() {
-        // Updates regional households consumption, housing decisions, and corresponding regional bids and offers
+    void stepHouseholds() {
+        // Update regional households' consumption, housing decisions, and corresponding regional bids and offers
         for (Household h : households) h.step();
-        // Stores regional sale market bid and offer prices and averages before bids are matched by clearing the market
+    }
+
+    /**
+     * One of the two main methods of the class: clears both markets, recording data as appropriate
+     */
+    void stepMarkets() {
+        // Store regional sale market bid and offer prices and averages before bids are matched by clearing the market
         regionalHousingMarketStats.preClearingRecord();
-        // Clears regional sale market and updates the HPI
+        // Clear regional sale market and updates the HPI
         houseSaleMarket.clearMarket();
-        // Computes and stores several regional housing market statistics after bids are matched by clearing the market (such as HPI, HPA)
+        // Compute and stores several regional housing market statistics after bids are matched by clearing the market (such as HPI, HPA)
         regionalHousingMarketStats.postClearingRecord();
-        // Stores regional rental market bid and offer prices and averages before bids are matched by clearing the market
+        // Store regional rental market bid and offer prices and averages before bids are matched by clearing the market
         regionalRentalMarketStats.preClearingRecord();
-        // Clears regional rental market
+        // Clear regional rental market
         houseRentalMarket.clearMarket();
-        // Computes and stores several regional rental market statistics after bids are matched by clearing the market (such as HPI, HPA)
+        // Compute and stores several regional rental market statistics after bids are matched by clearing the market (such as HPI, HPA)
         regionalRentalMarketStats.postClearingRecord();
-        // Stores regional household statistics after both regional markets have been cleared
+        // Store regional household statistics after both regional markets have been cleared
         regionalHouseholdStats.record();
     }
 
@@ -106,5 +113,5 @@ public class Region {
 
     void increaseHousingStock () { housingStock++; }
     
-    public int getRegionID() {return regionID;}
+    int getRegionID() {return regionID;}
 }

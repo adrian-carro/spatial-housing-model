@@ -72,7 +72,7 @@ public class Geography {
             for (Region destination: regions) {
                 for(int quality = 0; quality < config.N_QUALITY; ++quality) {
                     // TODO: Add here commuting costs!
-                	    double commutingCost = 1000*distanceMatrix[origin.getRegionID()][destination.getRegionID()];
+                    double commutingCost = 1000*distanceMatrix[origin.getRegionID()][destination.getRegionID()];
                     double priceForSale = destination.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality);
                     RegionQualityRecord recordForSale = new RegionQualityRecord(config, destination, quality, priceForSale, commutingCost, true);
                     origin.regionsPQNewForSale.add(recordForSale);
@@ -85,8 +85,10 @@ public class Geography {
             origin.regionsPQNewForSale.sortPriorities();
             origin.regionsPQNewForRent.sortPriorities();
         }
-        // Update, for each region, its households, market statistics collectors and markets
-        for (Region r : regions) r.step();
+        // Update, for each region, its households, collecting bids at the corresponding markets
+        for (Region r : regions) r.stepHouseholds();
+        // Update, for each region, its market statistics collectors and markets
+        for (Region r : regions) r.stepMarkets();
     }
 
     //----- Getter/setter methods -----//
