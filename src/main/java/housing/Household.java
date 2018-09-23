@@ -296,14 +296,11 @@ public class Household implements IHouseOwner, Serializable {
         // Second, find mortgage object and pay off as much outstanding debt as possible given bank balance
         MortgageAgreement mortgage = mortgageFor(sale.house);
         bankBalance -= mortgage.payoff(bankBalance);
-        // Third, if there is no more outstanding debt, remove the house from the household's housePayments object
-        if (mortgage.nPayments == 0) {
-            housePayments.remove(sale.house);
-        } else {
-            // TODO: Warning, if bankBalance is not enough to pay mortgage back, then the house stays in housePayments, consequences to be checked!
-            System.out.println("Property not removed from housePayments of " + this);
-            System.exit(0);
-        }
+        // Third, remove the house from the household's housePayments object (even if there is outstanding debt!)
+        // TODO: An implicit assumption here is that any outstanding debt that cannot be paid with the sellers savings
+        // TODO: (including the money from the current sale) is wiped out, i.e., the household is bailed out. That is
+        // TODO: why the house is removed from the housePayments object. Need to explain this in the article!
+        housePayments.remove(sale.house);
         // Fourth, if the house is still being offered on the rental market, withdraw the offer
         if (sale.house.isOnRentalMarket()) {
             sale.house.region.houseRentalMarket.removeOffer(sale);
