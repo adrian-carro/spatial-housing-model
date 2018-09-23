@@ -69,7 +69,7 @@ public class RegionQualityRecord extends HousingMarketRecord {
         public int XYCompare(RegionQualityRecord arg0, RegionQualityRecord arg1) {
             double diff = arg0.getPrice() - arg1.getPrice();
             if (diff == 0.0) {
-                diff = ((RegionQualityRecord) arg1).getF() - ((RegionQualityRecord) arg0).getF(); // Note the reverse ordering here
+                diff = arg1.getF() - arg0.getF(); // Note the reverse ordering here
                 if (diff == 0.0) {
                     diff = arg0.getId() - arg1.getId();
                 }
@@ -78,21 +78,19 @@ public class RegionQualityRecord extends HousingMarketRecord {
         }
 
         /**
-         * @return -1, 0 or 1 if arg0 has, respectively, less P than, equal P as, or greater P than
-         * arg1
+         * @return -1, 0 or 1 if arg0 is, respectively, cheaper than, as expensive as, or more expensive than arg1
          */
         @Override
         public int XCompare(RegionQualityRecord arg0, RegionQualityRecord arg1) {
-            return Integer.signum((int) (((RegionQualityRecord) arg0).getPrice() - ((RegionQualityRecord) arg1).getPrice()));
+            return (int) Math.signum(arg0.getPrice() - arg1.getPrice());
         }
 
         /**
-         * @return -1, 0 or 1 if arg0 has, respectively, less F than, equal F as, or greater F than
-         * arg1
+         * @return -1, 0 or 1 if arg0 has, respectively, less F than, equal F as, or greater F than arg1
          */
         @Override
         public int YCompare(RegionQualityRecord arg0, RegionQualityRecord arg1) {
-            return Integer.signum((int) (((RegionQualityRecord) arg0).getF() - ((RegionQualityRecord) arg1).getF()));
+            return (int) Math.signum((arg0.getF() - arg1.getF()));
         }
     } 
       
