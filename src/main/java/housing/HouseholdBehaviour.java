@@ -232,10 +232,10 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: here query that particular region...
         RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY,
                 purchasePrice, 0, true);
-        RegionQualityRecord optBuyChoice = region.regionsPQNewForSale.peek(xGreatestBoundaryForPurchase);
+        RegionQualityRecord optBuyChoice = region.regionsSalePQ.peek(xGreatestBoundaryForPurchase);
         RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY,
                 desiredRent, 0, false);
-        RegionQualityRecord optRentChoice = region.regionsPQNewForRent.peek(xGreatestBoundaryForRent);
+        RegionQualityRecord optRentChoice = region.regionsRentPQ.peek(xGreatestBoundaryForRent);
         if (isPropertyInvestor()) {
             // TODO: Probably change this to not buy if they are too poor to buy anywhere!
             // TODO: Also, first change this to buy in their home, rather than job, region

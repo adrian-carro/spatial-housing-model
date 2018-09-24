@@ -3,6 +3,7 @@ package housing;
 import collectors.RegionalHouseholdStats;
 import collectors.RegionalHousingMarketStats;
 import collectors.RegionalRentalMarketStats;
+
 import org.apache.commons.math3.random.MersenneTwister;
 
 import utilities.PriorityQueue2D;
@@ -35,8 +36,8 @@ public class Region {
     private int                         regionID;
     private int                         housingStock;
 
-    PriorityQueue2D<RegionQualityRecord>    regionsPQNewForSale; // PriorityQueue2D of regions (ordered by price and FSale)
-    PriorityQueue2D<RegionQualityRecord>    regionsPQNewForRent; // PriorityQueue2D of regions (ordered by price and FRent)
+    PriorityQueue2D<RegionQualityRecord>    regionsSalePQ; // PriorityQueue2D of regions (ordered by sale price and F)
+    PriorityQueue2D<RegionQualityRecord>    regionsRentPQ; // PriorityQueue2D of regions (ordered by rental price and F)
 
     //------------------------//
     //----- Constructors -----//
@@ -55,9 +56,8 @@ public class Region {
         regionalHousingMarketStats = new RegionalHousingMarketStats(config, houseSaleMarket);
         regionalRentalMarketStats = new RegionalRentalMarketStats(config, regionalHousingMarketStats,
                                                                   houseRentalMarket);
-
-        regionsPQNewForSale = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
-        regionsPQNewForRent = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
+        regionsSalePQ = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
+        regionsRentPQ = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
     }
 
     //-------------------//
@@ -68,13 +68,15 @@ public class Region {
      * Initialises the region by clearing the array of households and initialising the other internal variables
      */
     public void init() {
+        housingStock = 0;
         households.clear();
         houseSaleMarket.init();
         houseRentalMarket.init();
+        regionalHouseholdStats.init();
         regionalHousingMarketStats.init();
         regionalRentalMarketStats.init();
-        regionalHouseholdStats.init();
-        housingStock = 0;
+        regionsSalePQ.clear();
+        regionsRentPQ.clear();
     }
 
     /**
@@ -113,5 +115,5 @@ public class Region {
 
     void increaseHousingStock () { housingStock++; }
     
-    int getRegionID() {return regionID;}
+    int getRegionID() { return regionID; }
 }

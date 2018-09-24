@@ -19,18 +19,16 @@ public class Geography {
     //----- Fields -----//
     //------------------//
 
-    private static ArrayList<Region>    regions;
-//    private static double[][]           distanceMatrix; // The distance matrix
-    private ArrayList<ArrayList<Double>>           distanceMatrix; // The distance matrix
-    private Config	                    config; // Private field to receive the Model's configuration parameters object
-    // TODO: Bring commuting costs data into this class to be used for computing prices and filling in the priority queues
+    private static ArrayList<Region>        regions;
+    private ArrayList<ArrayList<Double>>    distanceMatrix;
+    private Config	                        config; // Private field to receive the Model's configuration parameters object
 
     //------------------------//
     //----- Constructors -----//
     //------------------------//
 
     /**
-     * Constructs the geography with its regions and respective target populations and distance between regions
+     * Constructs the geography with its regions and respective target populations and distance between them
      */
     Geography(Config config, MersenneTwister rand) {
         this.config = config;
@@ -51,7 +49,6 @@ public class Geography {
      * Initialises the geography by initialising its regions
      */
     public void init() {
-        // First initialise all regions
         for (Region r : regions) r.init();
     }
 
@@ -66,26 +63,25 @@ public class Geography {
         // Update, for each region, the priority queue of region-quality bands using current market data
         // For each region...
         for (Region origin : regions) {
-            // ...first, clear the priority queue of region-quality bands
-            origin.regionsPQNewForSale.clear();
-            origin.regionsPQNewForRent.clear();
-            // ...then, fill it in using current (exponential moving average) prices
+            // ...first, clear both sale and rental priority queues of region-quality bands
+            origin.regionsSalePQ.clear();
+            origin.regionsRentPQ.clear();
+            // ...then, fill them in using current (exponential moving average) prices
             for (Region destination: regions) {
-                for(int quality = 0; quality < config.N_QUALITY; ++quality) {
+                for (int quality = 0; quality < config.N_QUALITY; ++quality) {
                     // TODO: Add here commuting costs!
-//                    double commutingCost = 1000*distanceMatrix[origin.getRegionID()][destination.getRegionID()];
                     double commutingCost = 1000*distanceMatrix.get(origin.getRegionID()).get(destination.getRegionID());
                     double priceForSale = destination.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality);
                     RegionQualityRecord recordForSale = new RegionQualityRecord(config, destination, quality, priceForSale, commutingCost, true);
-                    origin.regionsPQNewForSale.add(recordForSale);
+                    origin.regionsSalePQ.add(recordForSale);
                     double priceForRent = destination.regionalRentalMarketStats.getExpAvSalePriceForQuality(quality);
                     RegionQualityRecord recordForRent = new RegionQualityRecord(config, destination, quality, priceForRent, commutingCost, false);
-                    origin.regionsPQNewForRent.add(recordForRent);
+                    origin.regionsRentPQ.add(recordForRent);
                 }
             }
             // ...finally, sort priorities before any use
-            origin.regionsPQNewForSale.sortPriorities();
-            origin.regionsPQNewForRent.sortPriorities();
+            origin.regionsSalePQ.sortPriorities();
+            origin.regionsRentPQ.sortPriorities();
         }
         // Update, for each region, its households, collecting bids at the corresponding markets
         for (Region r : regions) r.stepHouseholds();
