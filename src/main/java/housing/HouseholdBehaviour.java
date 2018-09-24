@@ -266,8 +266,10 @@ public class HouseholdBehaviour implements Serializable {
         		- optBuyChoice.getPrice()*me.getLengthOfNextStay()*(1+getLongTermHPAExpectation(optBuyChoice.getRegion()));
         double totalCostForRenting = me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getPrice()
         		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getCommutingCost();
-        double FSaleNew = Math.pow(optBuyChoice.getQuality(), config.A_IN_F) / (totalCostForBuying + config.B_IN_F);
-        double FRentNew = Math.pow(optRentChoice.getQuality(), config.A_IN_F) / (totalCostForRenting + config.B_IN_F);
+        double FSaleNew = Math.pow(optBuyChoice.getQuality(), config.LOCATION_QUALITY_EXPONENT) /
+                (totalCostForBuying + config.LOCATION_PRICE_THRESHOLD);
+        double FRentNew = Math.pow(optRentChoice.getQuality(), config.LOCATION_QUALITY_EXPONENT) /
+                (totalCostForRenting + config.LOCATION_PRICE_THRESHOLD);
         if (rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(FRentNew - FSaleNew))) {
             return optBuyChoice;
         } else {

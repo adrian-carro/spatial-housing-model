@@ -42,9 +42,9 @@ public class RegionQualityRecord extends HousingMarketRecord {
         this.commutingCost = commutingCost;
         this.saleOrRental = saleOrRental;
         if(saleOrRental) {
-        		F = Math.pow(quality, config.A_IN_F)/price;
+        		F = Math.pow(quality, config.LOCATION_QUALITY_EXPONENT)/price;
         } else {
-        		F = Math.pow(quality, config.A_IN_F)/(config.constants.MONTHS_IN_YEAR*price 
+        		F = Math.pow(quality, config.LOCATION_QUALITY_EXPONENT)/(config.constants.MONTHS_IN_YEAR*price
         				+ config.constants.MONTHS_IN_YEAR*commutingCost); 
     //TODO: probably add some psychological cost
         }        
@@ -138,7 +138,5 @@ public class RegionQualityRecord extends HousingMarketRecord {
      * @param newPrice The new (exponential moving average) price for this region and quality band
      * @param auth Authority to change the price
      */
-    public void setPrice(double newPrice, HousingMarket.Authority auth) {
-        super.setPrice(newPrice, auth);
-    }
+    public void setPrice(double newPrice, HousingMarket.Authority auth) { super.setPrice(newPrice, auth); }
 }

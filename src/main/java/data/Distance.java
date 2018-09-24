@@ -24,7 +24,8 @@ public class Distance {
     private static Config config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     // Reads and stores the matrix of distances between regions as a static 2D ArrayList of doubles
-	private static ArrayList<ArrayList<Double>> distanceMatrix = readDistanceMatrix(config.DISTANCE_BETWEEN_REGIONS);
+	private static ArrayList<ArrayList<Double>> distanceMatrix =
+            readDistanceMatrix(config.DATA_DISTANCE_BETWEEN_REGIONS);
 
     //-------------------//
     //----- Methods -----//
