@@ -197,7 +197,7 @@ public class Household implements IHouseOwner, Serializable {
      * @param house A house owned by the household
      */
     private void manageHouse(House house) {
-        HouseSaleRecord forSale, forRent;
+        HouseOfferRecord forSale, forRent;
         double newPrice;
         
         forSale = house.getSaleRecord();
@@ -209,7 +209,7 @@ public class Household implements IHouseOwner, Serializable {
                 house.region.houseSaleMarket.removeOffer(forSale);
                 // TODO: Is first condition redundant?
                 if(house != home && house.resident == null) {
-                    house.region.houseRentalMarket.offer(house, buyToLetRent(house));
+                    house.region.houseRentalMarket.offer(house, buyToLetRent(house), false);
                 }
             }
         } else if(decideToSellHouse(house)) { // put house on market?
@@ -237,7 +237,11 @@ public class Household implements IHouseOwner, Serializable {
         } else {
             principal = 0.0;
         }
-        h.getRegion().houseSaleMarket.offer(h, behaviour.getInitialSalePrice(h.getRegion(), h.getQuality(), principal));
+        if (h == home) {
+            h.getRegion().houseSaleMarket.offer(h, behaviour.getInitialSalePrice(h.getRegion(), h.getQuality(), principal), false);
+        } else {
+            h.getRegion().houseSaleMarket.offer(h, behaviour.getInitialSalePrice(h.getRegion(), h.getQuality(), principal), true);
+        }
     }
 
     /////////////////////////////////////////////////////////
@@ -252,16 +256,17 @@ public class Household implements IHouseOwner, Serializable {
      * Pay for house,
      * Put house on rental market if buy-to-let and no tenant.
      ********************************************************/
-    void completeHousePurchase(HouseSaleRecord sale) {
+    void completeHousePurchase(HouseOfferRecord sale) {
         if(isRenting()) { // give immediate notice to landlord and move out
-            if(sale.house.resident != null) System.out.println("Strange: my new house has someone in it!");
-            if(home == sale.house) {
+            if(sale.getHouse().resident != null) System.out.println("Strange: my new house has someone in it!");
+            if(home == sale.getHouse()) {
                 System.out.println("Strange: I've just bought a house I'm renting out");
             } else {
                 endTenancy();
             }
         }
-        MortgageAgreement mortgage = Model.bank.requestLoan(this, sale.getPrice(), behaviour.decideDownPayment(this,sale.getPrice()), home == null, sale.house);
+        MortgageAgreement mortgage = Model.bank.requestLoan(this, sale.getPrice(),
+                behaviour.decideDownPayment(this,sale.getPrice()), home == null, sale.getHouse());
         if(mortgage == null) {
             // TODO: need to either provide a way for house sales to fall through or to ensure that pre-approvals are always satisfiable
             System.out.println("Can't afford to buy house: strange");
@@ -272,16 +277,17 @@ public class Household implements IHouseOwner, Serializable {
             if(isInSocialHousing()) System.out.println("Is homeless");
             if(isFirstTimeBuyer()) System.out.println("Is firsttimebuyer");
             if(behaviour.isPropertyInvestor()) System.out.println("Is investor");
-            System.out.println("House owner = "+sale.house.owner);
+            System.out.println("House owner = "+ sale.getHouse().owner);
             System.out.println("me = "+this);
         } else {
             bankBalance -= mortgage.downPayment;
-            housePayments.put(sale.house, mortgage);
+            housePayments.put(sale.getHouse(), mortgage);
             if (home == null) { // move in to house
-                home = sale.house;
-                sale.house.resident = this;
-            } else if (sale.house.resident == null) { // put empty buy-to-let house on rental market
-                sale.house.region.houseRentalMarket.offer(sale.house, buyToLetRent(sale.house));
+                home = sale.getHouse();
+                sale.getHouse().resident = this;
+            } else if (sale.getHouse().resident == null) { // put empty buy-to-let house on rental market
+                sale.getHouse().region.houseRentalMarket.offer(sale.getHouse(), buyToLetRent(sale.getHouse()),
+                        false);
             }
             isFirstTimeBuyer = false;
         }
@@ -290,30 +296,30 @@ public class Household implements IHouseOwner, Serializable {
     /********************************************************
      * Do all stuff necessary when this household sells a house
      ********************************************************/
-    public void completeHouseSale(HouseSaleRecord sale) {
+    public void completeHouseSale(HouseOfferRecord sale) {
         // First, receive money from sale
         bankBalance += sale.getPrice();
         // Second, find mortgage object and pay off as much outstanding debt as possible given bank balance
-        MortgageAgreement mortgage = mortgageFor(sale.house);
+        MortgageAgreement mortgage = mortgageFor(sale.getHouse());
         bankBalance -= mortgage.payoff(bankBalance);
         // Third, remove the house from the household's housePayments object (even if there is outstanding debt!)
         // TODO: An implicit assumption here is that any outstanding debt that cannot be paid with the sellers savings
         // TODO: (including the money from the current sale) is wiped out, i.e., the household is bailed out. That is
         // TODO: why the house is removed from the housePayments object. Need to explain this in the article!
-        housePayments.remove(sale.house);
+        housePayments.remove(sale.getHouse());
         // Fourth, if the house is still being offered on the rental market, withdraw the offer
-        if (sale.house.isOnRentalMarket()) {
-            sale.house.region.houseRentalMarket.removeOffer(sale);
+        if (sale.getHouse().isOnRentalMarket()) {
+            sale.getHouse().region.houseRentalMarket.removeOffer(sale);
         }
         // Fifth, if the house is the household's home, then the household moves out and becomes temporarily homeless...
-        if (sale.house == home) {
+        if (sale.getHouse() == home) {
             home.resident = null;
             home = null;
         // ...otherwise, if the house has a resident, if must be a renter, who must get evicted, also the rental income
         // corresponding to this tenancy must be subtracted from the owner's monthly rental income
-        } else if (sale.house.resident != null) {
-            monthlyGrossRentalIncome -= sale.house.resident.housePayments.get(sale.house).monthlyPayment;
-            sale.house.resident.getEvicted();
+        } else if (sale.getHouse().resident != null) {
+            monthlyGrossRentalIncome -= sale.getHouse().resident.housePayments.get(sale.getHouse()).monthlyPayment;
+            sale.getHouse().resident.getEvicted();
         }
     }
     
@@ -335,7 +341,7 @@ public class Household implements IHouseOwner, Serializable {
 //        if(h.resident != null) System.out.println("Strange: renting out a house that has a resident");        
 //        if(h.resident != null && h.resident == h.owner) System.out.println("Strange: renting out a house that belongs to a homeowner");        
         if(h.isOnRentalMarket()) System.out.println("Strange: got endOfLettingAgreement on house on rental market");
-        if(!h.isOnMarket()) h.region.houseRentalMarket.offer(h, buyToLetRent(h));
+        if(!h.isOnMarket()) h.region.houseRentalMarket.offer(h, buyToLetRent(h), false);
     }
 
     /**********************************************************
@@ -369,9 +375,9 @@ public class Household implements IHouseOwner, Serializable {
      * in to rented accommodation (i.e. set up a regular
      * payment contract. At present we use a MortgageApproval).
      ********************************************************/
-    void completeHouseRental(HouseSaleRecord sale) {
+    void completeHouseRental(HouseOfferRecord sale) {
         // If trying to rent own house, no need for contract
-        if (sale.house.owner == this) {
+        if (sale.getHouse().owner == this) {
             System.out.println("Strange: I'm renting a house I own");
             System.exit(0);
         // Otherwise, write a contract
@@ -381,22 +387,22 @@ public class Household implements IHouseOwner, Serializable {
             rent.nPayments = config.TENANCY_LENGTH_AVERAGE
                     + rand.nextInt(2*config.TENANCY_LENGTH_EPSILON + 1) - config.TENANCY_LENGTH_EPSILON;
 //            rent.principal = rent.monthlyPayment*rent.nPayments;
-            housePayments.put(sale.house, rent);
+            housePayments.put(sale.getHouse(), rent);
         }
         if (home != null) {
             System.out.println("Strange: I'm renting a house but not homeless");
             System.exit(0);
         } else {
-            home = sale.house;
+            home = sale.getHouse();
         }
-        if (sale.house.resident != null) {
+        if (sale.getHouse().resident != null) {
             System.out.println("Strange: tenant moving into an occupied house");
-            if(sale.house.resident == this) System.out.println("...and I'm the resident!");
-            if(sale.house.owner == this) System.out.println("...and I'm the owner!");
-            if(sale.house.owner == sale.house.resident) System.out.println("...and owner and resident are the same!");
+            if(sale.getHouse().resident == this) System.out.println("...and I'm the resident!");
+            if(sale.getHouse().owner == this) System.out.println("...and I'm the owner!");
+            if(sale.getHouse().owner == sale.getHouse().resident) System.out.println("...and owner and resident are the same!");
             System.exit(0);
         } else {
-            sale.house.resident = this;
+            sale.getHouse().resident = this;
         }
     }
 
@@ -448,9 +454,9 @@ public class Household implements IHouseOwner, Serializable {
      * property
      */
     @Override
-    public void completeHouseLet(HouseSaleRecord sale) {
-        if(sale.house.isOnMarket()) {
-            sale.house.region.houseSaleMarket.removeOffer(sale.house.getSaleRecord());
+    public void completeHouseLet(HouseOfferRecord sale) {
+        if (sale.getHouse().isOnMarket()) {
+            sale.getHouse().region.houseSaleMarket.removeOffer(sale.getHouse().getSaleRecord());
         }
         monthlyGrossRentalIncome += sale.getPrice();
     }
@@ -559,7 +565,7 @@ public class Household implements IHouseOwner, Serializable {
                 putHouseForSale(h);
             // ...or rent it out
             } else {
-                h.region.houseRentalMarket.offer(h, buyToLetRent(h));
+                h.region.houseRentalMarket.offer(h, buyToLetRent(h), false);
             }
         // If being an owner-occupier, put inherited house for sale
         } else {

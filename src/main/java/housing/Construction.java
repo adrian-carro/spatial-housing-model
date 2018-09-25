@@ -135,7 +135,8 @@ public class Construction implements IHouseOwner, Serializable {
                 newHouse.owner = this;
                 // ...put the house for sale in the regional house sale market at the reference price for that quality
                 region.houseSaleMarket.offer(newHouse,
-                        region.regionalHousingMarketStats.getExpAvSalePriceForQuality(newHouse.getQuality()));
+                        region.regionalHousingMarketStats.getExpAvSalePriceForQuality(newHouse.getQuality()),
+                        false);
 //                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()));
                 // ...add the house to the portfolio of construction sector properties
                 onMarket.add(newHouse);
@@ -185,7 +186,8 @@ public class Construction implements IHouseOwner, Serializable {
                 newHouse.owner = this;
                 // ...put the house for sale in the regional house sale market at the reference price for that quality
                 region.houseSaleMarket.offer(newHouse,
-                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()));
+                        region.regionalHousingMarketStats.getReferencePriceForQuality(newHouse.getQuality()),
+                        false);
                 // ...add the house to the portfolio of construction sector properties
                 onMarket.add(newHouse);
                 // ...and finally increase both regional and general housing stocks, and decrease shortfall
@@ -197,7 +199,7 @@ public class Construction implements IHouseOwner, Serializable {
 	}
 
 	@Override
-	public void completeHouseSale(HouseSaleRecord sale) { onMarket.remove(sale.house); }
+	public void completeHouseSale(HouseOfferRecord sale) { onMarket.remove(sale.getHouse()); }
 
 	@Override
 	public void endOfLettingAgreement(House h, PaymentAgreement p) {
@@ -205,7 +207,7 @@ public class Construction implements IHouseOwner, Serializable {
 	}
 
 	@Override
-	public void completeHouseLet(HouseSaleRecord sale) {
+	public void completeHouseLet(HouseOfferRecord sale) {
         System.out.println("Strange: the construction sector is trying to let a house!");
 	}
 
