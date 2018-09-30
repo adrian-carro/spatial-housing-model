@@ -34,10 +34,12 @@ public class Geography {
         this.config = config;
         regions = new ArrayList<>(); 
         int regionID = 0;
+        // Read target population for each real region from file and create a region accordingly
         for (int targetPopulation: data.Demographics.getTargetPopulationPerRegion()) {        		
             regions.add(new Region(this.config, rand, targetPopulation, regionID));
             regionID++;
         }
+        // Read matrix of distances between regions, pass the number of regions to check if it is the same as in the distances file
         distanceMatrix = data.Distance.getDistanceMatrix(regions.size());
     }
 
@@ -48,41 +50,13 @@ public class Geography {
     /**
      * Initialises the geography by initialising its regions
      */
-    public void init() {
-        for (Region r : regions) r.init();
-    }
+    public void init() { for (Region r : regions) r.init(); }
 
     /**
-     * Main method of the class: first, it loops through the regions updating their priority queues of region-quality
-     * bands, then, it loops again through the regions updating household's bids, clearing both markets, and recording
-     * data as appropriate. Note that, since every record at the priority queue of regions-quality bands would need to
-     * be removed and re-introduced, it is more efficient to simply clear the priority queue altogether and fill it in
-     * again from scratch
+     * Main method of the class: first, it loops through the regions updating household's bids, and then again clearing
+     * both markets and recording data as appropriate
      */
     public void step() {
-        // Update, for each region, the priority queue of region-quality bands using current market data
-        // For each region...
-        for (Region origin : regions) {
-            // ...first, clear both sale and rental priority queues of region-quality bands
-            origin.regionsSalePQ.clear();
-            origin.regionsRentPQ.clear();
-            // ...then, fill them in using current (exponential moving average) prices
-            for (Region destination: regions) {
-                for (int quality = 0; quality < config.N_QUALITY; ++quality) {
-                    // TODO: Add here commuting costs!
-                    double commutingCost = 1000*distanceMatrix.get(origin.getRegionID()).get(destination.getRegionID());
-                    double priceForSale = destination.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality);
-                    RegionQualityRecord recordForSale = new RegionQualityRecord(config, destination, quality, priceForSale, commutingCost, true);
-                    origin.regionsSalePQ.add(recordForSale);
-                    double priceForRent = destination.regionalRentalMarketStats.getExpAvSalePriceForQuality(quality);
-                    RegionQualityRecord recordForRent = new RegionQualityRecord(config, destination, quality, priceForRent, commutingCost, false);
-                    origin.regionsRentPQ.add(recordForRent);
-                }
-            }
-            // ...finally, sort priorities before any use
-            origin.regionsSalePQ.sortPriorities();
-            origin.regionsRentPQ.sortPriorities();
-        }
         // Update, for each region, its households, collecting bids at the corresponding markets
         for (Region r : regions) r.stepHouseholds();
         // Update, for each region, its market statistics collectors and markets

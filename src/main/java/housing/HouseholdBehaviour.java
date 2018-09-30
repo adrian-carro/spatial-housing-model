@@ -226,70 +226,12 @@ public class HouseholdBehaviour implements Serializable {
                 + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse));
     }
     
-    RegionQualityRecord decideOptHouse(Household me, Region region, double purchasePrice, double desiredRent) {
-        // TODO: Check that BTL investors are behaving according to design
-        // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
-        // TODO: here query that particular region...
-        RegionQualityRecord xGreatestBoundaryForPurchase = new RegionQualityRecord(config, region, config.N_QUALITY,
-                purchasePrice, 0, true);
-        RegionQualityRecord optBuyChoice = region.regionsSalePQ.peek(xGreatestBoundaryForPurchase);
-        RegionQualityRecord xGreatestBoundaryForRent = new RegionQualityRecord(config, region, config.N_QUALITY,
-                desiredRent, 0, false);
-        RegionQualityRecord optRentChoice = region.regionsRentPQ.peek(xGreatestBoundaryForRent);
-        if (isPropertyInvestor()) {
-            // TODO: Probably change this to not buy if they are too poor to buy anywhere!
-            // TODO: Also, first change this to buy in their home, rather than job, region
-            // Property investors always try to buy, if they are too poor, they try in their home (job) region
-            if (optBuyChoice != null) {
-                return optBuyChoice;
-            } else {
-                return new RegionQualityRecord(config, region, 0, purchasePrice, 0,
-                        false);
-            }
-        }
-        // If too poor to buy...
-        if (optBuyChoice == null) {
-            // ...but not too poor to rent, then rent
-            if (optRentChoice != null) {
-                return optRentChoice;
-            // If too poor to rent too, then try to rent in home (job) region
-            } else {
-                return new RegionQualityRecord(config, region, 0, desiredRent, 0, false);
-            }
-        }
-        if(optRentChoice == null) return optBuyChoice; // If reached here, we know optBuyChoice is not null
-        MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, optBuyChoice.getPrice(),
-                decideDownPayment(me, optBuyChoice.getPrice()), true);
-        double totalCostForBuying = decideDownPayment(me, optBuyChoice.getPrice())
-        		+ me.getLengthOfNextStay()*mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR 
-        		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optBuyChoice.getCommutingCost() 
-        		- optBuyChoice.getPrice()*me.getLengthOfNextStay()*(1+getLongTermHPAExpectation(optBuyChoice.getRegion()));
-        double totalCostForRenting = me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getPrice()
-        		+ me.getLengthOfNextStay()*config.constants.MONTHS_IN_YEAR*optRentChoice.getCommutingCost();
-        double FSaleNew = Math.pow(optBuyChoice.getQuality(), config.LOCATION_QUALITY_EXPONENT) /
-                (totalCostForBuying + config.LOCATION_PRICE_THRESHOLD);
-        double FRentNew = Math.pow(optRentChoice.getQuality(), config.LOCATION_QUALITY_EXPONENT) /
-                (totalCostForRenting + config.LOCATION_PRICE_THRESHOLD);
-        if (rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(FRentNew - FSaleNew))) {
-            return optBuyChoice;
-        } else {
-            return optRentChoice;
-        }
-    }
-
-    boolean decideRentOrPurchase(RegionQualityRecord OptHouse) {
-        return OptHouse.getSaleOrRent();
-    }  	
-    
-    Region decideHouseRegion(RegionQualityRecord OptHouse) {
-    		return OptHouse.getRegion();
-    }
-    
 	/********************************************************
 	 * Decide how much to bid on the rental market
 	 * Source: Zoopla rental prices 2008-2009 (at Bank of England)
 	 ********************************************************/
-	double desiredRent(double monthlyGrossEmploymentIncome) {
+	// TODO: Check if monthly gross employment income is the correct one for this use, rather than net employment income
+	double getDesiredRentPrice(double monthlyGrossEmploymentIncome) {
 	    return monthlyGrossEmploymentIncome*config.DESIRED_RENT_INCOME_FRACTION;
 	}
 
@@ -366,7 +308,8 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: This mechanism and its parameter are not declared in the article! Any reference for the value of the parameter?
         if (me.getBankBalance() < getDesiredBankBalance(me.getAnnualGrossTotalIncome())*config.BTL_CHOICE_MIN_BANK_BALANCE) { return false; }
         // ...find maximum price (maximum mortgage) the household could pay
-        double maxPrice = Model.bank.getMaxMortgage(me, false);
+        double maxPrice = Model.bank.getMaxMortgage(me.getBankBalance(), me.getAnnualGrossEmploymentIncome(),
+                me.getMonthlyNetTotalIncome(), me.isFirstTimeBuyer(), false);
         // ...never buy if that maximum price is below the average price for the lowest quality
         if (maxPrice < region.regionalHousingMarketStats.getExpAvSalePriceForQuality(0)) { return false; }
 
@@ -410,7 +353,8 @@ public class HouseholdBehaviour implements Serializable {
         // TODO: 10% above the average price of top quality houses. The effect of this is to prevent fast increases of
         // TODO: price as BTL investors buy all supply till prices are too high for everybody. Fairly unclear mechanism,
         // TODO: check for removal!
-        return(Math.min(Model.bank.getMaxMortgage(me, false),
+        return(Math.min(Model.bank.getMaxMortgage(me.getBankBalance(), me.getAnnualGrossEmploymentIncome(),
+                me.getMonthlyNetTotalIncome(), me.isFirstTimeBuyer(), false),
                 1.1*region.regionalHousingMarketStats.getExpAvSalePriceForQuality(config.N_QUALITY-1)));
     }
 
@@ -449,12 +393,12 @@ public class HouseholdBehaviour implements Serializable {
      *
      * @param x Parameter of the sigma or logistic function
      */
-    private double sigma(double x) { return 1.0/(1.0 + Math.exp(-1.0*x)); }
+    double sigma(double x) { return 1.0/(1.0 + Math.exp(-1.0*x)); }
 
 	/**
      * @return expectation value of HPI in one year's time divided by today's HPI
      */
-	private double getLongTermHPAExpectation(Region region) {
+	double getLongTermHPAExpectation(Region region) {
 		// Dampening or multiplier factor, depending on its value being <1 or >1, for the current trend of HPA when
 		// computing expectations as in HPI(t+DT) = HPI(t) + FACTOR*DT*dHPI/dt (double)
 		return(region.regionalHousingMarketStats.getLongTermHPA()*config.HPA_EXPECTATION_FACTOR);

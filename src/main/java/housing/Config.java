@@ -218,6 +218,8 @@ public class Config {
     public class Constants {
         final public int DAYS_IN_MONTH = 30;
         final public int MONTHS_IN_YEAR = 12;
+        final int WORKING_DAYS_IN_MONTH = 20;
+        final int WORKING_HOURS_IN_DAY = 8;
     }
 
     //------------------------//

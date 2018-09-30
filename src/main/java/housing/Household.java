@@ -29,6 +29,7 @@ public class Household implements IHouseOwner, Serializable {
 
     double                      incomePercentile; // Fixed for the whole lifetime of the household
 
+    private Geography                       geography;
     private Region                          jobRegion;
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
@@ -38,11 +39,9 @@ public class Household implements IHouseOwner, Serializable {
     private double                          bankBalance;
     private double                          annualGrossEmploymentIncome;
     private double                          monthlyGrossEmploymentIncome;
-    private double                          lengthOfNextStay;
     private double                          monthlyGrossRentalIncome; // Keeps track of monthly rental income, as only tenants keep a reference to the rental contract, not landlords
     private boolean                         isFirstTimeBuyer;
     private boolean                         isBankrupt;
-    private boolean                         isHomelessLastMonth; // TODO: Delete it by refreshing lengthOfNextStay each time households get evicted or end contract or sell house.
     
     //------------------------//
     //----- Constructors -----//
@@ -52,14 +51,15 @@ public class Household implements IHouseOwner, Serializable {
      * Initialises behaviour (determine whether the household will be a BTL investor). Households start off in social
      * housing and with their "desired bank balance" in the bank
      */
-    public Household(Config config, MersenneTwister rand, double householdAgeAtBirth, Region jobRegion) {
+    public Household(Config config, MersenneTwister rand, double householdAgeAtBirth, Geography geography,
+                     Region jobRegion) {
         this.config = config;
         this.rand = rand;
+        this.geography = geography;
         this.jobRegion = jobRegion;
         home = null;
         isFirstTimeBuyer = true;
         isBankrupt = false;
-        isHomelessLastMonth = true;
         id = ++id_pool;
         age = householdAgeAtBirth;
         incomePercentile = this.rand.nextDouble();
@@ -69,7 +69,6 @@ public class Household implements IHouseOwner, Serializable {
         monthlyGrossEmploymentIncome = annualGrossEmploymentIncome/config.constants.MONTHS_IN_YEAR;
         bankBalance = behaviour.getDesiredBankBalance(getAnnualGrossTotalIncome()); // Desired bank balance is used as initial value for actual bank balance
         monthlyGrossRentalIncome = 0.0;
-        lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*this.rand.nextDouble();
     }
 
     //-------------------//
@@ -119,18 +118,13 @@ public class Household implements IHouseOwner, Serializable {
                 System.out.println("House is in my payments, but I don't own it nor do I live in it");
             }
         }
-        // Decide length of next stay if just entered social housing status
-        if (!isHomelessLastMonth && isInSocialHousing()) {
-            lengthOfNextStay = 1 + (config.HOLD_PERIOD - 1)*rand.nextDouble(); // lengthOfNextStay is a random number between 1 and HOLD_PERIOD
-        }
         // Make housing decisions depending on current housing state
         if (isInSocialHousing()) {
-            // TODO: Method that takes jobRegion and gives bidRegion, which is introduced into bidForAHome
-            bidForAHome(jobRegion); // When BTL households are born, they enter here the first time and until they manage to buy a home!
+            bidForAHome(); // When BTL households are born, they enter here the first time and until they manage to buy a home!
         } else if (isRenting()) {
             if (housePayments.get(home).nPayments == 0) { // End of rental period for this tenant
                 endTenancy();
-                bidForAHome(jobRegion);
+                bidForAHome();
             }
         } else if (behaviour.isPropertyInvestor()) { // Only BTL investors who already own a home enter here
             double price = behaviour.btlPurchaseBid(this, jobRegion);
@@ -146,7 +140,6 @@ public class Household implements IHouseOwner, Serializable {
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
         }
-        isHomelessLastMonth = isInSocialHousing(); //update the variable at the end of each month
     }
 
     /**
@@ -406,35 +399,272 @@ public class Household implements IHouseOwner, Serializable {
         }
     }
 
-
-    /********************************************************
-     * Make the decision whether to bid on the housing market or rental market.
-     * This is an "intensity of choice" decision (sigma function)
-     * on the cost of renting compared to the cost of owning, with
-     * COST_OF_RENTING being an intrinsic psychological cost of not
-     * owning. 
-     ********************************************************/
-    private void bidForAHome(Region region) {
-        // Find household's desired housing expenditure
-        double purchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
-        // Cap this expenditure to the maximum mortgage available to the household
-        purchasePrice = Math.min(purchasePrice, Model.bank.getMaxMortgage(this, true));
-        // Find household's desired rent expenditure
-        double rent = behaviour.desiredRent(monthlyGrossEmploymentIncome);
-        // Compare costs to decide whether to buy or rent...
-        RegionQualityRecord OptHouse = behaviour.decideOptHouse(this, region, purchasePrice, rent);
-        if(behaviour.decideRentOrPurchase(OptHouse)) {
-            // ... if buying, bid in the house sale market for the capped desired price
-            behaviour.decideHouseRegion(OptHouse).houseSaleMarket.bid(this, purchasePrice);
+    /**
+     * Decide whether to bid on the house sale market or the rental market and where. This is an "intensity of choice"
+     * decision (sigma function) on the cost of owning in the optimal region for this household (there where it can
+     * afford the highest possible quality taking into account commuting costs) compared to the cost of renting in the
+     * cheapest region for that same quality for this household (there where the price of this quality is the cheapest
+     * taking into account commuting costs), with COST_OF_RENTING being an intrinsic psychological cost of not owning.
+     * Note the use of max to refer to maximum quality in a given region while optimal refers to the maximum quality
+     * among all regions.
+     */
+    private void bidForAHome() {
+        // Declare variables
+        RegionQualityPriceContainer optimalOptionForBuying;
+        RegionQualityPriceContainer optimalOptionForRenting;
+        // Find optimal option for buying (region where the household could afford the highest quality band, taking into
+        // account commuting costs, among all possible regions)
+        optimalOptionForBuying = findOptimalPurchaseRegion();
+        // If household is a potential buy-to-let investor, then always buy...
+        if (behaviour.isPropertyInvestor()) {
+            // ...if household cannot afford minimum quality anywhere (optimal option for buying is null), then it
+            // chooses to bid in the region with cheapest minimum quality
+            if (optimalOptionForBuying == null) {
+                optimalOptionForBuying = findCheapestPurchaseRegion();
+            }
+            // ...bid in the house sale market for the capped desired price
+            optimalOptionForBuying.getRegion().houseSaleMarket.bid(this,
+                    optimalOptionForBuying.getDesiredPrice());
+        // Otherwise, for normal households...
         } else {
-            // ... if renting, bid in the house rental market for the desired rent price
-            behaviour.decideHouseRegion(OptHouse).houseRentalMarket.bid(this, rent);
+            // ...if household cannot afford minimum quality anywhere (optimal option for buying is null), then it tries
+            // to find the optimal rental region (where it can afford the highest quality)
+            if (optimalOptionForBuying == null) {
+                optimalOptionForRenting = findOptimalRentalRegion();
+                // ...if household cannot afford to rent minimum quality anywhere (optimal option for renting is null),
+                // then it chooses to bid for rental in the cheapest region for renting (where the minimum quality has
+                // the minimum price)
+                if (optimalOptionForRenting == null) {
+                    optimalOptionForRenting = findCheapestRentalRegion();
+                }
+                // ...bid in the house rental market for the desired rent price
+                optimalOptionForRenting.getRegion().houseRentalMarket.bid(this,
+                        optimalOptionForRenting.getDesiredPrice());
+            // ...otherwise, if the normal household can afford to buy somewhere...
+            } else {
+                // ...then find the region where the same quality has the cheapest rental cost (including commuting)
+                optimalOptionForRenting = findCheapestRentalRegionForQuality(optimalOptionForBuying.getQuality());
+                // ...and decide between the purchase and the rental options
+                if (decideRentOrPurchase(optimalOptionForBuying, optimalOptionForRenting)) {
+                    // ...if buying, bid in the house sale market for the capped desired price
+                    optimalOptionForBuying.getRegion().houseSaleMarket.bid(this,
+                            optimalOptionForBuying.getDesiredPrice());
+                } else {
+                    // ...if renting, bid in the house rental market for the desired rent price
+                    optimalOptionForRenting.getRegion().houseRentalMarket.bid(this,
+                            optimalOptionForRenting.getDesiredPrice());
+                }
+            }
         }
-        // Record the bid on householdStats for counting the number of bidders above exponential moving average sale price
-        // TODO: Rethink what this counter is recording: which region to use? which price to use?
-        behaviour.decideHouseRegion(OptHouse).regionalHouseholdStats.countNonBTLBidsAboveExpAvSalePrice(purchasePrice);
+        // TODO: Need to call here to an equivalent to the old countNonBTLBidsAboveExpAvSalePrice(), not implemented yet
     }
-    
+
+    /**
+     * Find optimal region for buying, that is, the region where the household can afford the highest quality band when
+     * looking at exponential moving average sale prices
+     *
+     * @return RegionQualityPriceContainer with information on the chosen region, i.e., the maximum quality the
+     * household could afford there, the exponential moving average sale price of that quality, and the household's
+     * desired purchase price there (taking into account commuting costs)
+     */
+    private RegionQualityPriceContainer findOptimalPurchaseRegion() {
+        // Declare and initialise variables for comparisons
+        double desiredPurchasePrice = 0.0; // Dummy value, never used
+        int optimalQuality = -1; // Dummy value, it forces entering the if condition in the first iteration
+        double optimalExpAvSalePrice = 0.0; // Dummy value, never used
+        Region optimalRegionForBuying = null;
+        // Find optimal region for buying. To this end, for each region...
+        for (Region region : geography.getRegions()) {
+            // ...find household's desired purchase price (with regional expected HPA)
+            // TODO: Discuss with Doyne how to subtract from here commuting costs (which multiplier to transform annual
+            // TODO: commuting cost into full house price discount)
+            desiredPurchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
+            // ...capped to the maximum mortgage available to the household, including commuting costs in the
+            // affordability check
+            desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(bankBalance,
+                    annualGrossEmploymentIncome, (getMonthlyNetTotalIncome() - getMonthlyCommutingCost(region)),
+                    isFirstTimeBuyer, true));
+            // ...with this desired purchase price, find highest quality this household could afford to buy in this
+            // region
+            int maxQualityForBuying = region.regionalHousingMarketStats.getMaxQualityForPrice(desiredPurchasePrice);
+            // ...check if this quality is non-negative (i.e., household can at least afford the minimum quality) and it
+            // is higher than (or equal and cheaper) than the previous optimal (among studied regions)
+            if (maxQualityForBuying >= 0 && ((maxQualityForBuying > optimalQuality)
+                    || ((maxQualityForBuying == optimalQuality)
+                    && (region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying)
+                    < optimalExpAvSalePrice)))) {
+                optimalQuality = maxQualityForBuying;
+                optimalExpAvSalePrice
+                        = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying);
+                optimalRegionForBuying = region;
+            }
+        }
+        if (optimalQuality < 0) {
+            return null;
+        } else {
+            return new RegionQualityPriceContainer(optimalRegionForBuying, optimalQuality, optimalExpAvSalePrice,
+                    desiredPurchasePrice);
+        }
+    }
+
+    /**
+     * Find optimal region for renting, that is, the region where the household can afford the highest quality band when
+     * looking at exponential moving average rental prices
+     *
+     * @return RegionQualityPriceContainer with information on the chosen region, i.e., the maximum quality the
+     * household could afford to rent there, the exponential moving average rental price of that quality, and the
+     * household's desired rent price there (taking into account commuting costs)
+     */
+    private RegionQualityPriceContainer findOptimalRentalRegion() {
+        // Declare and initialise variables for comparisons
+        double desiredRentPrice = 0.0; // Dummy value, never used
+        int optimalQuality = -1; // Dummy value, it forces entering the if condition in the first iteration
+        double optimalExpAvRentPrice = 0.0; // Dummy value, never used
+        Region optimalRegionForRenting = null;
+        // Find optimal region for renting. To this end, for each region...
+        for (Region region : geography.getRegions()) {
+            // ...find household's desired rental price (taking into account commuting cost)
+            desiredRentPrice = behaviour.getDesiredRentPrice((monthlyGrossEmploymentIncome
+                    - getMonthlyCommutingCost(region)));
+            // ...with this desired rent price, find highest quality this household could afford to rent in this region
+            int maxQualityForRenting = region.regionalRentalMarketStats.getMaxQualityForPrice(desiredRentPrice);
+            // ...check if this quality is non-negative (i.e., household can at least afford the minimum quality) and it
+            // is higher than (or equal and cheaper) than the previous optimal (among studied regions)
+            if (maxQualityForRenting >= 0 && ((maxQualityForRenting > optimalQuality)
+                    || ((maxQualityForRenting == optimalQuality)
+                    && (region.regionalRentalMarketStats.getExpAvSalePriceForQuality(maxQualityForRenting)
+                    < optimalExpAvRentPrice)))) {
+                optimalQuality = maxQualityForRenting;
+                optimalExpAvRentPrice
+                        = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(maxQualityForRenting);
+                optimalRegionForRenting = region;
+            }
+        }
+        if (optimalQuality < 0) {
+            return null;
+        } else {
+            return new RegionQualityPriceContainer(optimalRegionForRenting, optimalQuality, optimalExpAvRentPrice,
+                    desiredRentPrice);
+        }
+    }
+
+    /**
+     * Find cheapest region for buying, that is, the region with the cheapest lowest quality band when looking at
+     * exponential moving average sale prices
+     *
+     * @return RegionQualityPriceContainer with information on the chosen region
+     */
+    private RegionQualityPriceContainer findCheapestPurchaseRegion() {
+        // Declare and initialise variables for comparisons
+        double cheapestTotalCost = Double.POSITIVE_INFINITY; // Dummy value, used only for 1st entry at if statement within for loop
+        Region cheapestRegionForBuying = null;
+        // Find cheapest region for buying. To this end, for each region...
+        for (Region region : geography.getRegions()) {
+            // ...find total purchase cost including the household's commuting cost to this region
+            // TODO: Once a decision is made with Doyne about how to add commuting costs to the total price of the
+            // TODO: house, it should be implemented here
+            double totalCost = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(0);
+            // ...check if this cost is lower than or equal to the previous cheapest cost (among studied regions)
+            if (totalCost <= cheapestTotalCost) {
+                cheapestTotalCost = totalCost;
+                cheapestRegionForBuying = region;
+            }
+        }
+        // Find household's desired purchase price (with regional expected HPA)...
+        // TODO: Discuss with Doyne how to subtract from here commuting costs (which multiplier to transform annual
+        // TODO: commuting cost into full house price discount)
+        double desiredPurchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome,
+                cheapestRegionForBuying);
+        // ...capped to the maximum mortgage available to the household, including commuting costs in the
+        // affordability check
+        desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(bankBalance,
+                annualGrossEmploymentIncome,
+                (getMonthlyNetTotalIncome() - getMonthlyCommutingCost(cheapestRegionForBuying)), isFirstTimeBuyer,
+                true));
+        return new RegionQualityPriceContainer(cheapestRegionForBuying, 0, cheapestTotalCost,
+                desiredPurchasePrice);
+    }
+
+    /**
+     * Find cheapest region for renting, that is, the region with the cheapest lowest quality band when looking at
+     * exponential moving average rental prices
+     *
+     * @return RegionQualityPriceContainer with information on the chosen region
+     */
+    private RegionQualityPriceContainer findCheapestRentalRegion() {
+        // Declare and initialise variables for comparisons
+        double cheapestTotalCost = Double.POSITIVE_INFINITY; // Dummy value, used only for 1st entry at if statement within for loop
+        Region cheapestRegionForRenting = null;
+        // Find cheapest region for buying. To this end, for each region...
+        for (Region region : geography.getRegions()) {
+            // ...find total rental cost including the household's commuting cost to this region
+            double totalCost = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(0)
+                    + getMonthlyCommutingCost(region);
+            // ...check if this cost is lower than or equal to the previous cheapest cost (among studied regions)
+            if (totalCost <= cheapestTotalCost) {
+                cheapestTotalCost = totalCost;
+                cheapestRegionForRenting = region;
+            }
+        }
+        return new RegionQualityPriceContainer(cheapestRegionForRenting, 0, cheapestTotalCost,
+                (behaviour.getDesiredRentPrice(monthlyGrossEmploymentIncome)
+                        - getMonthlyCommutingCost(cheapestRegionForRenting)));
+    }
+
+    /**
+     * Find cheapest region to rent a house of a given quality taking into account commuting costs
+     *
+     * @param quality Quality band to check
+     * @return RegionQualityPriceContainer with information on the chosen region
+     */
+    private RegionQualityPriceContainer findCheapestRentalRegionForQuality(int quality) {
+        // Declare and initialise variables for comparisons
+        double optimalMonthlyRentalCost = Double.POSITIVE_INFINITY; // Dummy value, used only for 1st entry at if statement within for loop
+        Region optimalRegionForRenting = null;
+        // For each region...
+        for (Region region : geography.getRegions()) {
+            // ...find monthly rental cost of that quality band (exponential average price + commuting costs)
+            double monthlyRentalCost = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(quality)
+                    + getMonthlyCommutingCost(region);
+            if (monthlyRentalCost <= optimalMonthlyRentalCost) {
+                optimalMonthlyRentalCost = monthlyRentalCost;
+                optimalRegionForRenting = region;
+            }
+        }
+        return new RegionQualityPriceContainer(optimalRegionForRenting, quality, optimalMonthlyRentalCost,
+                (behaviour.getDesiredRentPrice(monthlyGrossEmploymentIncome)
+                        - getMonthlyCommutingCost(optimalRegionForRenting)));
+    }
+
+    /**
+     * Between a given optimal purchase choice (in a given region and for a given average price) and a given optimal
+     * rental choice (in a given region and for a given average price), both of them including commuting costs,
+     * decide whether to go for the purchase or the rental option. Note that, even though the household may decide to
+     * not rent a house of the same quality as they would buy, but rather of a different quality, the cash value of the
+     * difference in quality is assumed to be the difference in rental price between the two qualities, thus being
+     * economically equivalent options.
+     *
+     *  @return True if household decides for the purchase option, false if household decides for the rental option
+     */
+    private boolean decideRentOrPurchase(RegionQualityPriceContainer optimalOptionForBuying,
+                                         RegionQualityPriceContainer optimalOptionForRenting) {
+        // Simulate a mortgage request to assess annual mortgage cost for a house in the optimal region and quality band
+        // for this household (i.e., using exponential average sale price for that region and quality band)
+        MortgageAgreement mortgageApproval = Model.bank.requestApproval(this, optimalOptionForBuying.getExpAvPrice(),
+                behaviour.decideDownPayment(this, optimalOptionForBuying.getExpAvPrice()), true);
+        // Compute annual buying cost (annual mortgage cost plus annual commuting cost)
+        double optimalAnnualBuyingCost = (mortgageApproval.monthlyPayment
+                + getMonthlyCommutingCost(optimalOptionForBuying.getRegion())) * config.constants.MONTHS_IN_YEAR
+                - optimalOptionForBuying.getExpAvPrice()
+                * behaviour.getLongTermHPAExpectation(optimalOptionForBuying.getRegion());
+        double optimalAnnualRentalCost = config.constants.MONTHS_IN_YEAR * (optimalOptionForRenting.getExpAvPrice()
+                + getMonthlyCommutingCost(optimalOptionForRenting.getRegion()));
+        // Compare costs to build a probability of buying based on a sigma function
+        double probabilityOfBuying = behaviour.sigma(config.SENSITIVITY_RENT_OR_PURCHASE * (optimalAnnualRentalCost
+                * (1.0 + config.PSYCHOLOGICAL_COST_OF_RENTING) - optimalAnnualBuyingCost));
+        // Return a boolean which is true with that probability
+        return rand.nextDouble() < probabilityOfBuying;
+    }
     
     /********************************************************
      * Decide whether to sell ones own house.
@@ -446,8 +676,6 @@ public class Household implements IHouseOwner, Serializable {
             return(behaviour.decideToSellInvestmentProperty(h, this));
         }
     }
-
-
 
     /***
      * Do stuff necessary when BTL investor lets out a rental
@@ -465,6 +693,26 @@ public class Household implements IHouseOwner, Serializable {
         return(behaviour.buyToLetRent(
                 h.region.regionalRentalMarketStats.getExpAvSalePriceForQuality(h.getQuality()),
                 h.region.regionalRentalMarketStats.getExpAvDaysOnMarket(), h));
+    }
+
+    /**
+     * Find the monthly commuting cost for this household: monthly commuting time times value of time, plus monthly
+     * commuting fee
+     */
+    private double getMonthlyCommutingCost(Region region) {
+        // TODO: Dummy zero travel time, and thus dummy zero monthly commuting cost, for now. Need to implement this,
+        // TODO: probably as a function within a data.Transport or data.Commuting class that would replace data.Distance
+        double travelTime = 0;
+        // TODO: Add travel fee here: 2.0*(travelTime*getTimeValue + travelFee)*config.constants.WORKING_DAYS_IN_MONTH
+        return 2.0 * travelTime * getTimeValue() * config.constants.WORKING_DAYS_IN_MONTH;
+    }
+
+    /**
+     * Find the value (in GBP) of an hour of time for this household
+     */
+    private double getTimeValue(){
+        return monthlyGrossEmploymentIncome / config.constants.WORKING_DAYS_IN_MONTH
+                * config.constants.WORKING_HOURS_IN_DAY;
     }
 
     /////////////////////////////////////////////////////////
@@ -602,8 +850,6 @@ public class Household implements IHouseOwner, Serializable {
     public double getAnnualGrossEmploymentIncome() { return annualGrossEmploymentIncome; }
 
     public double getMonthlyGrossEmploymentIncome() { return monthlyGrossEmploymentIncome; }
-
-    public double getLengthOfNextStay() {return lengthOfNextStay;}
     
     /***
      * @return Number of properties this household currently has on the sale market

@@ -54,10 +54,8 @@ public class Demographics {
             int nBirths = (int)(region.getTargetPopulation()*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR
                     + 0.5);
             while(nBirths-- > 0) {
-                region.households.add(new Household(config,
-                                                    rand,
-                                                    data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(rand),
-                                                    region));
+                region.households.add(new Household(config, rand,
+                        data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(rand), geography, region));
                 totalPopulation++;
             }
             // Death: Kill households with a probability dependent on their age and organise inheritance

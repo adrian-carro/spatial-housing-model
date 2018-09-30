@@ -6,8 +6,6 @@ import collectors.RegionalRentalMarketStats;
 
 import org.apache.commons.math3.random.MersenneTwister;
 
-import utilities.PriorityQueue2D;
-
 import java.util.ArrayList;
 
 /**************************************************************************************************
@@ -24,20 +22,17 @@ public class Region {
     //----- Fields -----//
     //------------------//
 
-    public ArrayList<Household>         households;
-    public RegionalHouseholdStats       regionalHouseholdStats;
-    public RegionalHousingMarketStats   regionalHousingMarketStats;
-    public RegionalRentalMarketStats    regionalRentalMarketStats;
+    public ArrayList<Household>             households;
+    public RegionalHouseholdStats           regionalHouseholdStats;
+    public RegionalHousingMarketStats       regionalHousingMarketStats;
+    public RegionalRentalMarketStats        regionalRentalMarketStats;
 
-    HouseSaleMarket                     houseSaleMarket;
-    HouseRentalMarket                   houseRentalMarket;
-    int                                 targetPopulation;
+    HouseSaleMarket                         houseSaleMarket;
+    HouseRentalMarket                       houseRentalMarket;
+    int                                     targetPopulation;
 
-    private int                         regionID;
-    private int                         housingStock;
-
-    PriorityQueue2D<RegionQualityRecord>    regionsSalePQ; // PriorityQueue2D of regions (ordered by sale price and F)
-    PriorityQueue2D<RegionQualityRecord>    regionsRentPQ; // PriorityQueue2D of regions (ordered by rental price and F)
+    private int                             regionID;
+    private int                             housingStock;
 
     //------------------------//
     //----- Constructors -----//
@@ -56,8 +51,6 @@ public class Region {
         regionalHousingMarketStats = new RegionalHousingMarketStats(config, houseSaleMarket);
         regionalRentalMarketStats = new RegionalRentalMarketStats(config, regionalHousingMarketStats,
                                                                   houseRentalMarket);
-        regionsSalePQ = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
-        regionsRentPQ = new PriorityQueue2D<>(new RegionQualityRecord.PFComparator()); // Comparator based on price and F
     }
 
     //-------------------//
@@ -75,8 +68,6 @@ public class Region {
         regionalHouseholdStats.init();
         regionalHousingMarketStats.init();
         regionalRentalMarketStats.init();
-        regionsSalePQ.clear();
-        regionsRentPQ.clear();
     }
 
     /**
