@@ -9,13 +9,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 /**************************************************************************************************
- * Class to read the matrix of distances between the regions.
+ * Class to read data on transport: a matrix of commuting times, and a matrix of commuting fees
+ * between the regions
  *
- * @author Haoyu Ye, Adrian Carro
+ * @author Adrian Carro
  *
  *************************************************************************************************/
 
-public class Distance {
+public class Transport {
 
     //------------------//
     //----- Fields -----//
@@ -24,20 +25,20 @@ public class Distance {
     private static Config config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     // Reads and stores the matrix of distances between regions as a static 2D ArrayList of doubles
-	private static ArrayList<ArrayList<Double>> distanceMatrix =
-            readDistanceMatrix(config.DATA_DISTANCE_BETWEEN_REGIONS);
+	private static ArrayList<ArrayList<Double>> commutingTimeMatrix =
+            readCommutingTimesMatrix(config.DATA_COMMUTING_TIMES);
 
     //-------------------//
     //----- Methods -----//
     //-------------------//
 
 	/**
-	 * Method to read the matrix of distances between every pair of regions from a data file.
+	 * Method to read the matrix of commuting times between every pair of regions from a data file.
 	 *
 	 * @param fileName String with name of file (address inside source folder)
-	 * @return distanceMatrix 2D ArrayList of doubles with the distances between each pair of regions
+	 * @return commutingTimeMatrix 2D ArrayList of doubles with the commuting times between each pair of regions
 	 */
-	private static ArrayList<ArrayList<Double>> readDistanceMatrix(String fileName) {
+	private static ArrayList<ArrayList<Double>> readCommutingTimesMatrix(String fileName) {
 		ArrayList<ArrayList<Double>> distanceMatrix = new ArrayList<>();
 		// Try-with-resources statement
 		try (BufferedReader buffReader = new BufferedReader(new FileReader(fileName))) {
@@ -64,7 +65,7 @@ public class Distance {
 		}
 		// Check that the matrix is squared
         if (distanceMatrix.size() != distanceMatrix.get(0).size()) {
-            System.out.println("Distance matrix is not squared");
+            System.out.println("Commuting time matrix is not squared");
             System.exit(0);
         }
 		return distanceMatrix;
@@ -72,14 +73,15 @@ public class Distance {
 
     //----- Getter/setter methods -----//
 
-	public static ArrayList<ArrayList<Double>> getDistanceMatrix(int numberOfRegions) {
+	public static ArrayList<ArrayList<Double>> getCommutingTimeMatrix(int numberOfRegions) {
 	    // First check if the number of regions passed as input (derived from reading the population per region file) is
         // the same as the number of regions read from the distances file
-	    if (numberOfRegions != distanceMatrix.size()) {
+	    if (numberOfRegions != commutingTimeMatrix.size()) {
             System.out.println("Number of regions at population file, " + numberOfRegions +
-                    ", incoherent with the number of regions at the distances file, " + distanceMatrix.size());
+                    ", incoherent with the number of regions at the commuting times file, "
+                    + commutingTimeMatrix.size());
             System.exit(0);
         }
-        return distanceMatrix;
+        return commutingTimeMatrix;
     }
 }

@@ -700,11 +700,9 @@ public class Household implements IHouseOwner, Serializable {
      * commuting fee
      */
     private double getMonthlyCommutingCost(Region region) {
-        // TODO: Dummy zero travel time, and thus dummy zero monthly commuting cost, for now. Need to implement this,
-        // TODO: probably as a function within a data.Transport or data.Commuting class that would replace data.Distance
-        double travelTime = 0;
         // TODO: Add travel fee here: 2.0*(travelTime*getTimeValue + travelFee)*config.constants.WORKING_DAYS_IN_MONTH
-        return 2.0 * travelTime * getTimeValue() * config.constants.WORKING_DAYS_IN_MONTH;
+        return 2.0 * geography.getCommutingTimeBetween(jobRegion, region) * getTimeValue()
+                * config.constants.WORKING_DAYS_IN_MONTH;
     }
 
     /**

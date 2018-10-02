@@ -1,5 +1,6 @@
 package housing;
 
+import data.Transport;
 import org.apache.commons.math3.random.MersenneTwister;
 
 import java.util.ArrayList;
@@ -20,8 +21,7 @@ public class Geography {
     //------------------//
 
     private static ArrayList<Region>        regions;
-    private ArrayList<ArrayList<Double>>    distanceMatrix;
-    private Config	                        config; // Private field to receive the Model's configuration parameters object
+    private ArrayList<ArrayList<Double>>    commutingTimeMatrix;
 
     //------------------------//
     //----- Constructors -----//
@@ -31,16 +31,15 @@ public class Geography {
      * Constructs the geography with its regions and respective target populations and distance between them
      */
     Geography(Config config, MersenneTwister rand) {
-        this.config = config;
         regions = new ArrayList<>(); 
         int regionID = 0;
         // Read target population for each real region from file and create a region accordingly
         for (int targetPopulation: data.Demographics.getTargetPopulationPerRegion()) {        		
-            regions.add(new Region(this.config, rand, targetPopulation, regionID));
+            regions.add(new Region(config, rand, targetPopulation, regionID));
             regionID++;
         }
         // Read matrix of distances between regions, pass the number of regions to check if it is the same as in the distances file
-        distanceMatrix = data.Distance.getDistanceMatrix(regions.size());
+        commutingTimeMatrix = Transport.getCommutingTimeMatrix(regions.size());
     }
 
     //-------------------//
@@ -66,4 +65,8 @@ public class Geography {
     //----- Getter/setter methods -----//
 
     public ArrayList<Region> getRegions() { return regions; }
+
+    public double getCommutingTimeBetween(Region region1, Region region2) {
+        return commutingTimeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
+    }
 }

@@ -145,7 +145,7 @@ public class Config {
     double UK_HOUSEHOLDS;                       // Approximate number of households in UK, used to scale up results for core indicators
     boolean MORTGAGE_DIAGNOSTICS_ACTIVE;        // Whether to record mortgage statistics
 
-    /** Declaration of addresses **/        // They must be public to be accessed from data package
+    /** Declaration of addresses **/                // They must be public to be accessed from data package
 
     // Data addresses: Government
     public String DATA_TAX_RATES;                   // Address for tax bands and rates data
@@ -160,8 +160,8 @@ public class Config {
     public String DATA_DEATH_PROB_GIVEN_AGE;        // Address for data on the probability of death given the age of the household representative person
     public String DATA_REAL_POPULATION_PER_REGION;  // Address for data on real population per region
     
-    // Data addresses: Geography
-    public String DATA_DISTANCE_BETWEEN_REGIONS;    // Address for data on distances between regions
+    // Data addresses: Transport
+    public String DATA_COMMUTING_TIMES;             // Address for data on distances between regions
     
     /** Construction of objects to contain derived parameters and constants **/
 
