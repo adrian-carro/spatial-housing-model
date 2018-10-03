@@ -143,8 +143,8 @@ public class Household implements IHouseOwner, Serializable {
     }
 
     /**
-     * Subtracts the essential, necessary consumption and housing expenses (mortgage and rental payments) from the net
-     * total income (employment income, property income, financial returns minus taxes)
+     * Subtracts the essential necessary consumption, housing expenses (mortgage and rental payments), and commuting
+     * fees from the net total income (employment income + property income + financial returns - taxes)
      */
     private double getMonthlyDisposableIncome() {
         // Start with net monthly income
@@ -156,6 +156,8 @@ public class Household implements IHouseOwner, Serializable {
         for(PaymentAgreement payment: housePayments.values()) {
             monthlyDisposableIncome -= payment.makeMonthlyPayment();
         }
+        // If the household has a home, subtract commuting consumption (monthly fee, not cost)
+        if (home != null) monthlyDisposableIncome -= getMonthlyCommutingFee(home.region);
         return monthlyDisposableIncome;
     }
 
@@ -164,6 +166,7 @@ public class Household implements IHouseOwner, Serializable {
      * tax on employment income and national insurance contributions are implemented!
      */
     double getMonthlyNetTotalIncome() {
+        // TODO: Note that this implies there is no tax on rental income nor on bank balance returns
         return getMonthlyGrossTotalIncome()
                 - (Model.government.incomeTaxDue(annualGrossEmploymentIncome)   // Employment income tax
                 + Model.government.class1NICsDue(annualGrossEmploymentIncome))  // National insurance contributions
@@ -465,7 +468,8 @@ public class Household implements IHouseOwner, Serializable {
      *
      * @return RegionQualityPriceContainer with information on the chosen region, i.e., the maximum quality the
      * household could afford there, the exponential moving average sale price of that quality, and the household's
-     * desired purchase price there (taking into account commuting costs)
+     * desired purchase price there (taking into account commuting fees at the mortgage affordability check,
+     * TODO: effect of total commuting cost on desired purchase price still to be implemented)
      */
     private RegionQualityPriceContainer findOptimalPurchaseRegion() {
         // Declare and initialise variables for comparisons
@@ -476,13 +480,13 @@ public class Household implements IHouseOwner, Serializable {
         // Find optimal region for buying. To this end, for each region...
         for (Region region : geography.getRegions()) {
             // ...find household's desired purchase price (with regional expected HPA)
-            // TODO: Discuss with Doyne how to subtract from here commuting costs (which multiplier to transform annual
-            // TODO: commuting cost into full house price discount)
+            // TODO: Discuss with Doyne how to subtract from here total commuting costs (time + fees), that is, which
+            // TODO: multiplier to use to transform annual commuting cost into full house price discount
             desiredPurchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
-            // ...capped to the maximum mortgage available to the household, including commuting costs in the
-            // affordability check
+            // ...capped to the maximum mortgage available to the household, including commuting fees (effective
+            // commuting cost) in the affordability check
             desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(bankBalance,
-                    annualGrossEmploymentIncome, (getMonthlyNetTotalIncome() - getMonthlyCommutingCost(region)),
+                    annualGrossEmploymentIncome, (getMonthlyNetTotalIncome() - getMonthlyCommutingFee(region)),
                     isFirstTimeBuyer, true));
             // ...with this desired purchase price, find highest quality this household could afford to buy in this
             // region
@@ -509,11 +513,13 @@ public class Household implements IHouseOwner, Serializable {
 
     /**
      * Find optimal region for renting, that is, the region where the household can afford the highest quality band when
-     * looking at exponential moving average rental prices
+     * looking at exponential moving average rental prices and taking into account total commuting costs, i.e., both
+     * commuting times and commuting fees. Note that this assumes that the household seeks to be economically
+     * compensated for the time spent commuting.
      *
      * @return RegionQualityPriceContainer with information on the chosen region, i.e., the maximum quality the
      * household could afford to rent there, the exponential moving average rental price of that quality, and the
-     * household's desired rent price there (taking into account commuting costs)
+     * household's desired rent price there (taking into account total commuting costs, time + fees)
      */
     private RegionQualityPriceContainer findOptimalRentalRegion() {
         // Declare and initialise variables for comparisons
@@ -523,7 +529,7 @@ public class Household implements IHouseOwner, Serializable {
         Region optimalRegionForRenting = null;
         // Find optimal region for renting. To this end, for each region...
         for (Region region : geography.getRegions()) {
-            // ...find household's desired rental price (taking into account commuting cost)
+            // ...find household's desired rental price (taking into account total commuting cost, time + fees)
             desiredRentPrice = behaviour.getDesiredRentPrice((monthlyGrossEmploymentIncome
                     - getMonthlyCommutingCost(region)));
             // ...with this desired rent price, find highest quality this household could afford to rent in this region
@@ -550,7 +556,9 @@ public class Household implements IHouseOwner, Serializable {
 
     /**
      * Find cheapest region for buying, that is, the region with the cheapest lowest quality band when looking at
-     * exponential moving average sale prices
+     * exponential moving average sale prices and taking into account only commuting fees: being the household unable to
+     * afford even the lowest quality in any region, it is forced to accept the cheapest combination of housing prices
+     * and commuting fees, not being able to seek any economic compensation for the time spent commuting.
      *
      * @return RegionQualityPriceContainer with information on the chosen region
      */
@@ -561,8 +569,8 @@ public class Household implements IHouseOwner, Serializable {
         // Find cheapest region for buying. To this end, for each region...
         for (Region region : geography.getRegions()) {
             // ...find total purchase cost including the household's commuting cost to this region
-            // TODO: Once a decision is made with Doyne about how to add commuting costs to the total price of the
-            // TODO: house, it should be implemented here
+            // TODO: Once a decision is made with Doyne about which multiplier to use to transform annual commuting fees
+            // TODO: into full house price discount, these fees should be subtracted here
             double totalCost = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(0);
             // ...check if this cost is lower than or equal to the previous cheapest cost (among studied regions)
             if (totalCost <= cheapestTotalCost) {
@@ -571,15 +579,15 @@ public class Household implements IHouseOwner, Serializable {
             }
         }
         // Find household's desired purchase price (with regional expected HPA)...
-        // TODO: Discuss with Doyne how to subtract from here commuting costs (which multiplier to transform annual
-        // TODO: commuting cost into full house price discount)
+        // TODO: Discuss with Doyne how to subtract from here total commuting costs (time + fees), that is, which
+        // TODO: multiplier to use to transform annual commuting cost into full house price discount
         double desiredPurchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome,
                 cheapestRegionForBuying);
-        // ...capped to the maximum mortgage available to the household, including commuting costs in the
-        // affordability check
+        // ...capped to the maximum mortgage available to the household, including commuting fees (effective commuting
+        // cost) in the affordability check
         desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(bankBalance,
                 annualGrossEmploymentIncome,
-                (getMonthlyNetTotalIncome() - getMonthlyCommutingCost(cheapestRegionForBuying)), isFirstTimeBuyer,
+                (getMonthlyNetTotalIncome() - getMonthlyCommutingFee(cheapestRegionForBuying)), isFirstTimeBuyer,
                 true));
         return new RegionQualityPriceContainer(cheapestRegionForBuying, 0, cheapestTotalCost,
                 desiredPurchasePrice);
@@ -587,7 +595,9 @@ public class Household implements IHouseOwner, Serializable {
 
     /**
      * Find cheapest region for renting, that is, the region with the cheapest lowest quality band when looking at
-     * exponential moving average rental prices
+     * exponential moving average rental prices and taking into account only commuting fees: being the household unable
+     * to afford even the lowest quality in any region, it is forced to accept the cheapest combination of house rental
+     * prices and commuting fees, not being able to seek any economic compensation for the time spent commuting.
      *
      * @return RegionQualityPriceContainer with information on the chosen region
      */
@@ -597,22 +607,25 @@ public class Household implements IHouseOwner, Serializable {
         Region cheapestRegionForRenting = null;
         // Find cheapest region for buying. To this end, for each region...
         for (Region region : geography.getRegions()) {
-            // ...find total rental cost including the household's commuting cost to this region
+            // ...find total rental cost including the household's commuting fees to this region
             double totalCost = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(0)
-                    + getMonthlyCommutingCost(region);
+                    + getMonthlyCommutingFee(region);
             // ...check if this cost is lower than or equal to the previous cheapest cost (among studied regions)
             if (totalCost <= cheapestTotalCost) {
                 cheapestTotalCost = totalCost;
                 cheapestRegionForRenting = region;
             }
         }
+        // Return container with cheapest rental region and desired rental price taking into account only commuting fees
         return new RegionQualityPriceContainer(cheapestRegionForRenting, 0, cheapestTotalCost,
                 (behaviour.getDesiredRentPrice(monthlyGrossEmploymentIncome)
-                        - getMonthlyCommutingCost(cheapestRegionForRenting)));
+                        - getMonthlyCommutingFee(cheapestRegionForRenting)));
     }
 
     /**
-     * Find cheapest region to rent a house of a given quality taking into account commuting costs
+     * Find cheapest region to rent a house of a given quality taking into account total commuting costs, i.e., both
+     * commuting times and commuting fees. Note that this assumes that the household seeks to be economically
+     * compensated for the time spent commuting.
      *
      * @param quality Quality band to check
      * @return RegionQualityPriceContainer with information on the chosen region
@@ -623,7 +636,7 @@ public class Household implements IHouseOwner, Serializable {
         Region optimalRegionForRenting = null;
         // For each region...
         for (Region region : geography.getRegions()) {
-            // ...find monthly rental cost of that quality band (exponential average price + commuting costs)
+            // ...find monthly rental cost of that quality band taking into account total commuting costs (time + fees)
             double monthlyRentalCost = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(quality)
                     + getMonthlyCommutingCost(region);
             if (monthlyRentalCost <= optimalMonthlyRentalCost) {
@@ -631,6 +644,8 @@ public class Household implements IHouseOwner, Serializable {
                 optimalRegionForRenting = region;
             }
         }
+        // Return container with cheapest rental region and desired rental price taking into account total commuting
+        // cost (time + fees)
         return new RegionQualityPriceContainer(optimalRegionForRenting, quality, optimalMonthlyRentalCost,
                 (behaviour.getDesiredRentPrice(monthlyGrossEmploymentIncome)
                         - getMonthlyCommutingCost(optimalRegionForRenting)));
@@ -638,11 +653,12 @@ public class Household implements IHouseOwner, Serializable {
 
     /**
      * Between a given optimal purchase choice (in a given region and for a given average price) and a given optimal
-     * rental choice (in a given region and for a given average price), both of them including commuting costs,
-     * decide whether to go for the purchase or the rental option. Note that, even though the household may decide to
-     * not rent a house of the same quality as they would buy, but rather of a different quality, the cash value of the
-     * difference in quality is assumed to be the difference in rental price between the two qualities, thus being
-     * economically equivalent options.
+     * rental choice (in a given region and for a given average price), both of them including total commuting costs
+     * (time + fees, i.e., the household is assume to be able to seek an economic compensation for the time spent
+     * commuting), decide whether to go for the purchase or the rental option. Note that, even though the household may
+     * decide to not rent a house of the same quality as they would buy, but rather of a different quality, the cash
+     * value of the difference in quality is assumed to be the same as the difference in rental price between the two
+     * qualities, thus being economically equivalent options.
      *
      *  @return True if household decides for the purchase option, false if household decides for the rental option
      */
@@ -652,11 +668,12 @@ public class Household implements IHouseOwner, Serializable {
         // for this household (i.e., using exponential average sale price for that region and quality band)
         MortgageAgreement mortgageApproval = Model.bank.requestApproval(this, optimalOptionForBuying.getExpAvPrice(),
                 behaviour.decideDownPayment(this, optimalOptionForBuying.getExpAvPrice()), true);
-        // Compute annual buying cost (annual mortgage cost plus annual commuting cost)
+        // Compute annual buying cost (annual mortgage cost plus annual total commuting cost, time + fees)
         double optimalAnnualBuyingCost = (mortgageApproval.monthlyPayment
                 + getMonthlyCommutingCost(optimalOptionForBuying.getRegion())) * config.constants.MONTHS_IN_YEAR
                 - optimalOptionForBuying.getExpAvPrice()
                 * behaviour.getLongTermHPAExpectation(optimalOptionForBuying.getRegion());
+        // Compute annual renting cost (annual rent plus annual total commuting cost, time + fees)
         double optimalAnnualRentalCost = config.constants.MONTHS_IN_YEAR * (optimalOptionForRenting.getExpAvPrice()
                 + getMonthlyCommutingCost(optimalOptionForRenting.getRegion()));
         // Compare costs to build a probability of buying based on a sigma function
@@ -700,8 +717,8 @@ public class Household implements IHouseOwner, Serializable {
      * commuting fee
      */
     private double getMonthlyCommutingCost(Region region) {
-        // TODO: Add travel fee here: 2.0*(travelTime*getTimeValue + travelFee)*config.constants.WORKING_DAYS_IN_MONTH
-        return 2.0 * geography.getCommutingTimeBetween(jobRegion, region) * getTimeValue()
+        return 2.0 * (geography.getCommutingTimeBetween(jobRegion, region) * getTimeValue()
+                + geography.getCommutingFeeBetween(jobRegion, region))
                 * config.constants.WORKING_DAYS_IN_MONTH;
     }
 
@@ -711,6 +728,13 @@ public class Household implements IHouseOwner, Serializable {
     private double getTimeValue(){
         return monthlyGrossEmploymentIncome / config.constants.WORKING_DAYS_IN_MONTH
                 * config.constants.WORKING_HOURS_IN_DAY;
+    }
+
+    /**
+     * Find the monthly commuting fee for this household
+     */
+    private double getMonthlyCommutingFee(Region region) {
+        return 2.0 * geography.getCommutingFeeBetween(jobRegion, region) * config.constants.WORKING_DAYS_IN_MONTH;
     }
 
     /////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-# Matrix of commuting times between each pair of regions (in minutes)
-0.00, 35.50, 49.75
-35.50, 0.00, 27.35
-49.75, 27.35, 0.00
+# Matrix of commuting times per trip (in hours) between each pair of regions
+0.20, 0.55, 0.90
+0.55, 0.20, 0.45
+0.90, 0.45, 0.20

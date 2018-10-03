@@ -6,9 +6,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import java.util.ArrayList;
 
 /**************************************************************************************************
- * Class to encapsulate the geography of regions and the commuting costs between them, as well as
- * to keep track of some national aggregate variables and deal with the priority queues for
- * households to choose where to bid for housing
+ * Class to encapsulate the geography of regions and the commuting times and fees between them
  *
  * @author Adrian Carro
  * @since 05/02/2018
@@ -22,6 +20,7 @@ public class Geography {
 
     private static ArrayList<Region>        regions;
     private ArrayList<ArrayList<Double>>    commutingTimeMatrix;
+    private ArrayList<ArrayList<Double>>    commutingFeeMatrix;
 
     //------------------------//
     //----- Constructors -----//
@@ -38,8 +37,12 @@ public class Geography {
             regions.add(new Region(config, rand, targetPopulation, regionID));
             regionID++;
         }
-        // Read matrix of distances between regions, pass the number of regions to check if it is the same as in the distances file
+        // Read matrix of commuting times between regions, pass the number of regions to check if it is the same as in
+        // the commuting times file
         commutingTimeMatrix = Transport.getCommutingTimeMatrix(regions.size());
+        // Read matrix of commuting times between regions, pass the number of regions to check if it is the same as in
+        // the commuting times file
+        commutingFeeMatrix = Transport.getCommutingFeeMatrix(regions.size());
     }
 
     //-------------------//
@@ -66,7 +69,11 @@ public class Geography {
 
     public ArrayList<Region> getRegions() { return regions; }
 
-    public double getCommutingTimeBetween(Region region1, Region region2) {
+    double getCommutingTimeBetween(Region region1, Region region2) {
         return commutingTimeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
+    }
+
+    double getCommutingFeeBetween(Region region1, Region region2) {
+        return commutingFeeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
     }
 }
