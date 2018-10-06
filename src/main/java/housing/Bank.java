@@ -1,6 +1,5 @@
 package housing;
 
-import java.io.Serializable;
 import java.util.HashSet;
 
 /**************************************************************************************************
@@ -10,7 +9,7 @@ import java.util.HashSet;
  * @author daniel, davidrpugh, Adrian Carro
  *
  *************************************************************************************************/
-public class Bank implements Serializable {
+public class Bank {
 
     //------------------//
     //----- Fields -----//

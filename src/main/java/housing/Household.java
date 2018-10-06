@@ -1,6 +1,5 @@
 package housing;
 
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,7 +15,7 @@ import org.apache.commons.math3.random.MersenneTwister;
  *
  *************************************************************************************************/
 
-public class Household implements IHouseOwner, Serializable {
+public class Household implements IHouseOwner {
 
     //------------------//
     //----- Fields -----//
