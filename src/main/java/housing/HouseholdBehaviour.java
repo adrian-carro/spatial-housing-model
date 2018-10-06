@@ -203,28 +203,6 @@ public class HouseholdBehaviour implements Serializable {
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// Renter behaviour
 	///////////////////////////////////////////////////////////////////////////////////////////////
-	
-	/*** renters or OO after selling home decide whether to rent or buy
-	 * N.B. even though the HH may not decide to rent a house of the
-	 * same quality as they would buy, the cash value of the difference in quality
-	 *  is assumed to be the difference in rental price between the two qualities.
-	 *  @return true if we should buy a house, false if we should rent
-	 */
-    public boolean decideRentOrPurchaseOld(Household me, Region region, double purchasePrice) {
-        if(isPropertyInvestor()) return(true);
-        MortgageAgreement mortgageApproval = Model.bank.requestApproval(me, purchasePrice,
-                decideDownPayment(me, purchasePrice), true);
-        // TODO: Probably need to introduce a region within the household (jobRegion? birthRegion?), such that we can
-        // TODO: here query that particular region...
-        int newHouseQuality = region.regionalHousingMarketStats.getMaxQualityForPrice(purchasePrice);
-        if (newHouseQuality < 0) return false; // can't afford a house anyway
-        double costOfHouse = mortgageApproval.monthlyPayment*config.constants.MONTHS_IN_YEAR
-				- purchasePrice*getLongTermHPAExpectation(region);
-        double costOfRent = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(newHouseQuality)
-                *config.constants.MONTHS_IN_YEAR;
-        return rand.nextDouble() < sigma(config.SENSITIVITY_RENT_OR_PURCHASE*(costOfRent*(1.0
-                + config.PSYCHOLOGICAL_COST_OF_RENTING) - costOfHouse));
-    }
     
 	/********************************************************
 	 * Decide how much to bid on the rental market
