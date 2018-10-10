@@ -42,9 +42,9 @@ public class Pdf {
         }
     }
 	
-	public Pdf(final BinnedDataDouble data) {
-		setPdf(data);
-	}
+	public Pdf(final BinnedDataDouble data) { setPdf(data); }
+
+    public Pdf(final BinnedDataDouble data, int NSamples) { setPdf(data, NSamples); }
 	
 	/**
 	 * @param ipdf functional class whose apply function returns the probability density at that point
