@@ -1,5 +1,6 @@
 package utilities;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -22,8 +23,15 @@ public class BinnedDataDouble extends BinnedData<Double> {
 	 */
 	public BinnedDataDouble(String filename) throws IOException {
 		super(0.0,0.0);
-		Reader in = new FileReader(filename);
-		Iterator<CSVRecord> records = CSVFormat.EXCEL.withHeader().parse(in).iterator();
+		FileReader in = new FileReader(filename);
+        BufferedReader buffReader = new BufferedReader(in);
+        // Skip initial comment lines
+        String line = buffReader.readLine();
+        while (line.charAt(0) == '#') {
+            line = buffReader.readLine();
+        }
+        // Pass advanced buffered reader to CSVFormat parser
+		Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(buffReader).iterator();
 		CSVRecord record;
 		if(records.hasNext()) {
 			record = records.next();
