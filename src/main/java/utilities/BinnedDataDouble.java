@@ -20,37 +20,42 @@ public class BinnedDataDouble extends BinnedData<Double> {
      * rows as needed for comments but always marked with an initial "#" character
      *
      * @param filename Address of the file to read data from
-     * @throws IOException Throws input-output exception if any problem occurs while reading the file
      */
-    public BinnedDataDouble(String filename) throws IOException {
+    public BinnedDataDouble(String filename) {
         super(0.0,0.0);
-        // Open file and buffered readers
-        FileReader in = new FileReader(filename);
-        BufferedReader buffReader = new BufferedReader(in);
-        // Skip initial comment lines keeping mark of previous position to return to if line is not comment
-        buffReader.mark(1000); // 1000 is just the number of characters that can be read while preserving the mark
-        String line = buffReader.readLine();
-        while (line.charAt(0) == '#') {
-            buffReader.mark(1000);
-            line = buffReader.readLine();
-        }
-        buffReader.reset(); // Return to previous position (before reading the first line that was not a comment)
-        // Pass advanced buffered reader to CSVFormat parser
-        Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(buffReader).iterator();
-        CSVRecord record;
-        // Read through records
-        if(records.hasNext()) {
-            record = records.next();
-            // Use the first record to set the first bin minimum and the bin width...
-            this.setFirstBinMin(Double.valueOf(record.get(0)));
-            this.setBinWidth(Double.valueOf(record.get(1))-firstBinMin);
-            // ...before actually adding it to the array
-            add(Double.valueOf(record.get(2)));
-            while(records.hasNext()) {
-                record = records.next();
-                // Next records are just added to the array
-                add(Double.valueOf(record.get(2)));
+        try {
+            // Open file and buffered readers
+            FileReader in = new FileReader(filename);
+            BufferedReader buffReader = new BufferedReader(in);
+            // Skip initial comment lines keeping mark of previous position to return to if line is not comment
+            buffReader.mark(1000); // 1000 is just the number of characters that can be read while preserving the mark
+            String line = buffReader.readLine();
+            while (line.charAt(0) == '#') {
+                buffReader.mark(1000);
+                line = buffReader.readLine();
             }
+            buffReader.reset(); // Return to previous position (before reading the first line that was not a comment)
+            // Pass advanced buffered reader to CSVFormat parser
+            Iterator<CSVRecord> records = CSVFormat.EXCEL.parse(buffReader).iterator();
+            CSVRecord record;
+            // Read through records
+            if(records.hasNext()) {
+                record = records.next();
+                // Use the first record to set the first bin minimum and the bin width...
+                this.setFirstBinMin(Double.valueOf(record.get(0)));
+                this.setBinWidth(Double.valueOf(record.get(1))-firstBinMin);
+                // ...before actually adding it to the array
+                add(Double.valueOf(record.get(2)));
+                while(records.hasNext()) {
+                    record = records.next();
+                    // Next records are just added to the array
+                    add(Double.valueOf(record.get(2)));
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Problem while loading data from " + filename
+                    + " for creating a BinnedDataDouble object");
+            e.printStackTrace();
         }
     }
 
