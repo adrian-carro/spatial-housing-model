@@ -49,10 +49,10 @@ public class Demographics {
 	public void step() {
 	    // For each region...
         for (Region region: geography.getRegions()) {
-            // Birth: Add households in proportion to target population and monthly birth rate of first-time-buyers
-            // TODO: Shouldn't this include also new renters? Review the whole method...
-            int nBirths = (int)(region.getTargetPopulation()*config.FUTURE_BIRTH_RATE/config.constants.MONTHS_IN_YEAR
-                    + 0.5);
+            // Birth: Add new households at a rate compatible with the age at birth distribution, the probability of
+            // death dependent on age, and the target population
+            int nBirths = (int) (region.getTargetPopulation() * data.Demographics.getBirthRate() + rand.nextDouble());
+            // Finally, add the households, with random ages drawn from the corresponding distribution
             while(nBirths-- > 0) {
                 region.households.add(new Household(config, rand,
                         data.Demographics.pdfHouseholdAgeAtBirth.nextDouble(rand), geography, region));
@@ -60,18 +60,15 @@ public class Demographics {
             }
             // Death: Kill households with a probability dependent on their age and organise inheritance
             double pDeath;
-            // TODO: ATTENTION ---> fudge parameter so that population approaches the target value
-            //double multFactor = (double)region.households.size()/region.getTargetPopulation();
-            double multFactor = 0.02;
             Iterator<Household> iterator = region.households.iterator();
             while(iterator.hasNext()) {
                 Household h = iterator.next();
                 pDeath = data.Demographics.probDeathGivenAge(h.getAge())/config.constants.MONTHS_IN_YEAR;
-                if(rand.nextDouble() < pDeath*multFactor) {
+                if (rand.nextDouble() < pDeath) {
                     iterator.remove();
                     totalPopulation--;
                     // Inheritance
-                    // TODO: This imposes inheritance within the same region!!!
+                    // TODO: This imposes inheritance within the same region, which is the job region of the dead household!!!
                     h.transferAllWealthTo(region.households.get(rand.nextInt(region.households.size())));
                 }
             }
