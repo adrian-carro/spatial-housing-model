@@ -20,8 +20,6 @@ public abstract class HousingMarket {
     //----- Fields -----//
     //------------------//
 
-    private static Authority                        authority = new Authority();
-
     private Config	                                config; // Private field to receive the Model's configuration parameters object
     private MersenneTwister                         rand; // Private field to receive the Model's random number generator
     private Region                                  region;
@@ -43,15 +41,6 @@ public abstract class HousingMarket {
         // TODO: Check if this integer is too large or small, check speed penalty for using ArrayList as opposed to
         // TODO: normal arrays
         bids = new ArrayList<>(config.TARGET_POPULATION/16);
-    }
-
-    //----------------------//
-    //----- Subclasses -----//
-    //----------------------//
-
-    // TODO: Make sure this authority class is actually needed
-    static class Authority {
-        private Authority() {}
     }
 
     //-------------------//
@@ -85,7 +74,7 @@ public abstract class HousingMarket {
      */
     public void updateOffer(HouseOfferRecord hsr, double newPrice) {
         offersPQ.remove(hsr);
-        hsr.setPrice(newPrice, authority);
+        hsr.setPrice(newPrice);
         offersPQ.add(hsr);
     }
     
@@ -199,7 +188,7 @@ public abstract class HousingMarket {
                 // Note that this needs to be done before modifying offer, so that it can be also found in the PY queue for the HouseSaleMarket case
                 removeOfferFromQueues(record, offer);
                 // ...update price for the offer
-                offer.setPrice(salePrice, authority);
+                offer.setPrice(salePrice);
                 // ...complete successful transaction and record it into the corresponding regionalHousingMarketStats
                 completeTransaction(offer.getMatchedBids().get(winningBid), offer);
                 // Put the rest of the bids for this property (failed bids) back on bids array

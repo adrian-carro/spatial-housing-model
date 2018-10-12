@@ -86,10 +86,9 @@ public class HouseOfferRecord extends HousingMarketRecord {
      * Set the listed price for this property
      *
      * @param newPrice The new listed price for this property
-     * @param auth Authority to change the price
      */
-	public void setPrice(double newPrice, HousingMarket.Authority auth) {
-		super.setPrice(newPrice, auth);
+	public void setPrice(double newPrice) {
+		super.setPrice(newPrice);
         recalculateHouseSpecificYield(newPrice);
 	}
 

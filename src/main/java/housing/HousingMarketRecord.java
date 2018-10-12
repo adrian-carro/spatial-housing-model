@@ -133,8 +133,5 @@ public abstract class HousingMarketRecord {
 
     public double getPrice() { return price; }
 
-    /**
-     * only the housing market has the authority to change the price of a market record
-     */
-    public void setPrice(double newPrice, HousingMarket.Authority auth) { price = newPrice; }
+    public void setPrice(double newPrice) { price = newPrice; }
 }
