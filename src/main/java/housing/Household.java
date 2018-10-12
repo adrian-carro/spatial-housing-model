@@ -62,7 +62,7 @@ public class Household implements IHouseOwner {
         id = ++id_pool;
         age = householdAgeAtBirth;
         incomePercentile = this.rand.nextDouble();
-        behaviour = new HouseholdBehaviour(this.config, this.rand, incomePercentile);
+        behaviour = new HouseholdBehaviour(this.config, this.rand, this.geography, incomePercentile);
         // Find initial values for the annual and monthly gross employment income
         annualGrossEmploymentIncome = data.EmploymentIncome.getAnnualGrossEmploymentIncome(age, incomePercentile);
         monthlyGrossEmploymentIncome = annualGrossEmploymentIncome/config.constants.MONTHS_IN_YEAR;
@@ -127,13 +127,12 @@ public class Household implements IHouseOwner {
             }
         } else if (behaviour.isPropertyInvestor()) { // Only BTL investors who already own a home enter here
             double price = behaviour.btlPurchaseBid(this, jobRegion);
-            // TODO: Replace this jobRegion by the one the investor decides to invest in
-            // TODO: Note this is counting all BTL investors as bids, regardless of decideToBuyInvestmentProperty
+            // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
+            // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
+            // TODO: between regions in unbiased manner?
             jobRegion.regionalHouseholdStats.countBTLBidsAboveExpAvSalePrice(price);
+            // TODO: Note this is counting all BTL investors as bids, regardless of decideToBuyInvestmentProperty
             if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
-                // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
-                // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
-                // TODO: between regions in unbiased manner?
                 jobRegion.houseSaleMarket.BTLbid(this, price);
             }
         } else if (!isHomeowner()){
@@ -155,7 +154,7 @@ public class Household implements IHouseOwner {
         for(PaymentAgreement payment: housePayments.values()) {
             monthlyDisposableIncome -= payment.makeMonthlyPayment();
         }
-        // If the household has a home, subtract commuting consumption (monthly fee, not cost)
+        // If the household has a home (whether owned or rented), subtract commuting consumption (monthly fee, not cost)
         if (home != null) monthlyDisposableIncome -= getMonthlyCommutingFee(home.region);
         return monthlyDisposableIncome;
     }
@@ -416,7 +415,7 @@ public class Household implements IHouseOwner {
         RegionQualityPriceContainer optimalOptionForRenting;
         // Find optimal option for buying (region where the household could afford the highest quality band, taking into
         // account commuting costs, among all possible regions)
-        optimalOptionForBuying = findOptimalPurchaseRegion();
+        optimalOptionForBuying = behaviour.findOptimalPurchaseRegion(this);
         // If household is a potential buy-to-let investor, then always buy...
         if (behaviour.isPropertyInvestor()) {
             // ...if household cannot afford minimum quality anywhere (optimal option for buying is null), then it
@@ -459,55 +458,6 @@ public class Household implements IHouseOwner {
             }
         }
         // TODO: Need to call here to an equivalent to the old countNonBTLBidsAboveExpAvSalePrice(), not implemented yet
-    }
-
-    /**
-     * Find optimal region for buying, that is, the region where the household can afford the highest quality band when
-     * looking at exponential moving average sale prices
-     *
-     * @return RegionQualityPriceContainer with information on the chosen region, i.e., the maximum quality the
-     * household could afford there, the exponential moving average sale price of that quality, and the household's
-     * desired purchase price there (taking into account commuting fees at the mortgage affordability check,
-     * TODO: effect of total commuting cost on desired purchase price still to be implemented)
-     */
-    private RegionQualityPriceContainer findOptimalPurchaseRegion() {
-        // Declare and initialise variables for comparisons
-        double desiredPurchasePrice = 0.0; // Dummy value, never used
-        int optimalQuality = -1; // Dummy value, it forces entering the if condition in the first iteration
-        double optimalExpAvSalePrice = 0.0; // Dummy value, never used
-        Region optimalRegionForBuying = null;
-        // Find optimal region for buying. To this end, for each region...
-        for (Region region : geography.getRegions()) {
-            // ...find household's desired purchase price (with regional expected HPA)
-            // TODO: Discuss with Doyne how to subtract from here total commuting costs (time + fees), that is, which
-            // TODO: multiplier to use to transform annual commuting cost into full house price discount
-            desiredPurchasePrice = behaviour.getDesiredPurchasePrice(monthlyGrossEmploymentIncome, region);
-            // ...capped to the maximum mortgage available to the household, including commuting fees (effective
-            // commuting cost) in the affordability check
-            desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(bankBalance,
-                    annualGrossEmploymentIncome, (getMonthlyNetTotalIncome() - getMonthlyCommutingFee(region)),
-                    isFirstTimeBuyer, true));
-            // ...with this desired purchase price, find highest quality this household could afford to buy in this
-            // region
-            int maxQualityForBuying = region.regionalHousingMarketStats.getMaxQualityForPrice(desiredPurchasePrice);
-            // ...check if this quality is non-negative (i.e., household can at least afford the minimum quality) and it
-            // is higher than (or equal and cheaper) than the previous optimal (among studied regions)
-            if (maxQualityForBuying >= 0 && ((maxQualityForBuying > optimalQuality)
-                    || ((maxQualityForBuying == optimalQuality)
-                    && (region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying)
-                    < optimalExpAvSalePrice)))) {
-                optimalQuality = maxQualityForBuying;
-                optimalExpAvSalePrice
-                        = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying);
-                optimalRegionForBuying = region;
-            }
-        }
-        if (optimalQuality < 0) {
-            return null;
-        } else {
-            return new RegionQualityPriceContainer(optimalRegionForBuying, optimalQuality, optimalExpAvSalePrice,
-                    desiredPurchasePrice);
-        }
     }
 
     /**
@@ -732,7 +682,7 @@ public class Household implements IHouseOwner {
     /**
      * Find the monthly commuting fee for this household
      */
-    private double getMonthlyCommutingFee(Region region) {
+    double getMonthlyCommutingFee(Region region) {
         return 2.0 * geography.getCommutingFeeBetween(jobRegion, region) * config.constants.WORKING_DAYS_IN_MONTH;
     }
 

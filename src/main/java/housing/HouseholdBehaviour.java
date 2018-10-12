@@ -17,6 +17,7 @@ public class HouseholdBehaviour {
 
 	private Config	            	config; // Private field to receive the Model's configuration parameters object
 	private MersenneTwister     	rand; // Private field to receive the Model's random number generator
+    private Geography               geography;
     private boolean                 BTLInvestor;
     private double                  BTLCapGainCoefficient; // Sensitivity of BTL investors to capital gain, 0.0 cares only about rental yield, 1.0 cares only about cap gain
     private double                  propensityToSave;
@@ -34,9 +35,10 @@ public class HouseholdBehaviour {
 	 *
 	 * @param incomePercentile Fixed income percentile for the household (assumed constant over a lifetime)
      */
-	HouseholdBehaviour(Config config, MersenneTwister rand, double incomePercentile) {
+	HouseholdBehaviour(Config config, MersenneTwister rand, Geography geography, double incomePercentile) {
 		this.config = config;
 		this.rand = rand;
+		this.geography = geography;
         // Set downpayment distributions for both first-time-buyers and owner-occupiers
         downpaymentDistFTB = new LogNormalDistribution(rand, config.DOWNPAYMENT_FTB_SCALE,
                 config.DOWNPAYMENT_FTB_SHAPE);
@@ -179,29 +181,80 @@ public class HouseholdBehaviour {
 		return downpayment;
 	}
 
-    ///////////////////////////////////////////////////////////
-	///////////////////////// REVISED /////////////////////////
-    ///////////////////////////////////////////////////////////
-
-	/********************************************************
-	 * Decide how much to drop the list-price of a house if
-	 * it has been on the market for (another) month and hasn't
-	 * sold. Calibrated against Zoopla dataset in Bank of England
-	 * 
+	/**
+	 * Decide how much to drop the list-price of a house if it has been on the market for (another) month and hasn't
+	 * sold. Calibrated against Zoopla data at the Bank of England
+	 *
 	 * @param sale The HouseOfferRecord of the house that is on the market.
-	 ********************************************************/
+	 */
 	double rethinkHouseSalePrice(HouseOfferRecord sale) {
-		if(rand.nextDouble() < config.P_SALE_PRICE_REDUCE) {
-			double logReduction = config.REDUCTION_MU+(rand.nextGaussian()*config.REDUCTION_SIGMA);
-			return(sale.getPrice()*(1.0 - Math.exp(logReduction)/100.0));
+		if (rand.nextDouble() < config.P_SALE_PRICE_REDUCE) {
+			double logReduction = config.REDUCTION_MU + (rand.nextGaussian() * config.REDUCTION_SIGMA);
+			return sale.getPrice() * (1.0 - Math.exp(logReduction) / 100.0);
 		}
-		return(sale.getPrice());
+		return sale.getPrice();
 	}
+
+    //----- Spatial decisions -----//
+
+    /**
+     * Find optimal region for buying, that is, the region where the household can afford the highest quality band when
+     * looking at exponential moving average sale prices
+     *
+     * @return RegionQualityPriceContainer with information on the chosen region, i.e., the maximum quality the
+     * household could afford there, the exponential moving average sale price of that quality, and the household's
+     * desired purchase price there (taking into account commuting fees at the mortgage affordability check)
+     * TODO: Effect of total commuting cost on desired purchase price still to be implemented
+     */
+    RegionQualityPriceContainer findOptimalPurchaseRegion(Household h) {
+        // Declare and initialise variables for comparisons
+        double desiredPurchasePrice = 0.0; // Dummy value, never used
+        int optimalQuality = -1; // Dummy value, it forces entering the if condition in the first iteration
+        double optimalExpAvSalePrice = 0.0; // Dummy value, never used
+        Region optimalRegionForBuying = null;
+        // Find optimal region for buying. To this end, for each region...
+        for (Region region : geography.getRegions()) {
+            // ...find household's desired purchase price (with regional expected HPA)
+            // TODO: Discuss with Doyne how to subtract from here total commuting costs (time + fees), that is, which
+            // TODO: multiplier to use to transform annual commuting cost into full house price discount
+            desiredPurchasePrice = getDesiredPurchasePrice(h.getMonthlyGrossEmploymentIncome(), region);
+            // ...capped to the maximum mortgage available to the household, including commuting fees (effective
+            // commuting cost) in the affordability check
+            desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(h.getBankBalance(),
+                    h.getAnnualGrossEmploymentIncome(),
+                    (h.getMonthlyNetTotalIncome() - h.getMonthlyCommutingFee(region)),
+                    h.isFirstTimeBuyer(), true));
+            // ...with this desired purchase price, find highest quality this household could afford to buy in this
+            // region
+            int maxQualityForBuying = region.regionalHousingMarketStats.getMaxQualityForPrice(desiredPurchasePrice);
+            // ...check if this quality is non-negative (i.e., household can at least afford the minimum quality) and it
+            // is higher than (or equal and cheaper) than the previous optimal (among studied regions)
+            if (maxQualityForBuying >= 0 && ((maxQualityForBuying > optimalQuality)
+                    || ((maxQualityForBuying == optimalQuality)
+                    && (region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying)
+                    < optimalExpAvSalePrice)))) {
+                optimalQuality = maxQualityForBuying;
+                optimalExpAvSalePrice
+                        = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying);
+                optimalRegionForBuying = region;
+            }
+        }
+        if (optimalQuality < 0) {
+            return null;
+        } else {
+            return new RegionQualityPriceContainer(optimalRegionForBuying, optimalQuality, optimalExpAvSalePrice,
+                    desiredPurchasePrice);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////
+    ///////////////////////// REVISED /////////////////////////
+    ///////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// Renter behaviour
 	///////////////////////////////////////////////////////////////////////////////////////////////
-    
+
 	/********************************************************
 	 * Decide how much to bid on the rental market
 	 * Source: Zoopla rental prices 2008-2009 (at Bank of England)
@@ -214,13 +267,13 @@ public class HouseholdBehaviour {
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// Property investor behaviour
 	///////////////////////////////////////////////////////////////////////////////////////////////
-	
+
 	/**
 	 * Decide whether to sell or not an investment property. Investor households with only one investment property do
      * never sell it. A sale is never attempted when the house is occupied by a tenant. Households with at least two
      * investment properties will calculate the expected yield of the property in question based on two contributions:
      * rental yield and capital gain (with their corresponding weights which depend on the type of investor)
-	 * 
+	 *
 	 * @param h The house in question
 	 * @param me The investor household
 	 * @return True if investor me decides to sell investment property h
