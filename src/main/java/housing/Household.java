@@ -100,21 +100,28 @@ public class Household implements IHouseOwner {
             bankBalance = 1.0;
             isBankrupt = true;
         }
-        // TODO: Repair this! Important to keep the payoff function so as to remove the loan from the bank
-        // Manage all owned properties
-        for (House h: housePayments.keySet()) {
+        // Manage owned properties and close debts on previously owned properties. To this end, first, create an
+        // iterator over the house-paymentAgreement pairs at the household's housePayments object
+        Iterator<Entry<House, PaymentAgreement>> paymentIt = housePayments.entrySet().iterator();
+        Entry<House, PaymentAgreement> entry;
+        House h;
+        PaymentAgreement payment;
+        // Iterate over these house-paymentAgreement pairs...
+        while (paymentIt.hasNext()) {
+            entry = paymentIt.next();
+            h = entry.getKey();
+            payment = entry.getValue();
+            // ...if the household is the owner of the house, then manage it
             if (h.owner == this) {
                 manageHouse(h);
-//            } else if (h.resident != this && housePayments.get(h).nPayments == 0) {
-//                // Second, find mortgage object and pay off as much outstanding debt as possible given bank balance
-//                MortgageAgreement mortgage = mortgageFor(sale.house);
-//                bankBalance -= mortgage.payoff(bankBalance);
-//                // Third, if there is no more outstanding debt, remove the house from the household's housePayments object
-//                if (mortgage.nPayments == 0) {
-//                    housePayments.remove(sale.house);
-//                }
+                // ...otherwise, if the household is not the owner nor the resident, then it is an old debt due to
+                // the household's inability to pay the remaining principal off after selling a property...
             } else if (h.resident != this) {
-                System.out.println("House is in my payments, but I don't own it nor do I live in it");
+                MortgageAgreement mortgage = (MortgageAgreement) payment;
+                // ...remove this type of houses from payments as soon as the household pays the debt off
+                if ((payment.nPayments == 0) & (mortgage.principal == 0.0)) {
+                    paymentIt.remove();
+                }
             }
         }
         // Make housing decisions depending on current housing state
@@ -175,7 +182,12 @@ public class Household implements IHouseOwner {
      * Adds up all sources of (gross) income on a monthly basis: employment, property, returns on financial wealth
      */
     public double getMonthlyGrossTotalIncome() {
-        return monthlyGrossEmploymentIncome + monthlyGrossRentalIncome + bankBalance*config.RETURN_ON_FINANCIAL_WEALTH;
+        if (bankBalance > 0.0) {
+            return monthlyGrossEmploymentIncome + monthlyGrossRentalIncome
+                    + bankBalance*config.RETURN_ON_FINANCIAL_WEALTH;
+        } else {
+            return monthlyGrossEmploymentIncome + monthlyGrossRentalIncome;
+        }
     }
 
     double getAnnualGrossTotalIncome() { return getMonthlyGrossTotalIncome()*config.constants.MONTHS_IN_YEAR; }
@@ -296,11 +308,12 @@ public class Household implements IHouseOwner {
         // Second, find mortgage object and pay off as much outstanding debt as possible given bank balance
         MortgageAgreement mortgage = mortgageFor(sale.getHouse());
         bankBalance -= mortgage.payoff(bankBalance);
-        // Third, remove the house from the household's housePayments object (even if there is outstanding debt!)
-        // TODO: An implicit assumption here is that any outstanding debt that cannot be paid with the sellers savings
-        // TODO: (including the money from the current sale) is wiped out, i.e., the household is bailed out. That is
-        // TODO: why the house is removed from the housePayments object. Need to explain this in the article!
-        housePayments.remove(sale.getHouse());
+        // Third, if there is no more outstanding debt, remove the house from the household's housePayments object
+        if (mortgage.nPayments == 0) {
+            housePayments.remove(sale.getHouse());
+            // TODO: Warning, if bankBalance is not enough to pay mortgage back, then the house stays in housePayments,
+            // TODO: consequences to be checked. Looking forward, properties and payment agreements should be kept apart
+        }
         // Fourth, if the house is still being offered on the rental market, withdraw the offer
         if (sale.getHouse().isOnRentalMarket()) {
             sale.getHouse().region.houseRentalMarket.removeOffer(sale);
@@ -542,32 +555,36 @@ public class Household implements IHouseOwner {
             entry = paymentIt.next();
             h = entry.getKey();
             payment = entry.getValue();
-            // If the house is the deceased household's home, set both the house resident and household's home to null
-            if (h == home) {
-                h.resident = null;
-                home = null;
-            }
             // If the deceased household owns the house, then...
             if (h.owner == this) {
                 // ...first, withdraw the house from any market where it is currently being offered
                 if (h.isOnRentalMarket()) h.region.houseRentalMarket.removeOffer(h.getRentalRecord());
                 if (h.isOnMarket()) h.region.houseSaleMarket.removeOffer(h.getSaleRecord());
-                // ...then, if there is a resident, then this resident must be a tenant, who must get evicted
+                // ...then, if there is a resident in the house...
                 if (h.resident != null) {
-                    h.resident.getEvicted(); // TODO: Explain in paper that renters always get evicted, not just if heir needs the house
+                    // ...and this resident is different from the deceased household, then this resident must be a
+                    // tenant, who must get evicted
+                    if (h.resident != this) {
+                        h.resident.getEvicted(); // TODO: Explain in paper that renters always get evicted, not just if heir needs the house
+                    // ...otherwise, if the resident is the deceased household, remove it from the house
+                    } else {
+                        h.resident = null;
+                    }
                 }
                 // ...finally, transfer the property to the beneficiary household
                 beneficiary.inheritHouse(h);
-            // Otherwise, if the deceased household does not own the house, it must have been renting it: end the letting agreement
-            } else {
+            // Otherwise, if the deceased household does not own the house but it is living in it, then it must have
+            // been renting it: end the letting agreement
+            } else if (h == home) {
                 h.owner.endOfLettingAgreement(h, housePayments.get(h));
+                h.resident = null;
             }
             // If payment agreement is a mortgage, then try to pay off as much as possible from the deceased household's bank balance
             if (payment instanceof MortgageAgreement) {
                 bankBalance -= ((MortgageAgreement) payment).payoff();
             }
             // Remove the house-paymentAgreement entry from the deceased household's housePayments object
-            paymentIt.remove(); // TODO: I don't think this is necessary
+            paymentIt.remove(); // TODO: Not sure this is necessary. Note, though, that this implies erasing all outstanding debt
         }
         // Finally, transfer all remaining liquid wealth to the beneficiary household
         beneficiary.bankBalance += Math.max(0.0, bankBalance);
