@@ -40,6 +40,9 @@ public class RegionalHouseholdStats extends CollectorBase {
 
     // Other fields
     private double  sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private double  sumCommutingFees;
+    private double  sumCommutingCost;
+    private int     nCommuters;
     private int     nNonBTLBidsAboveExpAvSalePrice; // Number of normal (non-BTL) bids with desired housing expenditure above the exponential moving average sale price
     private int     nBTLBidsAboveExpAvSalePrice; // Number of BTL bids with desired housing expenditure above the exponential moving average sale price
     private int     nNonBTLBidsAboveExpAvSalePriceCounter; // Counter for the number of normal (non-BTL) bids with desired housing expenditure above the exp. mov. av. sale price
@@ -83,6 +86,9 @@ public class RegionalHouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        sumCommutingFees = 0.0;
+        sumCommutingCost = 0.0;
+        nCommuters = 0;
         nNonBTLBidsAboveExpAvSalePrice = 0;
         nBTLBidsAboveExpAvSalePrice = 0;
         nNonBTLBidsAboveExpAvSalePriceCounter = 0;
@@ -105,7 +111,10 @@ public class RegionalHouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
-        // Run through all households counting population in each type and summing their gross incomes
+        sumCommutingFees = 0.0;
+        sumCommutingCost = 0.0;
+        nCommuters = 0;
+        // Run through all households counting population in each type and summing over some of their variables
         for (Household h : region.households) {
             if (h.behaviour.isPropertyInvestor()) {
                 ++nBTL;
@@ -140,9 +149,17 @@ public class RegionalHouseholdStats extends CollectorBase {
                     }
                 // Non-BTL investors in social housing
                 } else if (h.isInSocialHousing()) {
-                    // TODO: Once numbers are checked, this "else if" can be replaced by an "else"
                     ++nNonBTLHomeless;
                     homelessAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
+                }
+            }
+            // Sum commuting fees and total commuting cost
+            if (!h.isInSocialHousing()) {
+                sumCommutingFees += h.getMonthlyCommutingFee(h.getHome().getRegion());
+                sumCommutingCost += h.getMonthlyCommutingCost(h.getHome().getRegion());
+                // If the household does not live in this region, add a commuter
+                if (h.getHome().getRegion() != region) {
+                    nCommuters++;
                 }
             }
         }
@@ -228,5 +245,7 @@ public class RegionalHouseholdStats extends CollectorBase {
     int getnNonBTLBidsAboveExpAvSalePrice() { return nNonBTLBidsAboveExpAvSalePrice; }
     // ... number of BTL bidders with desired housing expenditure above the exponential moving average sale price
     int getnBTLBidsAboveExpAvSalePrice() { return nBTLBidsAboveExpAvSalePrice; }
-
+    int getnCommuters() { return nCommuters; }
+    double getSumCommutingFees() { return sumCommutingFees; }
+    double getSumCommutingCost() { return sumCommutingCost; }
 }

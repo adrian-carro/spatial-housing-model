@@ -507,7 +507,7 @@ public class Household implements IHouseOwner {
      * Find the monthly commuting cost for this household: monthly commuting time times value of time, plus monthly
      * commuting fee
      */
-    double getMonthlyCommutingCost(Region region) {
+    public double getMonthlyCommutingCost(Region region) {
         return 2.0 * (geography.getCommutingTimeBetween(jobRegion, region) * getTimeValue()
                 + geography.getCommutingFeeBetween(jobRegion, region))
                 * config.constants.WORKING_DAYS_IN_MONTH;
@@ -517,14 +517,14 @@ public class Household implements IHouseOwner {
      * Find the value (in GBP) of an hour of time for this household
      */
     private double getTimeValue(){
-        return monthlyGrossEmploymentIncome / config.constants.WORKING_DAYS_IN_MONTH
-                * config.constants.WORKING_HOURS_IN_DAY;
+        return monthlyGrossEmploymentIncome / (config.constants.WORKING_DAYS_IN_MONTH
+                * config.constants.WORKING_HOURS_IN_DAY);
     }
 
     /**
      * Find the monthly commuting fee for this household
      */
-    double getMonthlyCommutingFee(Region region) {
+    public double getMonthlyCommutingFee(Region region) {
         return 2.0 * geography.getCommutingFeeBetween(jobRegion, region) * config.constants.WORKING_DAYS_IN_MONTH;
     }
 
@@ -705,4 +705,7 @@ public class Household implements IHouseOwner {
         }
         return(0.0);        
     }
+
+    public Region getJobRegion() { return jobRegion; }
+
 }

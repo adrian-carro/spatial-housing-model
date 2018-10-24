@@ -38,6 +38,9 @@ public class HouseholdStats extends CollectorBase {
 
     // Other fields
     private double              sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private double              sumCommutingFees;
+    private double              sumCommutingCost;
+    private int                 nCommuters;
     private int                 nNonBTLBidsAboveExpAvSalePrice; // Number of normal (non-BTL) bids with desired housing expenditure above the exponential moving average sale price
     private int                 nBTLBidsAboveExpAvSalePrice; // Number of BTL bids with desired housing expenditure above the exponential moving average sale price
 
@@ -77,6 +80,9 @@ public class HouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        sumCommutingFees = 0.0;
+        sumCommutingCost = 0.0;
+        nCommuters = 0;
         nNonBTLBidsAboveExpAvSalePrice = 0;
         nBTLBidsAboveExpAvSalePrice = 0;
     }
@@ -101,6 +107,9 @@ public class HouseholdStats extends CollectorBase {
         rentingAnnualisedTotalIncome = 0.0;
         homelessAnnualisedTotalIncome = 0.0;
         sumStockYield = 0.0;
+        sumCommutingFees = 0.0;
+        sumCommutingCost = 0.0;
+        nCommuters = 0;
         nNonBTLBidsAboveExpAvSalePrice = 0;
         nBTLBidsAboveExpAvSalePrice = 0;
         // Run through regions summing
@@ -119,6 +128,9 @@ public class HouseholdStats extends CollectorBase {
             rentingAnnualisedTotalIncome += region.regionalHouseholdStats.getRentingAnnualisedTotalIncome();
             homelessAnnualisedTotalIncome += region.regionalHouseholdStats.getHomelessAnnualisedTotalIncome();
             sumStockYield += region.regionalHouseholdStats.getSumStockYield();
+            sumCommutingFees += region.regionalHouseholdStats.getSumCommutingFees();
+            sumCommutingCost += region.regionalHouseholdStats.getSumCommutingCost();
+            nCommuters += region.regionalHouseholdStats.getnCommuters();
             nNonBTLBidsAboveExpAvSalePrice += region.regionalHouseholdStats.getnNonBTLBidsAboveExpAvSalePrice();
             nBTLBidsAboveExpAvSalePrice += region.regionalHouseholdStats.getnBTLBidsAboveExpAvSalePrice();
         }
@@ -175,80 +187,7 @@ public class HouseholdStats extends CollectorBase {
     int getnNonBTLBidsAboveExpAvSalePrice() { return nNonBTLBidsAboveExpAvSalePrice; }
     // ... number of BTL bidders with desired housing expenditure above the exponential moving average sale price
     int getnBTLBidsAboveExpAvSalePrice() { return nBTLBidsAboveExpAvSalePrice; }
-
-//    // Array with ages of all households
-//    public double [] getAgeDistribution() {
-//        double [] result = new double[region.households.size()];
-//        int i = 0;
-//        for(Household h : region.households) {
-//            result[i] = h.getAge();
-//            ++i;
-//        }
-//        return(result);
-//    }
-//
-//    // Array with ages of renters and households in social housing
-//    public double [] getNonOwnerAges() {
-//        double [] result = new double[getnNonOwner()];
-//        int i = 0;
-//        for(Household h : region.households) {
-//            if(!h.isHomeowner() && i < getnNonOwner()) {
-//                result[i++] = h.getAge();
-//            }
-//        }
-//        while(i < getnNonOwner()) {
-//            result[i++] = 0.0;
-//        }
-//        return(result);
-//    }
-//
-//    // Array with ages of owner-occupiers
-//    public double [] getOwnerOccupierAges() {
-//        double [] result = new double[getnNonOwner()];
-//        int i = 0;
-//        for(Household h : region.households) {
-//            if(!h.isHomeowner() && i < getnNonOwner()) {
-//                result[i] = h.getAge();
-//                ++i;
-//            }
-//        }
-//        while(i < getnNonOwner()) {
-//            result[i++] = 0.0;
-//        }
-//        return(result);
-//    }
-//
-//    // Distribution of the number of properties owned by BTL investors
-//    public double [] getBTLNProperties() {
-//        if(isActive() && nBTL > 0) {
-//            double [] result = new double[(int)nBTL];
-//            int i = 0;
-//            for(Household h : region.households) {
-//                if(h.behaviour.isPropertyInvestor() && i<nBTL) {
-//                    result[i] = h.nInvestmentProperties();
-//                    ++i;
-//                }
-//            }
-//            return(result);
-//        }
-//        return null;
-//    }
-//
-//    public double [] getLogIncomes() {
-//        double [] result = new double[region.households.size()];
-//        int i = 0;
-//        for(Household h : region.households) {
-//            result[i++] = Math.log(h.annualEmploymentIncome());
-//        }
-//        return(result);
-//    }
-//
-//    public double [] getLogBankBalances() {
-//        double [] result = new double[region.households.size()];
-//        int i = 0;
-//        for(Household h : region.households) {
-//            result[i++] = Math.log(Math.max(0.0, h.getBankBalance()));
-//        }
-//        return(result);
-//    }
+    int getnCommuters() { return nCommuters; }
+    double getSumCommutingFees() { return sumCommutingFees; }
+    double getSumCommutingCost() { return sumCommutingCost; }
 }

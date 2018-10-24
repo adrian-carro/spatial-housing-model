@@ -116,7 +116,9 @@ public class Recorder {
                     + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
                     + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
                     // Credit data
-                    + "nRegisteredMortgages");
+                    + "nRegisteredMortgages, "
+                    // Commuting data
+                    + "nCommuters, sumCommutingFees, sumCommutingCost");
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -133,13 +135,16 @@ public class Recorder {
                         + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                         // House sale market data
                         + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
-                        + "Sale ExAvSalePrice, Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, "
-                        + "Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
+                        + "Sale ExAvSalePrice, Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, "
+                        + "Sale nBTLBuyers, Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
                         + "Sale nNonBTLBidsAboveExpAvSalePrice, Sale nBTLBidsAboveExpAvSalePrice, Sale nSalesToBTL, "
                         + "Sale nSalesToFTB, "
                         // Rental market data
                         + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
-                        + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield");
+                        + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, "
+                        + "Rental ExpAvFlowYield, "
+                        // Commuting data
+                        + "nCommuters, sumCommutingFees, sumCommutingCost");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -236,7 +241,11 @@ public class Recorder {
                 Model.rentalMarketStats.getnSales() + ", " +
                 Model.rentalMarketStats.getExpAvFlowYield() + ", " +
                 // Credit data
-                Model.creditSupply.getnRegisteredMortgages());
+                Model.creditSupply.getnRegisteredMortgages() + ", " +
+                // Commuting data
+                Model.householdStats.getnCommuters() + ", " +
+                Model.householdStats.getSumCommutingFees() + ", " +
+                Model.householdStats.getSumCommutingCost());
 
         // Write general output results for each region
         int i = 0;
@@ -291,7 +300,11 @@ public class Recorder {
                     region.regionalRentalMarketStats.getnBuyers() + ", " +
                     region.regionalRentalMarketStats.getnSellers() + ", " +
                     region.regionalRentalMarketStats.getnSales() + ", " +
-                    region.regionalRentalMarketStats.getExpAvFlowYield());
+                    region.regionalRentalMarketStats.getExpAvFlowYield() + ", " +
+                    // Commuting data
+                    Model.householdStats.getnCommuters() + ", " +
+                    Model.householdStats.getSumCommutingFees() + ", " +
+                    Model.householdStats.getSumCommutingCost());
             i++;
         }
     }
