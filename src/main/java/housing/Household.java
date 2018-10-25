@@ -133,15 +133,18 @@ public class Household implements IHouseOwner {
                 bidForAHome();
             }
         } else if (behaviour.isPropertyInvestor()) { // Only BTL investors who already own a home enter here
-            double price = behaviour.btlPurchaseBid(this, jobRegion);
-            // TODO: ATTENTION ---> For now, investor households bid always in the region where they work!
-            // TODO: A separate method for quickly disqualifying investors who can't afford investing? How to choose
-            // TODO: between regions in unbiased manner?
-            jobRegion.regionalHouseholdStats.countBTLBidsAboveExpAvSalePrice(price);
-            // TODO: Note this is counting all BTL investors as bids, regardless of decideToBuyInvestmentProperty
-            if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
-                jobRegion.houseSaleMarket.BTLbid(this, price);
+//######################################################################################################################
+            Region chosenInvestmentRegion = behaviour.decideWhereToBuyInvestmentProperty(this);
+            if (chosenInvestmentRegion != null) {
+                chosenInvestmentRegion.houseSaleMarket.BTLbid(this,
+                        behaviour.btlPurchaseBid(this, chosenInvestmentRegion));
             }
+//######################################################################################################################
+//            if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
+//                double price = behaviour.btlPurchaseBid(this, jobRegion);
+//                jobRegion.houseSaleMarket.BTLbid(this, price);
+//            }
+            // TODO: Need to call here to an equivalent to the old countBTLBidsAboveExpAvSalePrice(), not implemented yet
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
         }

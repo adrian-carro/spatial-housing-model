@@ -3,6 +3,9 @@ package housing;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 
+import java.util.Arrays;
+import java.util.Iterator;
+
 /**************************************************************************************************
  * Class to implement the behavioural decisions made by households
  *
@@ -492,62 +495,112 @@ public class HouseholdBehaviour {
 	}
 
     /**
-     * Decide whether to buy or not a new investment property. Investor households with no investment properties always
-     * attempt to buy one. If the household's bank balance is below its desired bank balance, then no attempt to buy is
-     * made. If the resources available to the household (maximum mortgage) are below the average price for the lowest
-     * quality houses, then no attempt to buy is made. Households with at least one investment property will calculate
-     * the expected yield of a new property based on two contributions: rental yield and capital gain (with their
-     * corresponding weights which depend on the type of investor)
+     * Decide whether to buy or not a new investment property and where. Investor households with no investment
+     * properties always attempt to buy one. If the household's bank balance is below its desired bank balance, then no
+     * attempt to buy is made. If the resources available to the household (maximum mortgage) are below the average
+     * price for the lowest quality houses in a given region, then the probability to try to buy in that region is zero.
+     * Households compute a probability to invest in each region, proportional to the expected yield of a newly bought
+     * property in that region. A random number is then drawn for deciding whether to buy or not and in which region. In
+     * the case of household with no investment property, the random number is re-normalised to go from 0.0 to the sum
+     * of all the probabilities to buy, such that the household always tries to buy, only the specific region needs to
+     * be chosen. In the case of households with at least one investment property, the random number is re-normalised to
+     * go from 0.0 to the number of regions, such that not buying (a number above the sum of all the probabilities to
+     * buy) is a possible outcome.
      *
      * @param me The investor household
-     * @return True if investor me decides to try to buy a new investment property
+     * @return The region where the household decides to invest, null if the household decides not to invest
      */
-	public boolean decideToBuyInvestmentProperty(Household me, Region region) {
-        // Fast decisions...
-        // ...always decide to buy if owning no investment property yet
-        if (me.nInvestmentProperties() < 1) { return true ; }
-        // ...never buy (keep on saving) if bank balance is below the household's desired bank balance
-        // TODO: This mechanism and its parameter are not declared in the article! Any reference for the value of the parameter?
-        if (me.getBankBalance() < getDesiredBankBalance(me.getAnnualGrossTotalIncome())*config.BTL_CHOICE_MIN_BANK_BALANCE) { return false; }
-        // ...find maximum price (maximum mortgage) the household could pay
+    Region decideWhereToBuyInvestmentProperty(Household me) {
+        // Fast decision: never buy (keep on saving) if bank balance is below the household's desired bank balance
+        if (me.getBankBalance() < getDesiredBankBalance(me.getAnnualGrossTotalIncome())
+                *config.BTL_CHOICE_MIN_BANK_BALANCE) { return null; }
+
+        // Compute and store the probability to invest en each region, as well as the sum of these probabilities
+        double[] probToBuyPerRegion = findProbabilityToInvestPerRegion(me);
+        double sumProbToBuy = 0.0;
+        for (double probToBuy : probToBuyPerRegion) {
+            sumProbToBuy += probToBuy;
+        }
+
+        // Draw a double random number for decision making and initialise a counter
+        double randDouble = rand.nextDouble();
+        double counter = 0.0;
+        // If the investor household currently owns no investment property, then it always decide to buy...
+        if (me.nInvestmentProperties() < 1) {
+            // ...thus the random number should be re-normalised to go from 0.0 to sumProbToBuy
+            randDouble *= sumProbToBuy;
+        // Otherwise, the investor household might buy or not...
+        } else {
+            // ...thus the random number should be re-normalised to go from 0.0 to the number of regions
+            randDouble *= probToBuyPerRegion.length;
+        }
+
+        // Finally, iterate over the previously computed probabilities to find the chosen option...
+        int i = 0;
+        while ((i < probToBuyPerRegion.length) && (counter + probToBuyPerRegion[i] < randDouble)) {
+            counter += probToBuyPerRegion[i];
+            i++;
+        }
+        // ...in case the household must invest (it currently owns no investment property), but the probability to buy
+        // is zero for all regions, then choose a region at random (otherwise it would always choose the first region!)
+        if ((me.nInvestmentProperties() < 1) && sumProbToBuy == 0.0) {
+            i = rand.nextInt(probToBuyPerRegion.length);
+        }
+        // ...and, if the chosen number corresponds to a region, then return that region
+        if (i < probToBuyPerRegion.length) {
+            return geography.getRegions().get(i);
+        // ...return null otherwise
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Compute the probability to invest in each region, proportional to the expected yield of a newly bought property
+     * in that region. This expected yield is based on two contributions: rental yield and capital gain (with weights
+     * that depend on the type of investor).
+     *
+     * @param me The investor household
+     * @return An array with the probability to buy an investment property in each region
+     */
+    private double[] findProbabilityToInvestPerRegion(Household me) {
+        // Find variables common to all regions (equity, leverage and mortgage rate) for a hypothetical house maximising
+        // the leverage available to the household...
+        // ...find maximum price (maximum mortgage + all liquid wealth) the household could pay
         double maxPrice = Model.bank.getMaxMortgage(me.getBankBalance(), me.getAnnualGrossEmploymentIncome(),
                 me.getMonthlyNetTotalIncome(), me.isFirstTimeBuyer(), false);
-        // ...never buy if that maximum price is below the average price for the lowest quality
-        if (maxPrice < region.regionalHousingMarketStats.getExpAvSalePriceForQuality(0)) { return false; }
-
-        // Find the expected equity yield rate for a hypothetical house maximising the leverage available to the
-        // household and assuming an average rental yield (over all qualities). This is found as a weighted mix of both
-        // rental yield and capital gain times the leverage
         // ...find mortgage with maximum leverage by requesting maximum mortgage with minimum downpayment
         MortgageAgreement mortgage = Model.bank.requestApproval(me, maxPrice, 0.0, false);
         // ...find equity, or assets minus liabilities (which, initially, is simply the downpayment)
         double equity = Math.max(0.01, mortgage.downPayment); // The 0.01 prevents possible divisions by zero later on
         // ...find the leverage on that mortgage (Assets divided by equity, or return on equity)
         double leverage = mortgage.purchasePrice/equity;
-        // ...find the expected rental yield as an (exponential) average over all house qualities
-        double rentalYield = region.regionalRentalMarketStats.getExpAvFlowYield();
         // ...find the mortgage rate (pounds paid a year per pound of equity)
         double mortgageRate = mortgage.nextPayment()*config.constants.MONTHS_IN_YEAR/equity;
-        // ...finally, find expected equity yield, or yield on equity
-        double expectedEquityYield;
-        if(config.BTL_YIELD_SCALING) {
-            expectedEquityYield = leverage*((1.0 - BTLCapGainCoefficient)*rentalYield
-                    + BTLCapGainCoefficient*(region.regionalRentalMarketStats.getLongTermExpAvFlowYield()
-                    + getLongTermHPAExpectation(region))) - mortgageRate;
-        } else {
-            expectedEquityYield = leverage*((1.0 - BTLCapGainCoefficient)*rentalYield
+
+        // Compute and store the probability to invest en each region, as well as the sum of these probabilities
+        double[] probToBuyPerRegion = new double[geography.getRegions().size()];
+        // To this end, iterate through the regions...
+        int i = 0;
+        for (Region region : geography.getRegions()) {
+            // ...finding the expected rental yield as an (exponential) average over all house qualities
+            double rentalYield = region.regionalRentalMarketStats.getExpAvFlowYield();
+            // ...computing the expected equity yield, or yield on equity
+            double expectedEquityYield = leverage*((1.0 - BTLCapGainCoefficient)*rentalYield
                     + BTLCapGainCoefficient*getLongTermHPAExpectation(region))
                     - mortgageRate;
+            // ...and, finally, computing the probability to buy a new investment property in this region as a function
+            // of its expected equity yield
+            probToBuyPerRegion[i] = 1.0 - Math.pow((1.0 - sigma(config.BTL_CHOICE_INTENSITY*expectedEquityYield)),
+                    1.0/config.constants.MONTHS_IN_YEAR);
+            // ...with the caveat that, households assign zero probability to buy to regions where they cannot afford
+            // the average price of even the lowest quality band
+            if (maxPrice < region.regionalHousingMarketStats.getExpAvSalePriceForQuality(0)) {
+                probToBuyPerRegion[i] = 0.0;
+            }
+            i++;
         }
-        // Compute the probability to decide to buy an investment property as a function of the expected equity yield
-        // TODO: This probability has been changed to correctly reflect the conversion from annual to monthly
-        // TODO: probability. This needs to be explained in the article
-//        double pBuy = Math.pow(sigma(config.BTL_CHOICE_INTENSITY*expectedEquityYield),
-//                1.0/config.constants.MONTHS_IN_YEAR);
-        double pBuy = 1.0 - Math.pow((1.0 - sigma(config.BTL_CHOICE_INTENSITY*expectedEquityYield)),
-                1.0/config.constants.MONTHS_IN_YEAR);
-        // Return true or false as a random draw from the computed probability
-        return rand.nextDouble() < pBuy;
+        return probToBuyPerRegion;
     }
 
     double btlPurchaseBid(Household me, Region region) {
