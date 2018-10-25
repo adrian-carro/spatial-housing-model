@@ -1,0 +1,4 @@
+# Matrix of commuting fees per trip (in pounds) between each pair of regions
+2.50, 14.50, 21.75
+14.50, 2.50, 10.35
+21.75, 10.35, 2.50

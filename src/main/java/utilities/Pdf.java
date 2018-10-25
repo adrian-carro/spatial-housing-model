@@ -1,13 +1,6 @@
 package utilities;
 
-import java.io.IOException;
-import java.io.Serializable;
-
 import org.apache.commons.math3.random.MersenneTwister;
-
-import housing.Model;
-
-// import java.util.function.DoubleUnaryOperator; // not compatible with Java 1.7
 
 /****
  * Represents an arbitrarily shaped, 1-dimensional Probability Density Function.
@@ -17,40 +10,26 @@ import housing.Model;
  * @author daniel
  *
  */
-public class Pdf implements Serializable {
-	private static final long serialVersionUID = 1558047422758004631L;
+public class Pdf {
 
 	/***
 	 * Read the pdf from a binned .csv file. The format should be as specified in
 	 * BinnedDataDouble.
 	 * @param filename
-	 * @throws IOException 
 	 */
 	public Pdf(String filename) {
-		try {
 			BinnedDataDouble data = new BinnedDataDouble(filename);
 			setPdf(data);
-		} catch (IOException e) {
-			System.out.println("Problem loading data from file while initialising Pdf");
-			System.out.println("filename = "+System.getProperty("user.dir")+"/"+filename);
-			e.printStackTrace();			
-		}
 	}
 
     public Pdf(String filename, int NSamples) {
-        try {
             BinnedDataDouble data = new BinnedDataDouble(filename);
             setPdf(data, NSamples);
-        } catch (IOException e) {
-            System.out.println("Problem loading data from file while initialising Pdf");
-            System.out.println("filename = "+System.getProperty("user.dir")+"/"+filename);
-            e.printStackTrace();
-        }
     }
 	
-	public Pdf(final BinnedDataDouble data) {
-		setPdf(data);
-	}
+	public Pdf(final BinnedDataDouble data) { setPdf(data); }
+
+    public Pdf(final BinnedDataDouble data, int NSamples) { setPdf(data, NSamples); }
 	
 	/**
 	 * @param ipdf functional class whose apply function returns the probability density at that point
@@ -98,13 +77,9 @@ public class Pdf implements Serializable {
 		initInverseCDF();
 	}
 	
-	public double getSupportLowerBound() {
-		return start;
-	}
+	public double getSupportLowerBound() { return start; }
 
-	public double getSupportUpperBound() {
-		return end;
-	}
+	public double getSupportUpperBound() { return end; }
 
 	/***
 	 * Get probability density P(x)

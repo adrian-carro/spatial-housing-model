@@ -1,7 +1,5 @@
 package housing;
 
-import java.io.Serializable;
-
 /**************************************************************************************************
  * Class to represent the mortgage policy regulator or Central Bank. It reads a number of policy
  * thresholds from the config object into local variables with the purpose of allowing for dynamic
@@ -11,8 +9,7 @@ import java.io.Serializable;
  *
  *************************************************************************************************/
 
-public class CentralBank implements Serializable {
-	private static final long serialVersionUID = -2857716547766065142L;
+public class CentralBank {
 
     //------------------//
     //----- Fields -----//
@@ -71,7 +68,10 @@ public class CentralBank implements Serializable {
 	}
 
     /**
-     * Get the Loan-To-Income ratio limit imposed by the Central Bank for a given household
+     * Get the Loan-To-Income ratio limit applicable to a given household. Note that Loan-To-Income constraints apply
+     * only to non-BTL applicants. The private bank always imposes its own limit. Apart from this, it also imposes the
+     * Central Bank regulated limit, which allows for a certain fraction of residential loans (mortgages for
+     * owner-occupying) to go over it
      *
      * @param isFirstTimeBuyer True if the household is first-time buyer
      * @param isHome True if the mortgage is to buy a home for the household (non-BTL mortgage)

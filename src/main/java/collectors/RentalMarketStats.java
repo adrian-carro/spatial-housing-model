@@ -1,9 +1,9 @@
 package collectors;
 
 import housing.Config;
+import housing.Geography;
 import housing.Region;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**************************************************************************************************
@@ -21,7 +21,7 @@ public class RentalMarketStats extends HousingMarketStats {
     //------------------//
 
     // General fields
-    private ArrayList<Region>   geography;
+    private Geography           geography;
     private HousingMarketStats  housingMarketStats;
     private Config              config; // Private field to receive the Model's configuration parameters object
 
@@ -43,7 +43,7 @@ public class RentalMarketStats extends HousingMarketStats {
      *
      * @param geography Reference to the whole geography of regions
      */
-    public RentalMarketStats(Config config, HousingMarketStats housingMarketStats, ArrayList<Region> geography) {
+    public RentalMarketStats(Config config, HousingMarketStats housingMarketStats, Geography geography) {
         super(config, geography);
         setActive(true);
         this.config = config;
@@ -90,7 +90,7 @@ public class RentalMarketStats extends HousingMarketStats {
         // Re-initiate to zero variables to sum over regions
         sumMonthsOnMarketPerQuality = new double[config.N_QUALITY];
         // Run through regions summing
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             for (int q = 0; q < config.N_QUALITY; q++) {
                 sumMonthsOnMarketPerQuality[q] += region.regionalRentalMarketStats.getSumMonthsOnMarketForQuality(q);
             }
@@ -105,7 +105,7 @@ public class RentalMarketStats extends HousingMarketStats {
             }
             // ... average fraction of time that a house of a given quality is occupied, based on average tenancy length
             // and exponential moving average of months that houses of this quality spend on the rental market
-            avOccupancyPerQuality[q] = config.AVERAGE_TENANCY_LENGTH/(config.AVERAGE_TENANCY_LENGTH
+            avOccupancyPerQuality[q] = config.TENANCY_LENGTH_AVERAGE /(config.TENANCY_LENGTH_AVERAGE
                     + expAvMonthsOnMarketPerQuality[q]);
             // ... average flow gross rental yield per quality band (stick to previous value if no sales)
             if (housingMarketStats.getExpAvSalePriceForQuality(q) > 0) {
@@ -134,7 +134,7 @@ public class RentalMarketStats extends HousingMarketStats {
     @Override
     void runThroughRegionsSumming() {
         // Run through regions summing
-        for (Region region : geography) {
+        for (Region region : geography.getRegions()) {
             nBuyers += region.regionalRentalMarketStats.getnBuyers();
             nSellers += region.regionalRentalMarketStats.getnSellers();
             nUnsoldNewBuild += region.regionalRentalMarketStats.getnUnsoldNewBuild();
@@ -158,7 +158,7 @@ public class RentalMarketStats extends HousingMarketStats {
     @Override
     void collectOfferPrices() {
         int i = 0;
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             for (double price: region.regionalRentalMarketStats.getOfferPrices()) {
                 offerPrices[i] = price;
                 ++i;
@@ -173,7 +173,7 @@ public class RentalMarketStats extends HousingMarketStats {
     @Override
     void collectBidPrices() {
         int i = 0;
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             for(double price: region.regionalRentalMarketStats.getBidPrices()) {
                 bidPrices[i] = price;
                 ++i;

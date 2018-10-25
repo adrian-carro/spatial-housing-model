@@ -42,8 +42,6 @@ public class Config {
     public double INITIAL_HPI;                  // Initial housing price index
     double HPI_MEDIAN;                          // Median house price
     public double HPI_SHAPE;                    // Shape parameter for the log-normal distribution of housing prices
-    public double AVERAGE_TENANCY_LENGTH;       // Average number of months a tenant will stay in a rented house
-    // TODO: Only used to initiate some exponential averaging. Remove it!
     public double RENT_GROSS_YIELD;             // Profit margin for buy-to-let investors
 
     // Demographic parameters
@@ -52,7 +50,7 @@ public class Config {
 
     // Household parameters
     double RETURN_ON_FINANCIAL_WEALTH;      // Monthly percentage growth of financial investments
-    int TENANCY_LENGTH_AVERAGE;             // Average number of months a tenant will stay in a rented house
+    public int TENANCY_LENGTH_AVERAGE;      // Average number of months a tenant will stay in a rented house
     int TENANCY_LENGTH_EPSILON;             // Standard deviation of the noise in determining the tenancy length
 
     // Household behaviour parameters: buy-to-let
@@ -71,6 +69,9 @@ public class Config {
     double HPA_EXPECTATION_FACTOR;              // Weight assigned to current trend when computing expectations
     public int HPA_YEARS_TO_CHECK;              // Number of years of the HPI record to check when computing the annual HPA
     double HOLD_PERIOD;                         // Average period, in years, for which owner-occupiers hold their houses
+    // Household behaviour parameters: location decision
+    double LOCATION_QUALITY_EXPONENT;       // The parameter a in the formula F = Q^a/(P+b), where Q is quality and P is price
+    double LOCATION_PRICE_THRESHOLD;        // The parameter b in the formula F = Q^a/(P+b), where Q is quality and P is price
     // Household behaviour parameters: sale price reduction
     double P_SALE_PRICE_REDUCE;             // Monthly probability of reducing the price of a house on the market
     double REDUCTION_MU;                    // Mean percentage reduction for prices of houses on the market
@@ -136,14 +137,15 @@ public class Config {
     double CONSTRUCTION_HOUSES_PER_HOUSEHOLD;   // Target ratio of houses per household
 
     // Government parameters
-    double GOVERNMENT_PERSONAL_ALLOWANCE_LIMIT;         // Maximum personal allowance
-    public double GOVERNMENT_MONTHLY_INCOME_SUPPORT;    // Minimum monthly earnings for a married couple from income support
+    double GOVERNMENT_GENERAL_PERSONAL_ALLOWANCE;           // General personal allowance to be deducted when computing taxable income
+    double GOVERNMENT_INCOME_LIMIT_FOR_PERSONAL_ALLOWANCE;  // Limit of income above which personal allowance starts to decrease £1 for every £2 of income above this limit
+    public double GOVERNMENT_MONTHLY_INCOME_SUPPORT;        // Minimum monthly earnings for a married couple from income support
 
     // Collectors parameters
     double UK_HOUSEHOLDS;                       // Approximate number of households in UK, used to scale up results for core indicators
     boolean MORTGAGE_DIAGNOSTICS_ACTIVE;        // Whether to record mortgage statistics
 
-    /** Declaration of addresses **/        // They must be public to be accessed from data package
+    /** Declaration of addresses **/                // They must be public to be accessed from data package
 
     // Data addresses: Government
     public String DATA_TAX_RATES;                   // Address for tax bands and rates data
@@ -153,11 +155,14 @@ public class Config {
     public String DATA_INCOME_GIVEN_AGE;            // Address for conditional probability of income band given age band
 
     // Data addresses: Demographics
-    public String DATA_AGE_MARGINAL_PDF;            // Address for target initial age probability density for household representative person
     public String DATA_HOUSEHOLD_AGE_AT_BIRTH_PDF;  // Address for pdf of household representative person's age at household birth
     public String DATA_DEATH_PROB_GIVEN_AGE;        // Address for data on the probability of death given the age of the household representative person
     public String DATA_REAL_POPULATION_PER_REGION;  // Address for data on real population per region
-
+    
+    // Data addresses: Transport
+    public String DATA_COMMUTING_TIMES;             // Address for data on commuting times between regions
+    public String DATA_COMMUTING_FEES;              // Address for data on commuting fees between regions
+    
     /** Construction of objects to contain derived parameters and constants **/
 
     // Create object containing all constants
@@ -213,6 +218,8 @@ public class Config {
     public class Constants {
         final public int DAYS_IN_MONTH = 30;
         final public int MONTHS_IN_YEAR = 12;
+        final int WORKING_DAYS_IN_MONTH = 20;
+        final int WORKING_HOURS_IN_DAY = 8;
     }
 
     //------------------------//

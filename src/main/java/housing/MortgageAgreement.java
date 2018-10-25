@@ -8,7 +8,6 @@ package housing;
  *
  *************************************************************************************************/
 public class MortgageAgreement extends PaymentAgreement {
-	private static final long serialVersionUID = -1610029355056926296L;
 
     //------------------//
     //----- Fields -----//
@@ -76,6 +75,7 @@ public class MortgageAgreement extends PaymentAgreement {
             nPayments = 0;
             Model.bank.endMortgageContract(this);
 		} else {
+			// Since monthlyPayment is proportional to principal, any amount paid off decreases monthlyPayment in the same proportion
 			monthlyPayment *= (principal - amount)/principal;
 			principal -= amount;
 		}

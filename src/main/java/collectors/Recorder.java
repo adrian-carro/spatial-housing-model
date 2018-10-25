@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
+import housing.Geography;
 import housing.Model;
 import housing.Region;
 
@@ -20,6 +21,7 @@ public class Recorder {
     //------------------//
 
     private String outputFolder;
+    private Geography geography;
 
     private PrintWriter outfile;
 
@@ -44,9 +46,10 @@ public class Recorder {
     //----- Constructors -----//
     //------------------------//
 
-    public Recorder(String outputFolder) {
+    public Recorder(String outputFolder, Geography geography) {
         this.outputFolder = outputFolder;
-        regionalOutfiles = new PrintWriter[Model.geography.size()];
+        this.geography = geography;
+        regionalOutfiles = new PrintWriter[geography.getRegions().size()];
     }
 
     //-------------------//
@@ -105,20 +108,21 @@ public class Recorder {
                     + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                     // House sale market data
                     + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
-                    + "Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, Sale nSellers, "
-                    + "Sale nNewSellers, Sale nBTLSellers, Sale nSales, Sale BTLSalesProportion, "
-                    + "Sale FTBSalesProportion, "
+                    + "Sale ExAvSalePrice, Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, "
+                    + "Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
+                    + "Sale nNonBTLBidsAboveExpAvSalePrice, Sale nBTLBidsAboveExpAvSalePrice, Sale nSalesToBTL, "
+                    + "Sale nSalesToFTB, "
                     // Rental market data
                     + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
                     + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
                     // Credit data
                     + "nRegisteredMortgages, "
-                    // Stuff to remove
-                    + "ExAvSalePrice");
+                    // Commuting data
+                    + "nCommuters, sumCommutingFees, sumCommutingCost");
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        for (int i = 0; i < Model.geography.size(); i++) {
+        for (int i = 0; i < geography.getRegions().size(); i++) {
             try {
                 regionalOutfiles[i] = new PrintWriter(outputFolder + "Output-region" + i + "-run" + nRun + ".csv",
                         "UTF-8");
@@ -131,16 +135,16 @@ public class Recorder {
                         + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                         // House sale market data
                         + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
-                        + "Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, Sale nSellers, "
-                        + "Sale nNewSellers, Sale nBTLSellers, Sale nSales, Sale BTLSalesProportion, "
-                        + "Sale FTBSalesProportion, "
+                        + "Sale ExAvSalePrice, Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, "
+                        + "Sale nBTLBuyers, Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
+                        + "Sale nNonBTLBidsAboveExpAvSalePrice, Sale nBTLBidsAboveExpAvSalePrice, Sale nSalesToBTL, "
+                        + "Sale nSalesToFTB, "
                         // Rental market data
                         + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
-                        + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
-                        // Credit data
-                        + "nRegisteredMortgages, "
-                        // Stuff to remove
-                        + "ExAvSalePrice");
+                        + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, "
+                        + "Rental ExpAvFlowYield, "
+                        // Commuting data
+                        + "nCommuters, sumCommutingFees, sumCommutingCost");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -212,6 +216,7 @@ public class Recorder {
                 Model.housingMarketStats.getAvBidPrice() + ", " +
                 Model.housingMarketStats.getAvOfferPrice() + ", " +
                 Model.housingMarketStats.getAvSalePrice() + ", " +
+                Model.housingMarketStats.getExpAvSalePrice() + ", " +
                 Model.housingMarketStats.getAvDaysOnMarket() + ", " +
                 Model.housingMarketStats.getExpAvDaysOnMarket() + ", " +
                 Model.housingMarketStats.getnBuyers() + ", " +
@@ -220,8 +225,10 @@ public class Recorder {
                 Model.housingMarketStats.getnNewSellers() + ", " +
                 Model.housingMarketStats.getnBTLSellers() + ", " +
                 Model.housingMarketStats.getnSales() + ", " +
-                Model.housingMarketStats.getBTLSalesProportion() + ", " +
-                Model.housingMarketStats.getFTBSalesProportion() + ", " +
+                Model.householdStats.getnNonBTLBidsAboveExpAvSalePrice() + ", " +
+                Model.householdStats.getnBTLBidsAboveExpAvSalePrice() + ", " +
+                Model.housingMarketStats.getnSalesToBTL() + ", " +
+                Model.housingMarketStats.getnSalesToFTB() + ", " +
                 // Rental market data
                 Model.rentalMarketStats.getHPI() + ", " +
                 Model.rentalMarketStats.getAnnualHPA() + ", " +
@@ -235,12 +242,14 @@ public class Recorder {
                 Model.rentalMarketStats.getExpAvFlowYield() + ", " +
                 // Credit data
                 Model.creditSupply.getnRegisteredMortgages() + ", " +
-                // Stuff to remove
-                Model.housingMarketStats.getExpAvSalePrice());
+                // Commuting data
+                Model.householdStats.getnCommuters() + ", " +
+                Model.householdStats.getSumCommutingFees() + ", " +
+                Model.householdStats.getSumCommutingCost());
 
         // Write general output results for each region
         int i = 0;
-        for (Region region: Model.geography) {
+        for (Region region: geography.getRegions()) {
             regionalOutfiles[i].println(time + ", " +
                     // Number of households of each type
                     region.regionalHouseholdStats.getnNonBTLHomeless() + ", " +
@@ -268,15 +277,19 @@ public class Recorder {
                     region.regionalHousingMarketStats.getAvBidPrice() + ", " +
                     region.regionalHousingMarketStats.getAvOfferPrice() + ", " +
                     region.regionalHousingMarketStats.getAvSalePrice() + ", " +
+                    region.regionalHousingMarketStats.getExpAvSalePrice() + ", " +
                     region.regionalHousingMarketStats.getAvDaysOnMarket() + ", " +
+                    region.regionalHousingMarketStats.getExpAvDaysOnMarket() + ", " +                 
                     region.regionalHousingMarketStats.getnBuyers() + ", " +
                     region.regionalHousingMarketStats.getnBTLBuyers() + ", " +
                     region.regionalHousingMarketStats.getnSellers() + ", " +
                     region.regionalHousingMarketStats.getnNewSellers() + ", " +
                     region.regionalHousingMarketStats.getnBTLSellers() + ", " +
                     region.regionalHousingMarketStats.getnSales() + ", " +
-                    region.regionalHousingMarketStats.getBTLSalesProportion() + ", " +
-                    region.regionalHousingMarketStats.getFTBSalesProportion() + ", " +
+                    region.regionalHouseholdStats.getnNonBTLBidsAboveExpAvSalePrice() + ", " +
+                    region.regionalHouseholdStats.getnBTLBidsAboveExpAvSalePrice() + ", " +
+                    region.regionalHousingMarketStats.getnSalesToBTL() + ", " +
+                    region.regionalHousingMarketStats.getnSalesToFTB() + ", " +
                     // Rental market data
                     region.regionalRentalMarketStats.getHPI() + ", " +
                     region.regionalRentalMarketStats.getAnnualHPA() + ", " +
@@ -288,8 +301,10 @@ public class Recorder {
                     region.regionalRentalMarketStats.getnSellers() + ", " +
                     region.regionalRentalMarketStats.getnSales() + ", " +
                     region.regionalRentalMarketStats.getExpAvFlowYield() + ", " +
-                    // Stuff to remove
-                    region.regionalRentalMarketStats.getExpAvSalePrice());
+                    // Commuting data
+                    Model.householdStats.getnCommuters() + ", " +
+                    Model.householdStats.getSumCommutingFees() + ", " +
+                    Model.householdStats.getSumCommutingCost());
             i++;
         }
     }
@@ -312,7 +327,7 @@ public class Recorder {
             interestRateSpread.println("");
         }
         outfile.close();
-        for (int i = 0; i < Model.geography.size(); i++) {
+        for (int i = 0; i < geography.getRegions().size(); i++) {
             regionalOutfiles[i].close();
         }
     }

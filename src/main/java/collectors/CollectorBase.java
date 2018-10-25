@@ -1,19 +1,12 @@
 package collectors;
 
-import java.io.Serializable;
+public class CollectorBase {
 
-public class CollectorBase implements Serializable {
-	private static final long serialVersionUID = 6418211605960262874L;
+	private boolean active = false;
 
-	boolean active = false;
+	public boolean isActive() { return active; }
 
-	public boolean isActive() {
-		return active;
-	}
-
-	public void setActive(boolean active) {
-		this.active = active;
-	}
+	public void setActive(boolean active) { this.active = active; }
 	
 	
 }

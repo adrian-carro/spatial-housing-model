@@ -1,6 +1,5 @@
 package utilities;
 
-import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -20,8 +19,7 @@ import java.util.TreeSet;
  * @author daniel, Adrian Carro
  *
  *************************************************************************************************/
-public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
-	private static final long serialVersionUID = -2371013046862291303L;
+public class PriorityQueue2D<E> implements Iterable<E> {
 
 	//------------------//
 	//----- Fields -----//
@@ -38,7 +36,7 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 	public PriorityQueue2D(XYComparator<E> comparator) {
 		this.comparator = comparator;
 		xySortedElements = new TreeSet<>(new XYComparatorClass());
-		uncoveredElements = new TreeSet<>(new XYComparatorClass());
+		uncoveredElements = new TreeSet<>(new XComparatorClass());
 	}
 
 	//----------------------//
@@ -48,12 +46,16 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 	/**
 	 * Interface for the XYComparator, to be implemented by the objects to be inserted in the PriorityQueue2D
 	 */
-	public interface XYComparator<T> extends Serializable {
+	public interface XYComparator<T> {
 		/**
 		 * @return -1 or 1 if arg0 is, respectively, X-less than or X-greater than arg1 solving the arg0 == arg1 case by
 		 * reverse comparing along the Y dimension and comparing their Id's if they also have the same Y-measure
 		 */
 		int XYCompare(T arg0, T arg1);
+        /**
+         * @return -1, 0 or 1 if arg0 is, respectively, X-less than, X-equal to, or X-greater than arg1
+         */
+        int XCompare(T arg0, T arg1);
 		/**
 		 * @return -1, 0 or 1 if arg0 is, respectively, Y-less than, Y-equal to, or Y-greater than arg1
 		 */
@@ -67,6 +69,14 @@ public class PriorityQueue2D<E> implements Iterable<E>, Serializable {
 	public class XYComparatorClass implements Comparator<E> {
 		public int compare(E arg0, E arg1) { return comparator.XYCompare(arg0, arg1); }
 	}
+
+	/**
+     * Class to encapsulate the XCompare method at XYComparator such that it can be passed as an argument to the
+     * TreeSet constructor
+     */
+    public class XComparatorClass implements Comparator<E> {
+        public int compare(E arg0, E arg1) { return comparator.XCompare(arg0, arg1); }
+    }
 
 	/**
 	 * Iterator through the XY-sorted elements of xySortedElements. This needs to be re-implemented here in order to

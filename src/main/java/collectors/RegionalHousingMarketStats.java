@@ -145,8 +145,8 @@ public class RegionalHousingMarketStats extends CollectorBase {
         // Re-initialise to zero variables computed before market clearing
         nBuyers = market.getBids().size();
         nBTLBuyers = 0;
-        for (HouseBuyerRecord bid: market.getBids()) {
-            if (bid.buyer.behaviour.isPropertyInvestor() && bid.buyer.getHome() != null) {
+        for (HouseBidderRecord bid: market.getBids()) {
+            if (bid.getBidder().behaviour.isPropertyInvestor() && bid.getBidder().getHome() != null) {
                 nBTLBuyers++;
             }
         }
@@ -154,12 +154,12 @@ public class RegionalHousingMarketStats extends CollectorBase {
         nNewSellers = 0;
         nBTLSellers = 0;
         for (HousingMarketRecord element: market.getOffersPQ()) {
-            HouseSaleRecord offer = (HouseSaleRecord)element;
-            if (offer.tInitialListing == Model.getTime()) {
+            HouseOfferRecord offer = (HouseOfferRecord)element;
+            if (offer.gettInitialListing() == Model.getTime()) {
                 nNewSellers++;
             }
-            if (offer.house.owner != Model.construction) {
-                Household h = (Household)offer.house.owner;
+            if (offer.getHouse().owner != Model.construction) {
+                Household h = (Household) offer.getHouse().owner;
                 if (h.behaviour.isPropertyInvestor()) {
                     nBTLSellers++;
                 }
@@ -173,7 +173,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
         // Record bid prices and their average
         int i = 0;
-        for(HouseBuyerRecord bid : market.getBids()) {
+        for (HouseBidderRecord bid : market.getBids()) {
             sumBidPrices += bid.getPrice();
             bidPrices[i] = bid.getPrice();
             ++i;
@@ -181,7 +181,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
 
         // Record offer prices, their average, and the number of empty and new houses
         i = 0;
-        for(HousingMarketRecord sale : market.getOffersPQ()) {
+        for (HousingMarketRecord sale : market.getOffersPQ()) {
             sumOfferPrices += sale.getPrice();
             offerPrices[i] = sale.getPrice();
             ++i;
@@ -194,21 +194,21 @@ public class RegionalHousingMarketStats extends CollectorBase {
      * This method updates the values of several counters every time a buyer and a seller are matched and the
      * transaction is completed. Note that only counter variables can be modified within this method
      *
-     * @param purchase The HouseBuyerRecord of the buyer
-     * @param sale The HouseSaleRecord of the house being sold
+     * @param purchase The HouseBidderRecord of the buyer
+     * @param sale The HouseOfferRecord of the house being sold
      */
     // TODO: Need to think if this method and recordTransaction can be joined in a single method!
-    public void recordSale(HouseBuyerRecord purchase, HouseSaleRecord sale) {
+    public void recordSale(HouseBidderRecord purchase, HouseOfferRecord sale) {
         salesCount += 1;
-        MortgageAgreement mortgage = purchase.buyer.mortgageFor(sale.house);
-        if(mortgage != null) {
-            if(mortgage.isFirstTimeBuyer) {
+        MortgageAgreement mortgage = purchase.getBidder().mortgageFor(sale.getHouse());
+        if (mortgage != null) {
+            if (mortgage.isFirstTimeBuyer) {
                 ftbSalesCount += 1;
-            } else if(mortgage.isBuyToLet) {
+            } else if (mortgage.isBuyToLet) {
                 btlSalesCount += 1;
             }
         }
-        // TODO: Attention, call to model from regional class: need to build regional recorders!
+        // TODO: Attention, call to model from regional class: need to understand if regional micro-data recorders would be needed!
         Model.transactionRecorder.recordSale(purchase, sale, mortgage, market);
     }
 
@@ -216,10 +216,10 @@ public class RegionalHousingMarketStats extends CollectorBase {
      * This method updates the values of several counters every time a buyer and a seller are matched and the
      * transaction is completed. Note that only counter variables can be modified within this method
      *
-     * @param sale The HouseSaleRecord of the house being sold
+     * @param sale The HouseOfferRecord of the house being sold
      */
-    public void recordTransaction(HouseSaleRecord sale) {
-        sumDaysOnMarketCount += config.constants.DAYS_IN_MONTH*(Model.getTime() - sale.tInitialListing);
+    public void recordTransaction(HouseOfferRecord sale) {
+        sumDaysOnMarketCount += config.constants.DAYS_IN_MONTH*(Model.getTime() - sale.gettInitialListing());
         sumSalePricePerQualityCount[sale.getQuality()] += sale.getPrice();
         nSalesPerQualityCount[sale.getQuality()]++;
         sumSoldReferencePriceCount += referencePricePerQuality[sale.getQuality()];
@@ -256,7 +256,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
             }
         }
         // ... current house price index (only if there have been sales)
-        if(nSales > 0) {
+        if (nSales > 0) {
             housePriceIndex = sumSoldPrice/sumSoldReferencePrice;
         }
         // ... HPIRecord with the new house price index value
@@ -265,14 +265,14 @@ public class RegionalHousingMarketStats extends CollectorBase {
         annualHousePriceAppreciation = housePriceAppreciation(1);
         longTermHousePriceAppreciation = housePriceAppreciation(config.HPA_YEARS_TO_CHECK);
         // ... relaxation of the price distribution towards the reference price distribution (described in appendix A3)
-        for(int q = 0; q < config.N_QUALITY; q++) {
+        for (int q = 0; q < config.N_QUALITY; q++) {
             expAvSalePricePerQuality[q] = config.MARKET_AVERAGE_PRICE_DECAY*expAvSalePricePerQuality[q]
                     + (1.0 - config.MARKET_AVERAGE_PRICE_DECAY)*(housePriceIndex*referencePricePerQuality[q]);
         }
         // ...record number of unsold new build houses
         nUnsoldNewBuild = 0;
-        for(HousingMarketRecord sale : market.getOffersPQ()) {
-            if(((HouseSaleRecord)sale).house.owner == Model.construction) nUnsoldNewBuild++;
+        for (HousingMarketRecord sale : market.getOffersPQ()) {
+            if (((HouseOfferRecord) sale).getHouse().owner == Model.construction) nUnsoldNewBuild++;
         }
     }
 
@@ -350,7 +350,7 @@ public class RegionalHousingMarketStats extends CollectorBase {
     public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
     public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
-    public double getExpAvSalePrice() {
+    double getExpAvSalePrice() {
         double sum = 0.0;
         int n = 0;
         for (double element: expAvSalePricePerQuality) {
@@ -361,48 +361,36 @@ public class RegionalHousingMarketStats extends CollectorBase {
     }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
-    public double getAnnualHPA() { return annualHousePriceAppreciation; }
+    double getAnnualHPA() { return annualHousePriceAppreciation; }
     public double getLongTermHPA() {return longTermHousePriceAppreciation; }
 
     // Getters for derived variables
-    public double getAvBidPrice() {
+    double getAvBidPrice() {
         if (nBuyers > 0) {
             return sumBidPrices/nBuyers;
         } else {
             return 0.0;
         }
     }
-    public double getAvOfferPrice() {
+    double getAvOfferPrice() {
         if (nSellers > 0) {
             return sumOfferPrices/nSellers;
         } else {
             return 0.0;
         }
     }
-    public double getAvSalePrice() {
+    double getAvSalePrice() {
         if (nSales > 0) {
             return sumSoldPrice/nSales;
         } else {
             return 0.0;
         }
     }
-    // Proportion of monthly sales that are to first-time buyers
-    public double getFTBSalesProportion() {
-        if (nSales > 0) {
-            return (double)nFTBSales/nSales;
-        } else {
-            return 0.0;
-        }
-    }
-    // Proportion of monthly sales that are to buy-to-let investors
-    public double getBTLSalesProportion() {
-        if (nSales > 0) {
-            return (double)nBTLSales/nSales;
-        } else {
-            return 0.0;
-        }
-    }
-    public double getAvDaysOnMarket() {
+    // Number of monthly sales that are to first-time buyers
+    int getnSalesToFTB() { return nFTBSales; }
+    // Number of monthly sales that are to buy-to-let investors
+    int getnSalesToBTL() { return nBTLSales; }
+    double getAvDaysOnMarket() {
         if (nSales > 0) {
             return sumDaysOnMarket/nSales;
         } else {

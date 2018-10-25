@@ -4,8 +4,6 @@ import housing.*;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import java.util.ArrayList;
-
 /**************************************************************************************************
  * Class to aggregate all regional sale market statistics
  *
@@ -14,14 +12,13 @@ import java.util.ArrayList;
  *
  *************************************************************************************************/
 public class HousingMarketStats extends CollectorBase {
-    private static final long serialVersionUID = -535310555732796139L;
 
     //------------------//
     //----- Fields -----//
     //------------------//
 
     // General fields
-    private ArrayList<Region>       geography;
+    private Geography               geography;
     private Config                  config; // Private field to receive the Model's configuration parameters object
 
     // Variables computed at initialisation
@@ -66,7 +63,7 @@ public class HousingMarketStats extends CollectorBase {
      *
      * @param geography Reference to the whole geography of regions
      */
-    public HousingMarketStats(Config config, ArrayList<Region> geography) {
+    public HousingMarketStats(Config config, Geography geography) {
         setActive(true);
         this.config = config;
         this.geography = geography;
@@ -198,7 +195,7 @@ public class HousingMarketStats extends CollectorBase {
      */
     void runThroughRegionsSumming() {
         // Run through regions summing
-        for (Region region : geography) {
+        for (Region region : geography.getRegions()) {
             nBuyers += region.regionalHousingMarketStats.getnBuyers();
             nBTLBuyers += region.regionalHousingMarketStats.getnBTLBuyers();
             nSellers += region.regionalHousingMarketStats.getnSellers();
@@ -226,7 +223,7 @@ public class HousingMarketStats extends CollectorBase {
      */
 	void collectOfferPrices() {
 		int i = 0;
-		for (Region region: geography) {
+		for (Region region: geography.getRegions()) {
 		    for (double price: region.regionalHousingMarketStats.getOfferPrices()) {
                 offerPrices[i] = price;
                 ++i;
@@ -240,7 +237,7 @@ public class HousingMarketStats extends CollectorBase {
      */
 	void collectBidPrices() {
 		int i = 0;
-        for (Region region: geography) {
+        for (Region region: geography.getRegions()) {
             for(double price: region.regionalHousingMarketStats.getBidPrices()) {
                 bidPrices[i] = price;
                 ++i;
@@ -256,7 +253,7 @@ public class HousingMarketStats extends CollectorBase {
      * @param nYears Integer with the number of years over which to average house price growth
      * @return Annualised house price appreciation over nYears years
      */
-    public double housePriceAppreciation(int nYears) {
+    private double housePriceAppreciation(int nYears) {
         double HPI = (HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 1)
                 + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 2)
                 + HPIRecord.getElement(config.derivedParams.HPI_RECORD_LENGTH - 3));
@@ -275,7 +272,7 @@ public class HousingMarketStats extends CollectorBase {
      *
      * @return Quarter on quarter house price growth
      */
-    public double getQoQHousePriceGrowth() {
+    double getQoQHousePriceGrowth() {
         double HPI = HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 1)
                 + HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 2)
                 + HPIRecord.getElement(config.derivedParams.getHPIRecordLength() - 3);
@@ -315,10 +312,10 @@ public class HousingMarketStats extends CollectorBase {
     int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
 
     // Getters for other variables computed after market clearing
-    public double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
+    double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
     public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
-    public double getExpAvSalePrice() {
+    double getExpAvSalePrice() {
         double sum = 0.0;
         int n = 0;
         for (double element: expAvSalePricePerQuality) {
@@ -329,7 +326,7 @@ public class HousingMarketStats extends CollectorBase {
     }
     public double getHPI() { return housePriceIndex; }
     public DescriptiveStatistics getHPIRecord() { return HPIRecord; }
-    public double getAnnualHPA() { return annualHousePriceAppreciation; }
+    double getAnnualHPA() { return annualHousePriceAppreciation; }
     public double getLongTermHPA() {return longTermHousePriceAppreciation; }
 
     // Getters for derived variables
@@ -354,22 +351,10 @@ public class HousingMarketStats extends CollectorBase {
             return 0.0;
         }
     }
-    // Proportion of monthly sales that are to first-time buyers
-    double getFTBSalesProportion() {
-        if (nSales > 0) {
-            return (double)nFTBSales/nSales;
-        } else {
-            return 0.0;
-        }
-    }
-    // Proportion of monthly sales that are to buy-to-let investors
-    double getBTLSalesProportion() {
-        if (nSales > 0) {
-            return (double)nBTLSales/nSales;
-        } else {
-            return 0.0;
-        }
-    }
+    // Number of monthly sales that are to first-time buyers
+    int getnSalesToFTB() { return nFTBSales; }
+    // Number of monthly sales that are to buy-to-let investors
+    int getnSalesToBTL() { return nBTLSales; }
     double getAvDaysOnMarket() {
         if (nSales > 0) {
             return sumDaysOnMarket/nSales;

@@ -1,15 +1,12 @@
 package housing;
 
-import java.io.Serializable;
-
 /**************************************************************************************************
  * Class to represent a house with all its intrinsic characteristics.
  *
  * @author daniel, Adrian Carro
  *
  *************************************************************************************************/
-public class House implements Comparable<House>, Serializable {
-    private static final long serialVersionUID = 4538336934216907799L;
+public class House implements Comparable<House> {
 
     //------------------//
     //----- Fields -----//
@@ -22,8 +19,8 @@ public class House implements Comparable<House>, Serializable {
     public Region       region;
     public int          id;
 
-    HouseSaleRecord     saleRecord;
-    HouseSaleRecord     rentalRecord;
+    HouseOfferRecord    saleRecord;
+    HouseOfferRecord    rentalRecord;
 
     private int         quality;
 
@@ -51,15 +48,15 @@ public class House implements Comparable<House>, Serializable {
 
 	boolean isOnMarket() { return saleRecord != null; }
 
-	HouseSaleRecord getSaleRecord() { return saleRecord; }
+	HouseOfferRecord getSaleRecord() { return saleRecord; }
 
-	HouseSaleRecord getRentalRecord() { return rentalRecord; }
+	HouseOfferRecord getRentalRecord() { return rentalRecord; }
 
 	boolean isOnRentalMarket() { return rentalRecord != null; }
-    void putForSale(HouseSaleRecord saleRecord) { this.saleRecord = saleRecord; }
+    void putForSale(HouseOfferRecord saleRecord) { this.saleRecord = saleRecord; }
 
 	void resetSaleRecord() { saleRecord = null; }
-    void putForRent(HouseSaleRecord rentalRecord) { this.rentalRecord = rentalRecord; }
+    void putForRent(HouseOfferRecord rentalRecord) { this.rentalRecord = rentalRecord; }
 
 	void resetRentalRecord() { rentalRecord = null; }
 
