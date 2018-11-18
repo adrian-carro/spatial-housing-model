@@ -265,6 +265,7 @@ public class HouseholdBehaviour {
         double desiredRentPrice = 0.0; // Dummy value, never used
         int optimalQuality = -1; // Dummy value, it forces entering the if condition in the first iteration
         double optimalExpAvRentPrice = 0.0; // Dummy value, never used
+        double optimalDesiredRentPrice = 0.0; // Dummy value, never used
         Region optimalRegionForRenting = null;
         // Find optimal region for renting. To this end, for each region...
         for (Region region : geography.getRegions()) {
@@ -282,6 +283,7 @@ public class HouseholdBehaviour {
                 optimalQuality = maxQualityForRenting;
                 optimalExpAvRentPrice
                         = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(maxQualityForRenting);
+                optimalDesiredRentPrice = desiredRentPrice;
                 optimalRegionForRenting = region;
             }
         }
@@ -289,7 +291,7 @@ public class HouseholdBehaviour {
             return null;
         } else {
             return new RegionQualityPriceContainer(optimalRegionForRenting, optimalQuality, optimalExpAvRentPrice,
-                    desiredRentPrice);
+                    optimalDesiredRentPrice);
         }
     }
 

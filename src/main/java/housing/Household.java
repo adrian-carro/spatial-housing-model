@@ -133,17 +133,11 @@ public class Household implements IHouseOwner {
                 bidForAHome();
             }
         } else if (behaviour.isPropertyInvestor()) { // Only BTL investors who already own a home enter here
-//######################################################################################################################
             Region chosenInvestmentRegion = behaviour.decideWhereToBuyInvestmentProperty(this);
             if (chosenInvestmentRegion != null) {
                 chosenInvestmentRegion.houseSaleMarket.BTLbid(this,
                         behaviour.btlPurchaseBid(this, chosenInvestmentRegion));
             }
-//######################################################################################################################
-//            if (behaviour.decideToBuyInvestmentProperty(this, jobRegion)) {
-//                double price = behaviour.btlPurchaseBid(this, jobRegion);
-//                jobRegion.houseSaleMarket.BTLbid(this, price);
-//            }
             // TODO: Need to call here to an equivalent to the old countBTLBidsAboveExpAvSalePrice(), not implemented yet
         } else if (!isHomeowner()){
             System.out.println("Strange: this household is not a type I recognize");
