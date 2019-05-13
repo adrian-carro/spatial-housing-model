@@ -77,7 +77,7 @@ public class Model {
         demographics = new Demographics(config, rand, geography);
         construction = new Construction(config, rand, geography);
         centralBank = new CentralBank(config);
-        bank = new Bank(config);
+        bank = new Bank();
 
         recorder = new collectors.Recorder(outputFolder, geography);
         transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
