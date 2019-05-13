@@ -76,7 +76,7 @@ public class Model {
         government = new Government(config);
         demographics = new Demographics(config, rand, geography);
         construction = new Construction(config, rand, geography);
-        centralBank = new CentralBank(config);
+        centralBank = new CentralBank();
         bank = new Bank();
 
         recorder = new collectors.Recorder(outputFolder, geography);

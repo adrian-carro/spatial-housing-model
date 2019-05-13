@@ -16,22 +16,16 @@ public class CentralBank {
     //------------------//
 
     // General fields
-    private Config      config; // Private field to receive the Model's configuration parameters object
+	private Config	config = Model.config;	// Passes the Model's configuration parameters object to a private field
 
     // LTI policy thresholds
-    private double      firstTimeBuyerLTILimit; // Loan-To-Income upper limit for first-time buying mortgages
-    private double      ownerOccupierLTILimit; // Loan-To-Income upper limit for owner-occupying mortgages
-    private double      maxFractionOOMortgagesOverLTILimit; // Fraction of owner-occupying mortgages allowed to exceed the Loan-To-Income limit
+    private double firstTimeBuyerLTILimit; // Loan-To-Income upper limit for first-time buying mortgages
+    private double ownerOccupierLTILimit; // Loan-To-Income upper limit for owner-occupying mortgages
+    private double maxFractionOOMortgagesOverLTILimit; // Fraction of owner-occupying mortgages allowed to exceed the Loan-To-Income limit
 
     // ICR policy thresholds
-    private double      interestCoverRatioLimit; // Ratio of expected rental yield over interest monthly payment under stressed interest conditions
-    private double      interestCoverRatioStressedRate; // Stressed interest rate used for Interest-Cover-Ratio assessments
-
-    //------------------------//
-    //----- Constructors -----//
-    //------------------------//
-
-    public CentralBank(Config config) { this.config = config; }
+    private double interestCoverRatioLimit; // Ratio of expected rental yield over interest monthly payment under stressed interest conditions
+    private double interestCoverRatioStressedRate; // Stressed interest rate used for Interest-Cover-Ratio assessments
 
     //-------------------//
     //----- Methods -----//
