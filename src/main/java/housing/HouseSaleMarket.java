@@ -13,14 +13,14 @@ import utilities.PriorityQueue2D;
  *****************************************************/
 public class HouseSaleMarket extends HousingMarket {
 
-	private Config	                    			config; // Private field to receive the Model's configuration parameters object
-	private Region                                  region;
+    private Config	                    			config; // Private field to receive the Model's configuration parameters object
+    private Region                                  region;
     private PriorityQueue2D<HousingMarketRecord>    offersPY;
 
 	HouseSaleMarket(Config config, MersenneTwister rand, Region region) {
-	    super(config, rand, region);
-	    this.config = config;
-	    this.region = region;
+        super(config, rand, region);
+        this.config = config;
+        this.region = region;
 		offersPY = new PriorityQueue2D<>(new HousingMarketRecord.PYComparator());
 	}
 	
@@ -47,10 +47,10 @@ public class HouseSaleMarket extends HousingMarket {
 
 	@Override
 	public HouseOfferRecord offer(House house, double price, boolean BTLOffer) {
-		HouseOfferRecord hsr = super.offer(house, price, BTLOffer);
-		offersPY.add(hsr);
-		house.putForSale(hsr);
-		return(hsr);
+        HouseOfferRecord hsr = super.offer(house, price, BTLOffer);
+        offersPY.add(hsr);
+        house.putForSale(hsr);
+        return(hsr);
 	}
 	
 	@Override
@@ -118,5 +118,5 @@ public class HouseSaleMarket extends HousingMarket {
 	 * @param buyer The household that is making the bid.
 	 * @param maxPrice The maximum price that the household is willing to pay.
 	 ******************************************/
-	void BTLbid(Household buyer, double maxPrice) { bids.add(new HouseBidderRecord(buyer, maxPrice, true)); }
+    void BTLbid(Household buyer, double maxPrice) { bids.add(new HouseBidderRecord(buyer, maxPrice, true)); }
 }

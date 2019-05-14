@@ -92,7 +92,8 @@ public abstract class HousingMarket {
      * @param price The price that the household is willing to pay
      */
     public void bid(Household buyer, double price) {
-        bids.add(new HouseBidderRecord(buyer, price, false)); }
+        bids.add(new HouseBidderRecord(buyer, price, false));
+    }
 
     //----- Market clearing methods -----//
 
@@ -144,7 +145,6 @@ public abstract class HousingMarket {
         double pSuccessfulBid;
         double salePrice;
         int winningBid;
-        int enoughBids; // Upper bounded number of bids on one house
         Iterator<HousingMarketRecord> record = getOffersIterator();
         while(record.hasNext()) {
             offer = (HouseOfferRecord)record.next();
@@ -153,13 +153,22 @@ public abstract class HousingMarket {
             if(nBids > 1) {
                 // ...first bid up the price
                 if(config.BIDUP > 1.0) {
-                    // TODO: All this enough bids mechanism is not explained! The 10000/N factor, the 0.5 added, and the
-                    // TODO: topping of the function at 4 are not declared in the paper. Remove or explain!
-                    enoughBids = Math.min(4, (int)(0.5 + nBids*10000.0/config.TARGET_POPULATION));
-                    // TODO: Also, the role of MONTHS_UNDER_OFFER is not explained or declared!
-                    pSuccessfulBid = Math.exp(-enoughBids*config.derivedParams.MONTHS_UNDER_OFFER);
+                    // Assuming bids a randomly distributed throughout the month, this is the probability of two
+                    // consecutive bids having at least a week between them
+                    // TODO: Check this an exponential form, why not (1 - 7/30)^(nBids - 1)?
+                    pSuccessfulBid = Math.exp(-nBids*config.derivedParams.MONTHS_UNDER_OFFER);
+                    // Given the previous probability of success (two consecutive bids more than a week apart), find the
+                    // number of attempts before a success (number of consecutive bids less than a week apart before two
+                    // consecutive bids more than a week apart), which corresponds to a draw from a geometric
+                    // distribution
                     geomDist = new GeometricDistribution(rand, pSuccessfulBid);
-                    salePrice = offer.getPrice()*Math.pow(config.BIDUP, geomDist.sample());
+                    int number = geomDist.sample();
+                    // In order to avoid too large increases of price, set the maximum number of prices increases to 4
+                    // TODO: This maximum number of price increases is not declared in the article. It should be
+                    // TODO: explained or removed and its parameter (4) brought to the config file or removed.
+                    number = Math.min(4, number);
+                    // Finally compute the new price
+                    salePrice = offer.getPrice()*Math.pow(config.BIDUP, number);
                 } else {
                     salePrice = offer.getPrice();                    
                 }
@@ -223,7 +232,7 @@ public abstract class HousingMarket {
 
     public PriorityQueue2D<HousingMarketRecord> getOffersPQ() { return offersPQ; }
 
-    Iterator<HousingMarketRecord> getOffersIterator() { return(offersPQ.iterator()); }
+    private Iterator<HousingMarketRecord> getOffersIterator() { return(offersPQ.iterator()); }
 
     /**
      * Get the highest quality house being offered for a price up to that of the bid (OfferPrice <= bidPrice)

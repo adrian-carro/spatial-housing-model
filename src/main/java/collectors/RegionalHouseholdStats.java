@@ -11,7 +11,7 @@ import housing.Region;
  * @since 06/09/2017
  *
  *************************************************************************************************/
-public class RegionalHouseholdStats extends CollectorBase {
+public class RegionalHouseholdStats {
 
     //------------------//
     //----- Fields -----//
@@ -59,7 +59,6 @@ public class RegionalHouseholdStats extends CollectorBase {
      * @param region Reference to the region owning both the market and the regional collector
      */
     public RegionalHouseholdStats(Config config, Region region) {
-        setActive(true);
         this.config = config;
         this.region = region;
     }
@@ -120,11 +119,11 @@ public class RegionalHouseholdStats extends CollectorBase {
                 ++nBTL;
                 if (h.isBankrupt()) nBTLBankruptcies += 1;
                 // Active BTL investors
-                if (h.nInvestmentProperties() > 0) {
+                if (h.getNProperties() > 1) {
                     ++nActiveBTL;
                     activeBTLAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                     // Inactive BTL investors who own their house
-                } else if (h.nInvestmentProperties() == 0) {
+                } else if (h.getNProperties() == 1) {
                     ++nBTLOwnerOccupier;
                     ownerOccupierAnnualisedTotalIncome += h.getMonthlyGrossTotalIncome();
                     // Inactive BTL investors in social housing

@@ -25,50 +25,55 @@ public class Config {
     /** Declaration of parameters **/
 
     // General model control parameters
-    int SEED;                               // Seed for the random number generator
-    int N_STEPS;				            // Simulation duration in time steps
-    int TIME_TO_START_RECORDING;	        // Time steps before recording statistics (initialisation time)
-    int N_SIMS; 					        // Number of simulations to run (monte-carlo)
-    boolean recordCoreIndicators;		    // True to write time series for each core indicator
-    boolean recordMicroData;			    // True to write micro data for each transaction made
+    int SEED;                                           // Seed for the random number generator
+    int N_STEPS;                                        // Simulation duration in time steps
+    int N_SIMS;                                         // Number of simulations to run (monte-carlo)
+    public int TIME_TO_START_RECORDING_TRANSACTIONS;    // Time step to start recording transactions (to avoid too large files)
+    boolean recordTransactions;			                // True to write data for each transaction
+    boolean recordCoreIndicators;		                // True to write time series for each core indicator
+    boolean recordQualityBandPrice;                     // True to write time series of prices for each quality band to a single file per run
+    public boolean recordEmploymentIncome;              // True to write individual household monthly gross employment income data
+    public boolean recordRentalIncome;                  // True to write individual household monthly gross rental income data (after market clearing)
+    public boolean recordBankBalance;                   // True to write individual household liquid wealth (bank balance) data (after market clearing)
+    public boolean recordHousingWealth;                 // True to write individual household housing wealth data (after market clearing, assuming constant house prices!)
+    public boolean recordNHousesOwned;                  // True to write individual household number of houses owned data (after market clearing)
+    public boolean recordAge;                           // True to write individual household age of the household representative person
+    public boolean recordSavingRate;                    // True to write individual household saving rate data [1 - (taxExpenses + housing expenses(except deposits) + essentialConsumption + nonEssentialConsumption)/monthlyGrossTotalIncome]
 
     // House parameters
     public int N_QUALITY;                   // Number of quality bands for houses
 
     // Housing market parameters
-    int DAYS_UNDER_OFFER;                       // Time (in days) that a house remains under offer
+    private int DAYS_UNDER_OFFER;               // Time (in days) that a house remains under offer
     double BIDUP;                               // Smallest proportional increase in price that can cause a gazump
     public double MARKET_AVERAGE_PRICE_DECAY;   // Decay constant for the exponential moving average of sale prices
-    public double INITIAL_HPI;                  // Initial housing price index
-    double HPI_MEDIAN;                          // Median house price
-    public double HPI_SHAPE;                    // Shape parameter for the log-normal distribution of housing prices
+    public double HOUSE_PRICES_SCALE;           // Scale parameter for the log-normal distribution of house prices (logarithm of median house price = mean and median of logarithmic house prices)
+    public double HOUSE_PRICES_SHAPE;           // Shape parameter for the log-normal distribution of house prices (standard deviation of logarithmic house prices)
     public double RENT_GROSS_YIELD;             // Profit margin for buy-to-let investors
 
     // Demographic parameters
     public int TARGET_POPULATION;           // Target number of households
-    public double FUTURE_BIRTH_RATE;        // Future birth rate (births per year per capita), calibrated with flux of FTBs
+    public String DATA_AGE_DISTRIBUTION;    // Address for data on the age distribution of household representative persons
 
     // Household parameters
-    double RETURN_ON_FINANCIAL_WEALTH;      // Monthly percentage growth of financial investments
-    public int TENANCY_LENGTH_AVERAGE;      // Average number of months a tenant will stay in a rented house
-    int TENANCY_LENGTH_EPSILON;             // Standard deviation of the noise in determining the tenancy length
+    public String DATA_INCOME_GIVEN_AGE;    // Address for conditional probability of total gross non-rent income given age
+    public String DATA_WEALTH_GIVEN_INCOME; // Address for conditional probability of liquid wealth given total gross non-rent income
 
     // Household behaviour parameters: buy-to-let
-    double P_INVESTOR;                      // Prior probability of being (wanting to be) a BTL investor
+    private double P_INVESTOR;              // Prior probability of being (wanting to be) a BTL investor
     double MIN_INVESTOR_PERCENTILE;         // Minimum income percentile for a household to be a BTL investor
     double FUNDAMENTALIST_CAP_GAIN_COEFF;   // Weight that fundamentalists put on cap gain
     double TREND_CAP_GAIN_COEFF;			// Weight that trend-followers put on cap gain
     double P_FUNDAMENTALIST; 			    // Probability that a BTL investor is a fundamentalist versus a trend-follower
-    boolean BTL_YIELD_SCALING;			    // Chooses between two possible equations for BTL investors to make their buy/sell decisions
     // Household behaviour parameters: rent
-    double DESIRED_RENT_INCOME_FRACTION;    // Desired proportion of income to be spent on rent
+    public int TENANCY_LENGTH_AVERAGE;      // Average number of months a tenant will stay in a rented house
+    int TENANCY_LENGTH_EPSILON;             // Standard deviation of the noise in determining the tenancy length
+    double BID_RENT_AS_FRACTION_OF_INCOME;  // Proportion of income households bid on the rental market
     double PSYCHOLOGICAL_COST_OF_RENTING;   // Annual psychological cost of renting
     double SENSITIVITY_RENT_OR_PURCHASE;    // Sensitivity parameter of the decision between buying and renting
     // Household behaviour parameters: general
-    double BANK_BALANCE_FOR_CASH_DOWNPAYMENT;   // If bankBalance/housePrice is above this, payment will be made fully in cash
     double HPA_EXPECTATION_FACTOR;              // Weight assigned to current trend when computing expectations
     public int HPA_YEARS_TO_CHECK;              // Number of years of the HPI record to check when computing the annual HPA
-    double HOLD_PERIOD;                         // Average period, in years, for which owner-occupiers hold their houses
     // Household behaviour parameters: location decision
     double LOCATION_QUALITY_EXPONENT;       // The parameter a in the formula F = Q^a/(P+b), where Q is quality and P is price
     double LOCATION_PRICE_THRESHOLD;        // The parameter b in the formula F = Q^a/(P+b), where Q is quality and P is price
@@ -81,7 +86,7 @@ public class Config {
     double ESSENTIAL_CONSUMPTION_FRACTION;  // Fraction of Government support necessarily spent monthly by all households as essential consumption
     // Household behaviour parameters: initial sale price
     double SALE_MARKUP;                     // Initial markup over average price of same quality houses
-    double SALE_WEIGHT_DAYS_ON_MARKET;      // Weight of the days-on-market effect
+    double SALE_WEIGHT_MONTHS_ON_MARKET;    // Weight of the months-on-market effect
     double SALE_EPSILON;                    // Standard deviation of the noise
     // Household behaviour parameters: buyer's desired expenditure
     double BUY_SCALE;                       // Scale, number of annual salaries the buyer is willing to spend for buying a house
@@ -94,28 +99,22 @@ public class Config {
     public double RENT_MAX_AMORTIZATION_PERIOD; // Maximum period BTL investors are ready to wait to get back their investment, this determines their minimum demanded rent
     double RENT_REDUCTION;                      // Percentage reduction of demanded rent for every month the property is in the market, not rented
     // Household behaviour parameters: downpayment
-    double DOWNPAYMENT_FTB_SCALE;           // Scale parameter for the log-normal distribution of downpayments by first-time-buyers
-    double DOWNPAYMENT_FTB_SHAPE;           // Shape parameter for the log-normal distribution of downpayments by first-time-buyers
-    double DOWNPAYMENT_OO_SCALE;            // Scale parameter for the log-normal distribution of downpayments by owner-occupiers
-    double DOWNPAYMENT_OO_SHAPE;            // Shape parameter for the log-normal distribution of downpayments by owner-occupiers
-    double DOWNPAYMENT_MIN_INCOME;          // Minimum income percentile to consider any downpayment, below this level, downpayment is set to 0
-    double DOWNPAYMENT_BTL_MEAN;            // Average downpayment, as percentage of house price, by but-to-let investors
-    double DOWNPAYMENT_BTL_EPSILON;         // Standard deviation of the noise
-    // Household behaviour parameters: desired bank balance
-    double DESIRED_BANK_BALANCE_ALPHA;
-    double DESIRED_BANK_BALANCE_BETA;
-    double DESIRED_BANK_BALANCE_EPSILON;
+    double DOWNPAYMENT_BANK_BALANCE_FOR_CASH_SALE;  // If bankBalance/housePrice is above this, payment will be made fully in cash
+    double DOWNPAYMENT_FTB_SCALE;                   // Scale parameter for the log-normal distribution of downpayments by first-time-buyers
+    double DOWNPAYMENT_FTB_SHAPE;                   // Shape parameter for the log-normal distribution of downpayments by first-time-buyers
+    double DOWNPAYMENT_OO_SCALE;                    // Scale parameter for the log-normal distribution of downpayments by owner-occupiers
+    double DOWNPAYMENT_OO_SHAPE;                    // Shape parameter for the log-normal distribution of downpayments by owner-occupiers
+    double DOWNPAYMENT_MIN_INCOME;                  // Minimum income percentile to consider any downpayment, below this level, downpayment is set to 0
+    double DOWNPAYMENT_BTL_MEAN;                    // Average downpayment, as percentage of house price, by but-to-let investors
+    double DOWNPAYMENT_BTL_EPSILON;                 // Standard deviation of the noise
     // Household behaviour parameters: selling decision
-    double DECISION_TO_SELL_ALPHA;          // Weight of houses per capita effect
-    double DECISION_TO_SELL_BETA;           // Weight of interest rate effect
-    double DECISION_TO_SELL_HPC;            // TODO: fudge parameter, explicitly explained otherwise in the paper
-    double DECISION_TO_SELL_INTEREST;       // TODO: fudge parameter, explicitly explained otherwise in the paper
+    private double HOLD_PERIOD;                 // Average period, in years, for which owner-occupiers hold their houses
     // Household behaviour parameters: BTL buy/sell choice
     double BTL_CHOICE_INTENSITY;            // Shape parameter, or intensity of choice on effective yield
     double BTL_CHOICE_MIN_BANK_BALANCE;     // Minimun bank balance, as a percentage of the desired bank balance, to buy new properties
 
     // Bank parameters
-    int MORTGAGE_DURATION_YEARS;            // Mortgage duration in years
+    private int MORTGAGE_DURATION_YEARS;    // Mortgage duration in years
     double BANK_INITIAL_BASE_RATE;          // Bank initial base-rate (currently remains unchanged)
     double BANK_CREDIT_SUPPLY_TARGET;       // Bank's target supply of credit per household per month
     double BANK_MAX_FTB_LTV;                // Maximum LTV ratio that the private bank would allow for first-time-buyers
@@ -140,29 +139,17 @@ public class Config {
     double GOVERNMENT_GENERAL_PERSONAL_ALLOWANCE;           // General personal allowance to be deducted when computing taxable income
     double GOVERNMENT_INCOME_LIMIT_FOR_PERSONAL_ALLOWANCE;  // Limit of income above which personal allowance starts to decrease £1 for every £2 of income above this limit
     public double GOVERNMENT_MONTHLY_INCOME_SUPPORT;        // Minimum monthly earnings for a married couple from income support
+    public String DATA_TAX_RATES;                           // Address for tax bands and rates data
+    public String DATA_NATIONAL_INSURANCE_RATES;            // Address for national insurance bands and rates data
 
     // Collectors parameters
-    double UK_HOUSEHOLDS;                       // Approximate number of households in UK, used to scale up results for core indicators
-    boolean MORTGAGE_DIAGNOSTICS_ACTIVE;        // Whether to record mortgage statistics
+    private double UK_HOUSEHOLDS;                   // Approximate number of households in UK, used to scale up results for core indicators
 
-    /** Declaration of addresses **/                // They must be public to be accessed from data package
-
-    // Data addresses: Government
-    public String DATA_TAX_RATES;                   // Address for tax bands and rates data
-    public String DATA_NATIONAL_INSURANCE_RATES;    // Address for national insurance bands and rates data
-
-    // Data addresses: EmploymentIncome
-    public String DATA_INCOME_GIVEN_AGE;            // Address for conditional probability of income band given age band
-
-    // Data addresses: Demographics
-    public String DATA_HOUSEHOLD_AGE_AT_BIRTH_PDF;  // Address for pdf of household representative person's age at household birth
-    public String DATA_DEATH_PROB_GIVEN_AGE;        // Address for data on the probability of death given the age of the household representative person
-    public String DATA_REAL_POPULATION_PER_REGION;  // Address for data on real population per region
-    
-    // Data addresses: Transport
+    // Transport parameters
     public String DATA_COMMUTING_TIMES;             // Address for data on commuting times between regions
     public String DATA_COMMUTING_FEES;              // Address for data on commuting fees between regions
-    
+    public String DATA_REAL_POPULATION_PER_REGION;  // Address for data on real population per region
+
     /** Construction of objects to contain derived parameters and constants **/
 
     // Create object containing all constants
@@ -180,10 +167,9 @@ public class Config {
         public int HPI_RECORD_LENGTH;   // Number of months to record HPI (to compute price growth at different time scales)
         double MONTHS_UNDER_OFFER;      // Time (in months) that a house remains under offer
         double T;                       // Characteristic number of data-points over which to average market statistics
-        public double E;                // Decay constant for averaging days on market (in transactions)
+        public double E;                // Decay constant for averaging months on market (in transactions)
         public double G;                // Decay constant for averageListPrice averaging (in transactions)
-        public double HPI_LOG_MEDIAN;   // Logarithmic median house price (scale parameter of the log-normal distribution)
-        double HPI_REFERENCE;           // Mean of reference house prices
+        double HOUSE_PRICES_MEAN;       // Mean of reference house prices (scale + shape**2/2)
         // Household behaviour parameters: general
         double MONTHLY_P_SELL;          // Monthly probability for owner-occupiers to sell their houses
         // Bank parameters
@@ -194,21 +180,13 @@ public class Config {
         // Collectors parameters
         double AFFORDABILITY_DECAY; 	// Decay constant for the exponential moving average of affordability
 
-        public double getAffordabilityDecay() {
-          return AFFORDABILITY_DECAY;
-        }
+        public double getAffordabilityDecay() { return AFFORDABILITY_DECAY; }
 
-        public double getE() {
-            return E;
-        }
+        public double getE() { return E; }
 
-        public int getHPIRecordLength() {
-            return HPI_RECORD_LENGTH;
-        }
+        public int getHPIRecordLength() { return HPI_RECORD_LENGTH; }
 
-        public double getHPIReference() {
-            return HPI_REFERENCE;
-        }
+        public double getHousePricesMean() { return HOUSE_PRICES_MEAN; }
 
     }
 
@@ -242,17 +220,9 @@ public class Config {
     //----- Methods -----//
     //-------------------//
 
-    public boolean isMortgageDiagnosticsActive() {
-        return MORTGAGE_DIAGNOSTICS_ACTIVE;
-    }
+    public double getUKHouseholds() { return UK_HOUSEHOLDS; }
 
-    public double getUKHouseholds() {
-        return UK_HOUSEHOLDS;
-    }
-
-    public double getPInvestor() {
-        return P_INVESTOR;
-    }
+    double getPInvestor() { return P_INVESTOR; }
 
     /**
      * Method to read configuration parameters from a configuration (.properties) file
@@ -372,8 +342,7 @@ public class Config {
         derivedParams.T = 0.02*TARGET_POPULATION;                   // TODO: Clarify where does this 0.2 come from, and provide explanation for this formula
         derivedParams.E = Math.exp(-1.0/derivedParams.T);           // TODO: Provide explanation for this formula
         derivedParams.G = Math.exp(-N_QUALITY/derivedParams.T);     // TODO: Provide explanation for this formula
-        derivedParams.HPI_LOG_MEDIAN = Math.log(HPI_MEDIAN);
-        derivedParams.HPI_REFERENCE = Math.exp(derivedParams.HPI_LOG_MEDIAN + HPI_SHAPE*HPI_SHAPE/2.0);
+        derivedParams.HOUSE_PRICES_MEAN = Math.exp(HOUSE_PRICES_SCALE + HOUSE_PRICES_SHAPE*HOUSE_PRICES_SHAPE/2.0); // Mean of a log-normal distribution
         // Household behaviour parameters: general
         derivedParams.MONTHLY_P_SELL = 1.0/(HOLD_PERIOD*constants.MONTHS_IN_YEAR);
         // Bank parameters

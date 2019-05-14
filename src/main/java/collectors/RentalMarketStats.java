@@ -45,7 +45,6 @@ public class RentalMarketStats extends HousingMarketStats {
      */
     public RentalMarketStats(Config config, HousingMarketStats housingMarketStats, Geography geography) {
         super(config, geography);
-        setActive(true);
         this.config = config;
         this.geography = geography;
         // TODO: The model's housingMarketStats object should be passed as a parameter or with a setter (in case of mutual dependence)
@@ -143,7 +142,7 @@ public class RentalMarketStats extends HousingMarketStats {
             nSales += region.regionalRentalMarketStats.getnSales();
             sumSoldReferencePrice += region.regionalRentalMarketStats.getSumSoldReferencePrice();
             sumSoldPrice += region.regionalRentalMarketStats.getSumSoldPrice();
-            sumDaysOnMarket += region.regionalRentalMarketStats.getSumDaysOnMarket();
+            sumMonthsOnMarket += region.regionalRentalMarketStats.getSumMonthsOnMarket();
             for (int q = 0; q < config.N_QUALITY; q++) {
                 sumSalePricePerQuality[q] += region.regionalRentalMarketStats.getSumSalePriceForQuality(q);
                 nSalesPerQuality[q] += region.regionalRentalMarketStats.getnSalesForQuality(q);

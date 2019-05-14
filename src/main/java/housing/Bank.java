@@ -184,8 +184,8 @@ public class Bank {
 
 		if(isHome) {
 			// --- affordability constraint TODO: affordability for BTL?
-			affordable_principal = Math.max(0.0,config.CENTRAL_BANK_AFFORDABILITY_COEFF*h.getMonthlyNetTotalIncome())
-                    / getMonthlyPaymentFactor(isHome);
+			affordable_principal = Math.max(0.0, config.CENTRAL_BANK_AFFORDABILITY_COEFF
+					* h.getMonthlyNetEmploymentIncome()) / getMonthlyPaymentFactor(isHome);
 			approval.principal = Math.min(approval.principal, affordable_principal);
 
 			// --- lti constraint
@@ -228,11 +228,11 @@ public class Bank {
 	 * 
 	 * @param liquidWealth Household's bank balance (given that home-movers always sell their homes before trying to buy new ones)
 	 * @param annualGrossEmploymentIncome Household's annual gross employment income TODO: Check with Marc if this is correct (doesn't include housing income)
-     * @param monthlyNetTotalIncome Household's monthly net total income TODO: Check with Marc if this is correct (includes housing income)
+     * @param monthlyNetEmploymentIncome Household's monthly net total income TODO: Check with Marc if this is correct (includes housing income)
      * @param isHome True if household h plans to live in the house (non-BTL mortgage)
 	 * @return The maximum house price that this mortgage-lender is willing to approve a mortgage for
 	 */
-	double getMaxMortgage(double liquidWealth, double annualGrossEmploymentIncome, double monthlyNetTotalIncome,
+	double getMaxMortgage(double liquidWealth, double annualGrossEmploymentIncome, double monthlyNetEmploymentIncome,
                           boolean isFirstTimeBuyer, boolean isHome) {
 		double max_price;
 		double affordability_max_price; // Affordability (disposable income) constraint for maximum house price
@@ -247,7 +247,7 @@ public class Bank {
         if(isHome) { // No LTI nor affordability constraints for BTL investors
             // Affordability constraint
             affordability_max_price = max_downpayment + Math.max(0.0, config.CENTRAL_BANK_AFFORDABILITY_COEFF
-                    *monthlyNetTotalIncome)/getMonthlyPaymentFactor(isHome);
+                    *monthlyNetEmploymentIncome)/getMonthlyPaymentFactor(isHome);
             max_price = Math.min(max_price, affordability_max_price);
             // Loan-To-Income constraint
             lti_max_price = annualGrossEmploymentIncome*getLoanToIncomeLimit(isFirstTimeBuyer, isHome)

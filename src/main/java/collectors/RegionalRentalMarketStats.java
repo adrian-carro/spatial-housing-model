@@ -46,7 +46,6 @@ public class RegionalRentalMarketStats extends RegionalHousingMarketStats {
     public RegionalRentalMarketStats(Config config, RegionalHousingMarketStats regionalHousingMarketStats,
                                      HouseRentalMarket market) {
         super(config, market);
-        setActive(true);
         this.config = config;
         this.regHousingMarketStats = regionalHousingMarketStats;
         referencePricePerQuality = new double[config.N_QUALITY];

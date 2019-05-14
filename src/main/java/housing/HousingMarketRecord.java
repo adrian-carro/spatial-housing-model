@@ -18,7 +18,7 @@ public abstract class HousingMarketRecord {
     //------------------//
 
     private double price;
-    private int id;     // In order to get a unique, repeatable ordering
+    private int id;  // In order to get a unique, repeatable ordering
     private static int id_pool = 0;
 
     //------------------------//

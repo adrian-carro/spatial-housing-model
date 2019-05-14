@@ -3,9 +3,6 @@ package housing;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.random.MersenneTwister;
 
-import java.util.Arrays;
-import java.util.Iterator;
-
 /**************************************************************************************************
  * Class to implement the behavioural decisions made by households
  *
@@ -18,14 +15,16 @@ public class HouseholdBehaviour {
     //----- Fields -----//
     //------------------//
 
-	private Config	            	config; // Private field to receive the Model's configuration parameters object
-	private MersenneTwister     	rand; // Private field to receive the Model's random number generator
-    private Geography               geography;
-    private boolean                 BTLInvestor;
-    private double                  BTLCapGainCoefficient; // Sensitivity of BTL investors to capital gain, 0.0 cares only about rental yield, 1.0 cares only about cap gain
-    private double                  propensityToSave;
-    private LogNormalDistribution   downpaymentDistFTB; // Size distribution for downpayments of first-time-buyers
-    private LogNormalDistribution   downpaymentDistOO; // Size distribution for downpayments of owner-occupiers
+    private static Config                   config = Model.config; // Passes the Model's configuration parameters object to a private static field
+    private static MersenneTwister	        rand = Model.rand; // Passes the Model's random number generator to a private static field
+    private static LogNormalDistribution    downpaymentDistFTB = new LogNormalDistribution(rand,
+            config.DOWNPAYMENT_FTB_SCALE, config.DOWNPAYMENT_FTB_SHAPE); // Size distribution for downpayments of first-time-buyers
+    private static LogNormalDistribution    downpaymentDistOO = new LogNormalDistribution(rand,
+            config.DOWNPAYMENT_OO_SCALE, config.DOWNPAYMENT_OO_SHAPE); // Size distribution for downpayments of owner-occupiers
+    private boolean                         BTLInvestor;
+    private double                          BTLCapGainCoefficient; // Sensitivity of BTL investors to capital gain, 0.0 cares only about rental yield, 1.0 cares only about cap gain
+    private double                          propensityToSave;
+    private Geography                       geography;
 
     //------------------------//
     //----- Constructors -----//
@@ -38,17 +37,10 @@ public class HouseholdBehaviour {
 	 *
 	 * @param incomePercentile Fixed income percentile for the household (assumed constant over a lifetime)
      */
-	HouseholdBehaviour(Config config, MersenneTwister rand, Geography geography, double incomePercentile) {
-		this.config = config;
-		this.rand = rand;
+	HouseholdBehaviour(Geography geography, double incomePercentile) {
 		this.geography = geography;
-        // Set downpayment distributions for both first-time-buyers and owner-occupiers
-        downpaymentDistFTB = new LogNormalDistribution(rand, config.DOWNPAYMENT_FTB_SCALE,
-                config.DOWNPAYMENT_FTB_SHAPE);
-        downpaymentDistOO = new LogNormalDistribution(rand, config.DOWNPAYMENT_OO_SCALE,
-                config.DOWNPAYMENT_OO_SHAPE);
 	    // Compute propensity to save, so that it is constant for a given household
-        propensityToSave = config.DESIRED_BANK_BALANCE_EPSILON*rand.nextGaussian();
+        propensityToSave = rand.nextDouble();
         // Decide if household is a BTL investor and, if so, its tendency to seek capital gains or rental yields
 		BTLCapGainCoefficient = 0.0;
         if(incomePercentile > config.MIN_INVESTOR_PERCENTILE &&
@@ -77,24 +69,10 @@ public class HouseholdBehaviour {
 	 * @param bankBalance Household's liquid wealth
      * @param annualGrossTotalIncome Household's annual gross total income
 	 */
-	double getDesiredConsumption(double bankBalance, double annualGrossTotalIncome) {
-		return config.CONSUMPTION_FRACTION*Math.max(bankBalance - getDesiredBankBalance(annualGrossTotalIncome), 0.0);
-	}
-
-	/**
-     * Minimum bank balance each household is willing to have at the end of the month for the whole population to match
-     * the wealth distribution obtained from the household survey (LCFS). In particular, in line with the Wealth and
-     * Assets Survey, we model the relationship between liquid wealth and gross annual income as log-normal. This
-     * desired bank balance will be then used to determine non-essential consumption.
-     * TODO: Relationship described as log-normal here but power-law implemented! Dan's version of article described the
-     * TODO: the distributions of gross income and of liquid wealth as log-normal, not their relationship. Change paper!
-     *
-	 * @param annualGrossTotalIncome Household
-     */
-	double getDesiredBankBalance(double annualGrossTotalIncome) {
-		return Math.exp(config.DESIRED_BANK_BALANCE_ALPHA
-                + config.DESIRED_BANK_BALANCE_BETA*Math.log(annualGrossTotalIncome) + propensityToSave);
-	}
+    double getDesiredConsumption(double bankBalance, double annualGrossTotalIncome) {
+        return config.CONSUMPTION_FRACTION*Math.max(bankBalance
+                - data.Wealth.getDesiredBankBalance(annualGrossTotalIncome, propensityToSave), 0.0);
+    }
 
     //----- Owner-Occupier behaviour -----//
 
@@ -110,7 +88,7 @@ public class HouseholdBehaviour {
         // TODO: The capping of this factor intends to avoid negative and too large desired prices, the 0.9 is a
         // TODO: purely artificial fudge parameter. This formula should be reviewed and changed!
         if (HPAFactor > 0.9) HPAFactor = 0.9;
-        // TODO: Note that wealth is not used here, but only employmentIncome (as monthlyIncome refers here to monthlyGrossEmploymentIncome)
+        // TODO: Note that wealth is not used here, but only monthlyGrossEmploymentIncome
 		return config.BUY_SCALE*config.constants.MONTHS_IN_YEAR*monthlyGrossEmploymentIncome
                 *Math.exp(config.BUY_EPSILON*rand.nextGaussian())
                 /(1.0 - HPAFactor);
@@ -126,34 +104,21 @@ public class HouseholdBehaviour {
 	double getInitialSalePrice(Region region, int quality, double principal) {
         double exponent = config.SALE_MARKUP
                 + Math.log(region.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality) + 1.0)
-                - config.SALE_WEIGHT_DAYS_ON_MARKET*Math.log((region.regionalHousingMarketStats.getExpAvDaysOnMarket()
-                + 1.0)/(config.constants.DAYS_IN_MONTH + 1.0))
+                - config.SALE_WEIGHT_MONTHS_ON_MARKET
+                * Math.log(region.regionalHousingMarketStats.getExpAvMonthsOnMarketForQuality(quality) + 1.0)
                 + config.SALE_EPSILON*rand.nextGaussian();
-        // TODO: ExpAv days on market could be computed for each quality band so as to use here only the correct one
         return Math.max(Math.exp(exponent), principal);
 	}
 
 	/**
      * This method implements a household's decision to sell their owner-occupied property. On average, households sell
-     * owner-occupied houses every 11 years, due to exogenous reasons not addressed in the model. In order to prevent
-     * an unrealistic build-up of housing stock and unrealistic fluctuations of the interest rate, we modify this
-     * probability by introducing two extra factors, depending, respectively, on the number of houses per capita
-     * currently on the market and its exponential moving average, and on the interest rate and its exponential moving
-     * average. In this way, the long-term selling probability converges to 1/11.
-     * TODO: This method includes 2 unidentified fudge parameters, DECISION_TO_SELL_HPC (houses per capita) and
-     * TODO: DECISION_TO_SELL_INTEREST, which are explicitly explained otherwise in the manuscript. URGENT!
-     * TODO: Basically, need to implement both exponential moving averages referred above
+     * owner-occupied houses every 11 years, due to exogenous reasons not addressed in the model.
      *
-     * @param house House (home) that owner is considering selling
 	 * @return True if the owner-occupier decides to sell the house and false otherwise.
 	 */
-	boolean decideToSellHome(House house) {
+	boolean decideToSellHome() {
         // TODO: This if implies BTL agents never sell their homes, need to explain in paper!
-        return !isPropertyInvestor() && (rand.nextDouble() < config.derivedParams.MONTHLY_P_SELL*(1.0
-                + config.DECISION_TO_SELL_ALPHA*(config.DECISION_TO_SELL_HPC
-                - (double)house.region.houseSaleMarket.getnHousesOnMarket()/house.region.households.size())
-                + config.DECISION_TO_SELL_BETA*(config.DECISION_TO_SELL_INTEREST
-                - Model.bank.getMortgageInterestRate())));
+        return !isPropertyInvestor() && (rand.nextDouble() < config.derivedParams.MONTHLY_P_SELL);
     }
 
 	/**
@@ -163,7 +128,7 @@ public class HouseholdBehaviour {
 	 * @param housePrice the price of the house
      */
 	double decideDownPayment(Household me, double housePrice) {
-		if (me.getBankBalance() > housePrice*config.BANK_BALANCE_FOR_CASH_DOWNPAYMENT) {
+		if (me.getBankBalance() > housePrice*config.DOWNPAYMENT_BANK_BALANCE_FOR_CASH_SALE) {
 			return housePrice;
 		}
 		double downpayment;
@@ -176,7 +141,6 @@ public class HouseholdBehaviour {
 			downpayment = housePrice*(Math.max(0.0,
 					config.DOWNPAYMENT_BTL_MEAN + config.DOWNPAYMENT_BTL_EPSILON*rand.nextGaussian()));
 		} else {
-		    // TODO: Downpayments for inactive BTL investors (who are actually OO) should behave as for OO...
 			downpayment = Model.housingMarketStats.getHPI()*downpaymentDistOO.inverseCumulativeProbability(Math.max(0.0,
                     (me.incomePercentile - config.DOWNPAYMENT_MIN_INCOME)/(1 - config.DOWNPAYMENT_MIN_INCOME)));
 		}
@@ -225,7 +189,7 @@ public class HouseholdBehaviour {
             // commuting cost) in the affordability check
             desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(h.getBankBalance(),
                     h.getAnnualGrossEmploymentIncome(),
-                    (h.getMonthlyNetTotalIncome() - h.getMonthlyCommutingFee(region)),
+                    (h.getMonthlyNetEmploymentIncome() - h.getMonthlyCommutingFee(region)),
                     h.isFirstTimeBuyer(), true));
             // ...with this desired purchase price, find highest quality this household could afford to buy in this
             // region
@@ -328,7 +292,7 @@ public class HouseholdBehaviour {
         // cost) in the affordability check
         desiredPurchasePrice = Math.min(desiredPurchasePrice, Model.bank.getMaxMortgage(h.getBankBalance(),
                 h.getAnnualGrossEmploymentIncome(),
-                (h.getMonthlyNetTotalIncome() - h.getMonthlyCommutingFee(cheapestRegionForBuying)),
+                (h.getMonthlyNetEmploymentIncome() - h.getMonthlyCommutingFee(cheapestRegionForBuying)),
                 h.isFirstTimeBuyer(),
                 true));
         return new RegionQualityPriceContainer(cheapestRegionForBuying, 0, cheapestTotalCost,
@@ -439,7 +403,7 @@ public class HouseholdBehaviour {
 	 ********************************************************/
 	// TODO: Check if monthly gross employment income is the correct one for this use, rather than net employment income
 	double getDesiredRentPrice(double monthlyGrossEmploymentIncome) {
-	    return monthlyGrossEmploymentIncome*config.DESIRED_RENT_INCOME_FRACTION;
+	    return monthlyGrossEmploymentIncome*config.BID_RENT_AS_FRACTION_OF_INCOME;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -458,8 +422,8 @@ public class HouseholdBehaviour {
 	 */
 	boolean decideToSellInvestmentProperty(House h, Household me) {
 		// Fast decisions...
-        // ...always keep at least one investment property
-		if(me.nInvestmentProperties() < 2) return false;
+        // ...always keep at least one investment property (i.e., at least two properties)
+		if(me.getNProperties() < 3) return false;
         // ...don't sell while occupied by tenant
 		if(!h.isOnRentalMarket()) return false;
 
@@ -479,16 +443,9 @@ public class HouseholdBehaviour {
         // ...find the mortgage rate (pounds paid a year per pound of equity)
 		double mortgageRate = mortgage.nextPayment()*config.constants.MONTHS_IN_YEAR/equity;
         // ...finally, find expected equity yield, or yield on equity
-		double expectedEquityYield;
-		if(config.BTL_YIELD_SCALING) {
-			expectedEquityYield = leverage*((1.0 - BTLCapGainCoefficient)*currentRentalYield
-                    + BTLCapGainCoefficient*(h.region.regionalRentalMarketStats.getLongTermExpAvFlowYield()
-					+ getLongTermHPAExpectation(h.region))) - mortgageRate;
-		} else {
-			expectedEquityYield = leverage*((1.0 - BTLCapGainCoefficient)*currentRentalYield
+        double expectedEquityYield = leverage*((1.0 - BTLCapGainCoefficient)*currentRentalYield
                     + BTLCapGainCoefficient*getLongTermHPAExpectation(h.region))
                     - mortgageRate;
-		}
 		// Compute a probability to keep the property as a function of the effective yield
 		double pKeep = Math.pow(sigma(config.BTL_CHOICE_INTENSITY*expectedEquityYield),
                 1.0/config.constants.MONTHS_IN_YEAR);
@@ -514,8 +471,8 @@ public class HouseholdBehaviour {
      */
     Region decideWhereToBuyInvestmentProperty(Household me) {
         // Fast decision: never buy (keep on saving) if bank balance is below the household's desired bank balance
-        if (me.getBankBalance() < getDesiredBankBalance(me.getAnnualGrossTotalIncome())
-                *config.BTL_CHOICE_MIN_BANK_BALANCE) { return null; }
+        if (me.getBankBalance() < data.Wealth.getDesiredBankBalance(me.getAnnualGrossTotalIncome(),
+                me.behaviour.getPropensityToSave())*config.BTL_CHOICE_MIN_BANK_BALANCE) { return null; }
 
         // Compute and store the probability to invest en each region, as well as the sum of these probabilities
         double[] probToBuyPerRegion = findProbabilityToInvestPerRegion(me);
@@ -528,7 +485,7 @@ public class HouseholdBehaviour {
         double randDouble = rand.nextDouble();
         double counter = 0.0;
         // If the investor household currently owns no investment property, then it always decide to buy...
-        if (me.nInvestmentProperties() < 1) {
+        if (me.getNProperties() < 2) {
             // ...thus the random number should be re-normalised to go from 0.0 to sumProbToBuy
             randDouble *= sumProbToBuy;
         // Otherwise, the investor household might buy or not...
@@ -545,7 +502,7 @@ public class HouseholdBehaviour {
         }
         // ...in case the household must invest (it currently owns no investment property), but the probability to buy
         // is zero for all regions, then choose a region at random (otherwise it would always choose the first region!)
-        if ((me.nInvestmentProperties() < 1) && sumProbToBuy == 0.0) {
+        if ((me.getNProperties() < 2) && sumProbToBuy == 0.0) {
             i = rand.nextInt(probToBuyPerRegion.length);
         }
         // ...and, if the chosen number corresponds to a region, then return that region
@@ -570,7 +527,7 @@ public class HouseholdBehaviour {
         // the leverage available to the household...
         // ...find maximum price (maximum mortgage + all liquid wealth) the household could pay
         double maxPrice = Model.bank.getMaxMortgage(me.getBankBalance(), me.getAnnualGrossEmploymentIncome(),
-                me.getMonthlyNetTotalIncome(), me.isFirstTimeBuyer(), false);
+                me.getMonthlyNetEmploymentIncome(), me.isFirstTimeBuyer(), false);
         // ...find mortgage with maximum leverage by requesting maximum mortgage with minimum downpayment
         MortgageAgreement mortgage = Model.bank.requestApproval(me, maxPrice, 0.0, false);
         // ...find equity, or assets minus liabilities (which, initially, is simply the downpayment)
@@ -611,30 +568,31 @@ public class HouseholdBehaviour {
         // TODO: price as BTL investors buy all supply till prices are too high for everybody. Fairly unclear mechanism,
         // TODO: check for removal!
         return(Math.min(Model.bank.getMaxMortgage(me.getBankBalance(), me.getAnnualGrossEmploymentIncome(),
-                me.getMonthlyNetTotalIncome(), me.isFirstTimeBuyer(), false),
+                me.getMonthlyNetEmploymentIncome(), me.isFirstTimeBuyer(), false),
                 1.1*region.regionalHousingMarketStats.getExpAvSalePriceForQuality(config.N_QUALITY-1)));
     }
 
 	/**
-	 * How much rent does an investor decide to charge on a buy-to-let house? 
-	 * @param rbar exponential average rent for house of this quality
-	 * @param d average days on market
-	 * @param h house being offered for rent
+	 * How much rent does an investor decide to charge on a buy-to-let house? To make a decision, the household will
+     * check current exponential average rent prices for houses of the same quality, and the current exponential average
+     * time on market for houses of the same quality.
+     *
+	 * @param quality The quality of the house
 	 */
-	double buyToLetRent(double rbar, double d, House h) {
+	double buyToLetRent(int quality, Region region) {
 		// TODO: What? Where does this equation come from?
-		final double beta = config.RENT_MARKUP/Math.log(config.RENT_EQ_MONTHS_ON_MARKET); // Weight of days-on-market effect
-
-		double exponent = config.RENT_MARKUP + Math.log(rbar + 1.0)
-                - beta*Math.log((d + 1.0)/(config.constants.DAYS_IN_MONTH + 1))
-                + config.RENT_EPSILON*rand.nextGaussian();
+		final double beta = config.RENT_MARKUP/Math.log(config.RENT_EQ_MONTHS_ON_MARKET); // Weight of months-on-market effect
+		double exponent = config.RENT_MARKUP
+                + Math.log(region.regionalRentalMarketStats.getExpAvSalePriceForQuality(quality) + 1.0)
+                - beta*Math.log(region.regionalRentalMarketStats.getExpAvMonthsOnMarketForQuality(quality) + 1.0)
+                + config.RENT_EPSILON * rand.nextGaussian();
 		double result = Math.exp(exponent);
-        // TODO: The following contains a fudge (config.RENT_MAX_AMORTIZATION_PERIOD) to keep rental yield up
-		double minAcceptable = h.region.regionalHousingMarketStats.getExpAvSalePriceForQuality(h.getQuality())
+        // TODO: The following contains clamps rent prices to be at least 12*RENT_MAX_AMORTIZATION_PERIOD times below
+        // TODO: sale prices, thus setting also a minimum rental yield
+        double minAcceptable = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(quality)
                 /(config.RENT_MAX_AMORTIZATION_PERIOD*config.constants.MONTHS_IN_YEAR);
-		if (result < minAcceptable) result = minAcceptable;
+        if (result < minAcceptable) result = minAcceptable;
 		return result;
-
 	}
 
 	/**
@@ -650,12 +608,12 @@ public class HouseholdBehaviour {
      *
      * @param x Parameter of the sigma or logistic function
      */
-    double sigma(double x) { return 1.0/(1.0 + Math.exp(-1.0*x)); }
+    private double sigma(double x) { return 1.0/(1.0 + Math.exp(-1.0*x)); }
 
 	/**
      * @return expectation value of HPI in one year's time divided by today's HPI
      */
-	double getLongTermHPAExpectation(Region region) {
+	private double getLongTermHPAExpectation(Region region) {
 		// Dampening or multiplier factor, depending on its value being <1 or >1, for the current trend of HPA when
 		// computing expectations as in HPI(t+DT) = HPI(t) + FACTOR*DT*dHPI/dt (double)
 		return(region.regionalHousingMarketStats.getLongTermHPA()*config.HPA_EXPECTATION_FACTOR);
@@ -664,4 +622,6 @@ public class HouseholdBehaviour {
     public double getBTLCapGainCoefficient() { return BTLCapGainCoefficient; }
 
     public boolean isPropertyInvestor() { return BTLInvestor; }
+
+    double getPropensityToSave() { return propensityToSave; }
 }

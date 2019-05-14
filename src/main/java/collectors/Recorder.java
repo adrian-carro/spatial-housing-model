@@ -3,6 +3,7 @@ package collectors;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 
 import housing.Geography;
 import housing.Model;
@@ -24,7 +25,7 @@ public class Recorder {
     private Geography geography;
 
     private PrintWriter outfile;
-
+    private PrintWriter qualityBandPriceFile;
     private PrintWriter [] regionalOutfiles;
 
     private PrintWriter ooLTI;
@@ -95,7 +96,7 @@ public class Recorder {
         }
     }
 
-    public void openSingleRunFiles(int nRun) {
+    public void openSingleRunFiles(int nRun, boolean recordQualityBandPrice, int nQualityBands) {
         // Try opening output files (national and for each region) and write first row header with column names
         try {
             outfile = new PrintWriter(outputFolder + "Output-run" + nRun + ".csv", "UTF-8");
@@ -108,15 +109,16 @@ public class Recorder {
                     + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                     // House sale market data
                     + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
-                    + "Sale ExAvSalePrice, Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, Sale nBTLBuyers, "
-                    + "Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
+                    + "Sale ExAvSalePrice, Sale AvMonthsOnMarket, Sale ExpAvMonthsOnMarket, Sale nBuyers, "
+                    + "Sale nBTLBuyers, Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
                     + "Sale nNonBTLBidsAboveExpAvSalePrice, Sale nBTLBidsAboveExpAvSalePrice, Sale nSalesToBTL, "
                     + "Sale nSalesToFTB, "
                     // Rental market data
                     + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
-                    + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, Rental ExpAvFlowYield, "
+                    + "Rental AvMonthsOnMarket, Rental ExpAvMonthsOnMarket, Rental nBuyers, Rental nSellers, "
+                    + "Rental nSales, Rental ExpAvFlowYield, "
                     // Credit data
-                    + "nRegisteredMortgages, "
+                    + "nRegisteredMortgages, interestRate, "
                     // Commuting data
                     + "nCommuters, sumCommutingFees, sumCommutingCost");
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
@@ -135,23 +137,38 @@ public class Recorder {
                         + "HousingStock, nNewBuild, nUnsoldNewBuild, nEmptyHouses, BTLStockFraction, "
                         // House sale market data
                         + "Sale HPI, Sale AnnualHPA, Sale AvBidPrice, Sale AvOfferPrice, Sale AvSalePrice, "
-                        + "Sale ExAvSalePrice, Sale AvDaysOnMarket, Sale ExpAvDaysOnMarket, Sale nBuyers, "
+                        + "Sale ExAvSalePrice, Sale AvMonthsOnMarket, Sale ExpAvMonthsOnMarket, Sale nBuyers, "
                         + "Sale nBTLBuyers, Sale nSellers, Sale nNewSellers, Sale nBTLSellers, Sale nSales, "
                         + "Sale nNonBTLBidsAboveExpAvSalePrice, Sale nBTLBidsAboveExpAvSalePrice, Sale nSalesToBTL, "
                         + "Sale nSalesToFTB, "
                         // Rental market data
                         + "Rental HPI, Rental AnnualHPA, Rental AvBidPrice, Rental AvOfferPrice, Rental AvSalePrice, "
-                        + "Rental AvDaysOnMarket, Rental nBuyers, Rental nSellers, Rental nSales, "
-                        + "Rental ExpAvFlowYield, "
+                        + "Rental AvMonthsOnMarket, Rental ExpAvMonthsOnMarket, Rental nBuyers, Rental nSellers, "
+                        + "Rental nSales, Rental ExpAvFlowYield, "
                         // Commuting data
                         + "nCommuters, sumCommutingFees, sumCommutingCost");
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
         }
+        // If recording of quality band prices is active...
+        if(recordQualityBandPrice) {
+            // ...try opening output file and write first row header with column names
+            try {
+                qualityBandPriceFile = new PrintWriter(outputFolder + "QualityBandPrice-run" + nRun + ".csv", "UTF-8");
+                StringBuilder str = new StringBuilder();
+                str.append(String.format("Time, Q%d", 0));
+                for (int i = 1; i < nQualityBands; i++) {
+                    str.append(String.format(", Q%d", i));
+                }
+                qualityBandPriceFile.println(str);
+            } catch (FileNotFoundException | UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-    public void writeTimeStampResults(boolean recordCoreIndicators, int time) {
+    public void writeTimeStampResults(boolean recordCoreIndicators, int time, boolean recordQualityBandPrice) {
         if (recordCoreIndicators) {
             // If not at the first point in time...
             if (time > 0) {
@@ -217,8 +234,8 @@ public class Recorder {
                 Model.housingMarketStats.getAvOfferPrice() + ", " +
                 Model.housingMarketStats.getAvSalePrice() + ", " +
                 Model.housingMarketStats.getExpAvSalePrice() + ", " +
-                Model.housingMarketStats.getAvDaysOnMarket() + ", " +
-                Model.housingMarketStats.getExpAvDaysOnMarket() + ", " +
+                Model.housingMarketStats.getAvMonthsOnMarket() + ", " +
+                Model.housingMarketStats.getExpAvMonthsOnMarket() + ", " +
                 Model.housingMarketStats.getnBuyers() + ", " +
                 Model.housingMarketStats.getnBTLBuyers() + ", " +
                 Model.housingMarketStats.getnSellers() + ", " +
@@ -235,13 +252,15 @@ public class Recorder {
                 Model.rentalMarketStats.getAvBidPrice() + ", " +
                 Model.rentalMarketStats.getAvOfferPrice() + ", " +
                 Model.rentalMarketStats.getAvSalePrice() + ", " +
-                Model.rentalMarketStats.getAvDaysOnMarket() + ", " +
+                Model.rentalMarketStats.getAvMonthsOnMarket() + ", " +
+                Model.rentalMarketStats.getExpAvMonthsOnMarket() + ", " +
                 Model.rentalMarketStats.getnBuyers() + ", " +
                 Model.rentalMarketStats.getnSellers() + ", " +
                 Model.rentalMarketStats.getnSales() + ", " +
                 Model.rentalMarketStats.getExpAvFlowYield() + ", " +
                 // Credit data
                 Model.creditSupply.getnRegisteredMortgages() + ", " +
+                Model.creditSupply.getInterestRate() + ", " +
                 // Commuting data
                 Model.householdStats.getnCommuters() + ", " +
                 Model.householdStats.getSumCommutingFees() + ", " +
@@ -278,8 +297,8 @@ public class Recorder {
                     region.regionalHousingMarketStats.getAvOfferPrice() + ", " +
                     region.regionalHousingMarketStats.getAvSalePrice() + ", " +
                     region.regionalHousingMarketStats.getExpAvSalePrice() + ", " +
-                    region.regionalHousingMarketStats.getAvDaysOnMarket() + ", " +
-                    region.regionalHousingMarketStats.getExpAvDaysOnMarket() + ", " +                 
+                    region.regionalHousingMarketStats.getAvMonthsOnMarket() + ", " +
+                    region.regionalHousingMarketStats.getExpAvMonthsOnMarket() + ", " +
                     region.regionalHousingMarketStats.getnBuyers() + ", " +
                     region.regionalHousingMarketStats.getnBTLBuyers() + ", " +
                     region.regionalHousingMarketStats.getnSellers() + ", " +
@@ -296,7 +315,8 @@ public class Recorder {
                     region.regionalRentalMarketStats.getAvBidPrice() + ", " +
                     region.regionalRentalMarketStats.getAvOfferPrice() + ", " +
                     region.regionalRentalMarketStats.getAvSalePrice() + ", " +
-                    region.regionalRentalMarketStats.getAvDaysOnMarket() + ", " +
+                    region.regionalRentalMarketStats.getAvMonthsOnMarket() + ", " +
+                    region.regionalRentalMarketStats.getExpAvMonthsOnMarket() + ", " +
                     region.regionalRentalMarketStats.getnBuyers() + ", " +
                     region.regionalRentalMarketStats.getnSellers() + ", " +
                     region.regionalRentalMarketStats.getnSales() + ", " +
@@ -307,9 +327,16 @@ public class Recorder {
                     Model.householdStats.getSumCommutingCost());
             i++;
         }
+
+        // Write quality band prices to file
+        if (recordQualityBandPrice) {
+            String str = Arrays.toString(Model.housingMarketStats.getAvSalePricePerQuality());
+            str = str.substring(1, str.length() - 1);
+            qualityBandPriceFile.println(time + ", " + str);
+        }
     }
 
-    public void finishRun(boolean recordCoreIndicators) {
+    public void finishRun(boolean recordCoreIndicators, boolean recordQualityBandPrice) {
         if (recordCoreIndicators) {
             ooLTI.println("");
             btlLTV.println("");
@@ -329,6 +356,9 @@ public class Recorder {
         outfile.close();
         for (int i = 0; i < geography.getRegions().size(); i++) {
             regionalOutfiles[i].close();
+        }
+        if (recordQualityBandPrice) {
+            qualityBandPriceFile.close();
         }
     }
 

@@ -21,7 +21,7 @@ import org.apache.commons.io.FileUtils;
  * -configFile <arg>    Configuration file to be used (address within project folder). By default,
  *                      'src/main/resources/config.properties' is used.
  * -outputFolder <arg>  Folder in which to collect all results (address within project folder). By
- *                      default, 'results/<current date and time>/' is used. The folder will be
+ *                      default, 'Results/<current date and time>/' is used. The folder will be
  *                      created if it does not exist.
  * -dev                 Removes security question before erasing the content inside output folder
  *                      (if the folder already exists).
@@ -51,7 +51,8 @@ public class Model {
     public static HouseholdStats        householdStats;
     public static HousingMarketStats    housingMarketStats;
     public static RentalMarketStats     rentalMarketStats;
-    public static MicroDataRecorder     transactionRecorder;
+    public static TransactionRecorder   transactionRecorder;
+    public static MicroDataRecorder     microDataRecorder;
     public static int	                nSimulation; // To keep track of the simulation number
     public static int	                t; // To keep track of time (in months)
 
@@ -72,6 +73,7 @@ public class Model {
     public Model(String configFileName, String outputFolder) {
         config = new Config(configFileName);
         rand = new MersenneTwister(config.SEED);
+
         geography = new Geography(config, rand);
         government = new Government(config);
         demographics = new Demographics(config, rand, geography);
@@ -79,13 +81,14 @@ public class Model {
         centralBank = new CentralBank();
         bank = new Bank();
 
-        recorder = new collectors.Recorder(outputFolder, geography);
-        transactionRecorder = new collectors.MicroDataRecorder(outputFolder);
-        creditSupply = new collectors.CreditSupply(outputFolder);
-        coreIndicators = new collectors.CoreIndicators();
-        householdStats = new collectors.HouseholdStats(geography);
-        housingMarketStats = new collectors.HousingMarketStats(config, geography);
-        rentalMarketStats = new collectors.RentalMarketStats(config, housingMarketStats, geography);
+        recorder = new Recorder(outputFolder, geography);
+        transactionRecorder = new TransactionRecorder(outputFolder);
+        microDataRecorder = new MicroDataRecorder(outputFolder);
+        creditSupply = new CreditSupply();
+        coreIndicators = new CoreIndicators();
+        householdStats = new HouseholdStats(geography);
+        housingMarketStats = new HousingMarketStats(config, geography);
+        rentalMarketStats = new RentalMarketStats(config, housingMarketStats, geography);
 
         nSimulation = 0;
     }
@@ -102,9 +105,6 @@ public class Model {
         // Create an instance of Model in order to initialise it (reading config file)
         new Model(configFileName, outputFolder);
 
-        // Start data recorders for output
-        setupStatics();
-
         // Open files for writing multiple runs results
         recorder.openMultiRunFiles(config.recordCoreIndicators);
 
@@ -112,7 +112,11 @@ public class Model {
 		for (nSimulation = 1; nSimulation <= config.N_SIMS; nSimulation += 1) {
 
             // For each simulation, open files for writing single-run results
-            recorder.openSingleRunFiles(nSimulation);
+            recorder.openSingleRunFiles(nSimulation, true, config.N_QUALITY);
+            if (config.recordTransactions) { transactionRecorder.openSingleRunFiles(nSimulation); }
+            microDataRecorder.openSingleRunSingleVariableFiles(nSimulation, config.recordEmploymentIncome,
+                    config.recordRentalIncome, config.recordBankBalance, config.recordHousingWealth,
+                    config.recordNHousesOwned, config.recordAge, config.recordSavingRate);
 
 		    // For each simulation, initialise both houseSaleMarket and houseRentalMarket variables (including HPI)
             init();
@@ -124,10 +128,8 @@ public class Model {
                 // respective variables
                 modelStep();
 
-//                if (t >= config.TIME_TO_START_RECORDING) {
-                    // Write results of this time step and run to both multi- and single-run files
-                    recorder.writeTimeStampResults(config.recordCoreIndicators, t);
-//                }
+                // Write results of this time step and run to both multi- and single-run files
+                recorder.writeTimeStampResults(config.recordCoreIndicators, t, config.recordQualityBandPrice);
 
                 // Print time information to screen
                 if (t % 100 == 0) {
@@ -136,23 +138,18 @@ public class Model {
             }
 
 			// Finish each simulation within the recorders (closing single-run files, changing line in multi-run files)
-            recorder.finishRun(config.recordCoreIndicators);
-            // TODO: Check what this is actually doing and if it is necessary
-            if(config.recordMicroData) transactionRecorder.endOfSim();
+            recorder.finishRun(config.recordCoreIndicators, config.recordQualityBandPrice);
+            if (config.recordTransactions) transactionRecorder.finishRun();
+            microDataRecorder.finishRun(config.recordEmploymentIncome, config.recordRentalIncome,
+                    config.recordBankBalance, config.recordHousingWealth, config.recordNHousesOwned, config.recordAge,
+                    config.recordSavingRate);
 		}
 
         // After the last simulation, clean up
         recorder.finish(config.recordCoreIndicators);
-        if(config.recordMicroData) transactionRecorder.finish();
 
         //Stop the program when finished
 		System.exit(0);
-	}
-
-	private static void setupStatics() {
-        setRecordGeneral();
-		setRecordCoreIndicators(config.recordCoreIndicators);
-		setRecordMicroData(config.recordMicroData);
 	}
 
 	private static void init() {
@@ -203,7 +200,7 @@ public class Model {
         options.addOption("configFile", true, "Configuration file to be used (address within " +
                 "project folder). By default, 'src/main/resources/config.properties' is used.");
         options.addOption("outputFolder", true, "Folder in which to collect all results " +
-                "(address within project folder). By default, 'results/<current date and time>/' is used. The " +
+                "(address within project folder). By default, 'Results/<current date and time>/' is used. The " +
                 "folder will be created if it does not exist.");
         options.addOption("dev", false, "Removes security question before erasing the content" +
                 "inside output folder (if the folder already exists).");
@@ -246,7 +243,7 @@ public class Model {
                 if (!outputFolder.endsWith("/")) { outputFolder += "/"; }
             } else {
                 // If not, use the default value to initialise the respective member variable
-                outputFolder = "results/" + Instant.now().toString().replace(":", "-") + "/";
+                outputFolder = "Results/" + Instant.now().toString().replace(":", "-") + "/";
             }
         }
         catch(ParseException pex) {
@@ -298,18 +295,4 @@ public class Model {
      * @return Current month of the simulation
      */
 	static public int getMonth() { return t%12 + 1; }
-
-    private static void setRecordGeneral() {
-        creditSupply.setActive(true);
-        householdStats.setActive(true);
-        housingMarketStats.setActive(true);
-        rentalMarketStats.setActive(true);
-    }
-
-	private static void setRecordCoreIndicators(boolean recordCoreIndicators) {
-	    coreIndicators.setActive(recordCoreIndicators);
-	}
-
-	private static void setRecordMicroData(boolean record) { transactionRecorder.setActive(record); }
-
 }

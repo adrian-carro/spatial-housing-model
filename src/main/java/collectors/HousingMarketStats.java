@@ -11,7 +11,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
  * @since 16/09/2017
  *
  *************************************************************************************************/
-public class HousingMarketStats extends CollectorBase {
+public class HousingMarketStats {
 
     //------------------//
     //----- Fields -----//
@@ -42,12 +42,12 @@ public class HousingMarketStats extends CollectorBase {
     int 	                        nUnsoldNewBuild; // Accumulated number of new built properties still unsold after market clearing
     double                          sumSoldReferencePrice; // Sum of reference prices for the qualities of properties sold this month
     double                          sumSoldPrice; // Sum of prices of properties sold this month
-    double                          sumDaysOnMarket; // Normal average of the number of days on the market for properties sold this month
+    double                          sumMonthsOnMarket; // Normal average of the number of days on the market for properties sold this month
     double []                       sumSalePricePerQuality; // Normal average of the price for each quality band for properties sold this month
     int []                          nSalesPerQuality; // Number of sales for each quality band for properties sold this month
 
     // Other variables computed after market clearing
-    private double                  expAvDaysOnMarket; // Exponential moving average of the number of days on the market
+    private double                  expAvMonthsOnMarket; // Exponential moving average of the number of days on the market
     private double []               expAvSalePricePerQuality; // Exponential moving average of the price for each quality band
     private double                  housePriceIndex;
     private DescriptiveStatistics   HPIRecord;
@@ -64,7 +64,6 @@ public class HousingMarketStats extends CollectorBase {
      * @param geography Reference to the whole geography of regions
      */
     public HousingMarketStats(Config config, Geography geography) {
-        setActive(true);
         this.config = config;
         this.geography = geography;
         referencePricePerQuality = new double[config.N_QUALITY];
@@ -99,12 +98,12 @@ public class HousingMarketStats extends CollectorBase {
         nBTLSales = 0;
         sumSoldReferencePrice = 0;
         sumSoldPrice = 0;
-        sumDaysOnMarket = 0;
+        sumMonthsOnMarket = 0;
         sumSalePricePerQuality = new double[config.N_QUALITY];
         nSalesPerQuality = new int[config.N_QUALITY];
 
         // Set initial values for other variables computed (regionally) after market clearing
-        expAvDaysOnMarket = config.constants.DAYS_IN_MONTH; // TODO: Make this initialisation explicit in the paper! Is 30 days similar to the final simulated value?
+        expAvMonthsOnMarket = config.constants.DAYS_IN_MONTH; // TODO: Make this initialisation explicit in the paper! Is 30 days similar to the final simulated value?
         expAvSalePricePerQuality = new double[config.N_QUALITY];
         System.arraycopy(referencePricePerQuality, 0, expAvSalePricePerQuality, 0,
                 config.N_QUALITY); // Exponential averaging of prices is initialised from reference prices
@@ -133,7 +132,7 @@ public class HousingMarketStats extends CollectorBase {
         nBTLSales = 0;
         sumSoldReferencePrice = 0;
         sumSoldPrice = 0;
-        sumDaysOnMarket = 0;
+        sumMonthsOnMarket = 0;
         sumSalePricePerQuality = new double[config.N_QUALITY];
         nSalesPerQuality = new int[config.N_QUALITY];
 
@@ -163,8 +162,8 @@ public class HousingMarketStats extends CollectorBase {
         // Compute all derived variables...
         // ... exponential averages of days in the market and prices per quality band (only if there have been sales)
         if (nSales > 0) {
-            expAvDaysOnMarket = config.derivedParams.E*expAvDaysOnMarket
-                    + (1.0 - config.derivedParams.E)*sumDaysOnMarket/nSales;
+            expAvMonthsOnMarket = config.derivedParams.E*expAvMonthsOnMarket
+                    + (1.0 - config.derivedParams.E)*sumMonthsOnMarket/nSales;
         }
         for (int q = 0; q < config.N_QUALITY; q++) {
             if (nSalesPerQuality[q] > 0) {
@@ -209,7 +208,7 @@ public class HousingMarketStats extends CollectorBase {
             nBTLSales += region.regionalHousingMarketStats.getnBTLSales();
             sumSoldReferencePrice += region.regionalHousingMarketStats.getSumSoldReferencePrice();
             sumSoldPrice += region.regionalHousingMarketStats.getSumSoldPrice();
-            sumDaysOnMarket += region.regionalHousingMarketStats.getSumDaysOnMarket();
+            sumMonthsOnMarket += region.regionalHousingMarketStats.getSumMonthsOnMarket();
             for (int q = 0; q < config.N_QUALITY; q++) {
                 sumSalePricePerQuality[q] += region.regionalHousingMarketStats.getSumSalePriceForQuality(q);
                 nSalesPerQuality[q] += region.regionalHousingMarketStats.getnSalesForQuality(q);
@@ -305,14 +304,14 @@ public class HousingMarketStats extends CollectorBase {
     public int getnBTLSales() { return nBTLSales; }
     public double getSumSoldReferencePrice() { return sumSoldReferencePrice; }
     public double getSumSoldPrice() { return sumSoldPrice; }
-    public double getSumDaysOnMarket() { return sumDaysOnMarket; }
+    public double getSumMonthsOnMarket() { return sumMonthsOnMarket; }
     public double [] getSumSalePricePerQuality() { return sumSalePricePerQuality; }
     public double getSumSalePriceForQuality(int quality) { return sumSalePricePerQuality[quality]; }
     public int [] getnSalesPerQuality() { return nSalesPerQuality; }
     int getnSalesForQuality(int quality) { return nSalesPerQuality[quality]; }
 
     // Getters for other variables computed after market clearing
-    double getExpAvDaysOnMarket() { return expAvDaysOnMarket; }
+    double getExpAvMonthsOnMarket() { return expAvMonthsOnMarket; }
     public double [] getExpAvSalePricePerQuality() { return expAvSalePricePerQuality; }
     public double getExpAvSalePriceForQuality(int quality) { return expAvSalePricePerQuality[quality]; }
     double getExpAvSalePrice() {
@@ -355,9 +354,9 @@ public class HousingMarketStats extends CollectorBase {
     int getnSalesToFTB() { return nFTBSales; }
     // Number of monthly sales that are to buy-to-let investors
     int getnSalesToBTL() { return nBTLSales; }
-    double getAvDaysOnMarket() {
+    double getAvMonthsOnMarket() {
         if (nSales > 0) {
-            return sumDaysOnMarket/nSales;
+            return sumMonthsOnMarket/nSales;
         } else {
             return 0.0;
         }

@@ -10,7 +10,7 @@ import housing.Region;
  * @author daniel, Adrian Carro
  *
  *************************************************************************************************/
-public class HouseholdStats extends CollectorBase {
+public class HouseholdStats {
 
     //------------------//
     //----- Fields -----//
@@ -20,29 +20,29 @@ public class HouseholdStats extends CollectorBase {
     private Geography           geography;
 
     // Fields for counting numbers of the different types of households and household conditions
-    private int                 nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
-    private int                 nActiveBTL; // Number of BTL households with, at least, one BTL property
-    private int                 nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
-    private int                 nBTLHomeless; // Number of homeless BTL households
-    private int                 nBTLBankruptcies; // Number of BTL households going bankrupt in a given time step
-    private int                 nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
-    private int                 nRenting; // Number of (by definition, non-BTL) households renting their home
-    private int                 nNonBTLHomeless; // Number of homeless non-BTL households
-    private int                 nNonBTLBankruptcies; // Number of non-BTL households going bankrupt in a given time step
+    private int     nBTL; // Number of buy-to-let (BTL) households, i.e., households with the BTL gene (includes both active and inactive)
+    private int     nActiveBTL; // Number of BTL households with, at least, one BTL property
+    private int     nBTLOwnerOccupier; // Number of BTL households owning their home but without any BTL property
+    private int     nBTLHomeless; // Number of homeless BTL households
+    private int     nBTLBankruptcies; // Number of BTL households going bankrupt in a given time step
+    private int     nNonBTLOwnerOccupier; // Number of non-BTL households owning their home
+    private int     nRenting; // Number of (by definition, non-BTL) households renting their home
+    private int     nNonBTLHomeless; // Number of homeless non-BTL households
+    private int     nNonBTLBankruptcies; // Number of non-BTL households going bankrupt in a given time step
 
     // Fields for summing annualised total incomes
-    private double              activeBTLAnnualisedTotalIncome;
-    private double              ownerOccupierAnnualisedTotalIncome;
-    private double              rentingAnnualisedTotalIncome;
-    private double              homelessAnnualisedTotalIncome;
+    private double  activeBTLAnnualisedTotalIncome;
+    private double  ownerOccupierAnnualisedTotalIncome;
+    private double  rentingAnnualisedTotalIncome;
+    private double  homelessAnnualisedTotalIncome;
 
     // Other fields
-    private double              sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
-    private double              sumCommutingFees;
-    private double              sumCommutingCost;
-    private int                 nCommuters;
-    private int                 nNonBTLBidsAboveExpAvSalePrice; // Number of normal (non-BTL) bids with desired housing expenditure above the exponential moving average sale price
-    private int                 nBTLBidsAboveExpAvSalePrice; // Number of BTL bids with desired housing expenditure above the exponential moving average sale price
+    private double  sumStockYield; // Sum of stock gross rental yields of all currently occupied rental properties
+    private double  sumCommutingFees;
+    private double  sumCommutingCost;
+    private int     nCommuters;
+    private int     nNonBTLBidsAboveExpAvSalePrice; // Number of normal (non-BTL) bids with desired housing expenditure above the exponential moving average sale price
+    private int     nBTLBidsAboveExpAvSalePrice; // Number of BTL bids with desired housing expenditure above the exponential moving average sale price
 
     //------------------------//
     //----- Constructors -----//
@@ -54,7 +54,6 @@ public class HouseholdStats extends CollectorBase {
      * @param geography Reference to the whole geography of regions
      */
     public HouseholdStats(Geography geography) {
-        setActive(true);
         this.geography = geography;
     }
 
@@ -172,7 +171,7 @@ public class HouseholdStats extends CollectorBase {
     }
 
     // Getters for other variables...
-    // ... number of empty houses
+    // ... number of empty houses (total number of houses minus number of non-homeless households)
     int getnEmptyHouses() {
         return Model.construction.getHousingStock() + nBTLHomeless + nNonBTLHomeless
                 - Model.demographics.getTotalPopulation();

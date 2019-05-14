@@ -6,7 +6,7 @@ import org.apache.commons.math3.random.MersenneTwister;
  * Represents an arbitrarily shaped, 1-dimensional Probability Density Function.
  * Supply a DoubleUnaryOperator class that returns the probability density for
  * a given value.
- * 
+ *
  * @author daniel
  *
  */
@@ -18,19 +18,19 @@ public class Pdf {
 	 * @param filename
 	 */
 	public Pdf(String filename) {
-			BinnedDataDouble data = new BinnedDataDouble(filename);
-			setPdf(data);
+		BinnedDataDouble data = new BinnedDataDouble(filename);
+		setPdf(data);
 	}
 
-    public Pdf(String filename, int NSamples) {
-            BinnedDataDouble data = new BinnedDataDouble(filename);
-            setPdf(data, NSamples);
-    }
-	
+	public Pdf(String filename, int NSamples) {
+		BinnedDataDouble data = new BinnedDataDouble(filename);
+		setPdf(data, NSamples);
+	}
+
 	public Pdf(final BinnedDataDouble data) { setPdf(data); }
 
-    public Pdf(final BinnedDataDouble data, int NSamples) { setPdf(data, NSamples); }
-	
+	public Pdf(final BinnedDataDouble data, int NSamples) { setPdf(data, NSamples); }
+
 	/**
 	 * @param ipdf functional class whose apply function returns the probability density at that point
 	 * (should be defined on the interval [istart,iend) )
@@ -54,7 +54,7 @@ public class Pdf {
 		nSamples = NSamples;
 		initInverseCDF();
 	}
-	
+
 	public void setPdf(final BinnedDataDouble data) {
 		pdf = new DoubleUnaryOperator() {
 			public double applyAsDouble(double operand) {
@@ -63,7 +63,7 @@ public class Pdf {
 		start = data.getSupportLowerBound();
 		end = data.getSupportUpperBound();
 		nSamples = DEFAULT_CDF_SAMPLES;
-		initInverseCDF();		
+		initInverseCDF();
 	}
 
 	public void setPdf(final BinnedDataDouble data, int NSamples) {
@@ -76,29 +76,29 @@ public class Pdf {
 		nSamples = NSamples;
 		initInverseCDF();
 	}
-	
+
 	public double getSupportLowerBound() { return start; }
 
 	public double getSupportUpperBound() { return end; }
 
 	/***
 	 * Get probability density P(x)
-	 * @param x 
+	 * @param x
 	 * @return P(x)
 	 */
 	public double density(double x) {
 		if(x<start || x>=end) return(0.0);
 		return(pdf.applyAsDouble(x));
 	}
-	
+
 	public double inverseCumulativeProbability(double p) {
 		if(p < 0.0 || p>=1.0) throw(new IllegalArgumentException("p must be in the interval [0,1)"));
 		int i = (int)(p*(nSamples-1));
 		double remainder = p*(nSamples-1) - i;
 		return((1.0-remainder)*inverseCDF[i] + remainder*inverseCDF[i+1]);
 	}
-	
-	
+
+
 	/***
 	 * integrates "pdf" over "INTEGRATION_STEPS" steps, starting at
 	 * start + dx/2 and going up to end - dx/2, recording the values
@@ -135,7 +135,7 @@ public class Pdf {
 			inverseCDF[i] = x;
 		}
 	}
-	
+
 	/***
 	 * Sample from the PDF
 	 * @return A random sample from the PDF

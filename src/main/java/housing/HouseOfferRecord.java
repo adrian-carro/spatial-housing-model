@@ -29,16 +29,16 @@ public class HouseOfferRecord extends HousingMarketRecord {
     //----- Constructors -----//
     //------------------------//
 
-	public HouseOfferRecord(Region region, House house, double price, boolean BTLOffer) {
-		super(price);
+    public HouseOfferRecord(Region region, House house, double price, boolean BTLOffer) {
+        super(price);
         this.region = region;
         this.house = house;
         this.BTLOffer = BTLOffer;
-		initialListedPrice = price;
-		tInitialListing = Model.getTime();
-		matchedBids = new ArrayList<>(8); // TODO: Check if this initial size of 8 is good enough or can be improved
+        initialListedPrice = price;
+        tInitialListing = Model.getTime();
+        matchedBids = new ArrayList<>(8); // TODO: Check if this initial size of 8 is good enough or can be improved
         recalculateHouseSpecificYield(price);
-	}
+    }
 
     //-------------------//
     //----- Methods -----//
@@ -74,7 +74,7 @@ public class HouseOfferRecord extends HousingMarketRecord {
      */
     @Override
 	public int getQuality() { return house.getQuality(); }
-	
+
 	/**
 	 * Expected gross yield for this particular house, based on the current average flow yield and the actual listed
      * price for the house, and taking into account both the quality and the expected occupancy levels
@@ -92,9 +92,9 @@ public class HouseOfferRecord extends HousingMarketRecord {
         recalculateHouseSpecificYield(newPrice);
 	}
 
-	public House getHouse() { return house; }
+    public House getHouse() { return house; }
 
-	ArrayList<HouseBidderRecord> getMatchedBids() { return matchedBids; }
+    ArrayList<HouseBidderRecord> getMatchedBids() { return matchedBids; }
 
     public double getInitialListedPrice() { return initialListedPrice; }
 

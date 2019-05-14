@@ -70,7 +70,7 @@ public class PriorityQueue2D<E> implements Iterable<E> {
 		public int compare(E arg0, E arg1) { return comparator.XYCompare(arg0, arg1); }
 	}
 
-	/**
+    /**
      * Class to encapsulate the XCompare method at XYComparator such that it can be passed as an argument to the
      * TreeSet constructor
      */

@@ -33,16 +33,13 @@ public class HouseRentalMarket extends HousingMarket {
 	public void completeTransaction(HouseBidderRecord purchase, HouseOfferRecord sale) {
         region.regionalRentalMarketStats.recordTransaction(sale);
 		sale.getHouse().rentalRecord = null;
-		purchase.getBidder().completeHouseRental(sale);
-		sale.getHouse().owner.completeHouseLet(sale);
+		RentalAgreement rentalAgreement = purchase.getBidder().completeHouseRental(sale);
+		sale.getHouse().owner.completeHouseLet(sale, rentalAgreement);
 		region.regionalRentalMarketStats.recordSale(purchase, sale);
 	}
 
 	@Override
 	public HouseOfferRecord offer(House house, double price, boolean BTLOffer) {
-		if(house.isOnMarket()) {
-			System.out.println("Got offer on rental market of house already on sale market");			
-		}
 		HouseOfferRecord hsr = super.offer(house, price, false);
 		house.putForRent(hsr);
 		return(hsr);
