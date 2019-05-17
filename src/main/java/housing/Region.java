@@ -94,8 +94,6 @@ public class Region {
         houseRentalMarket.clearMarket();
         // Compute and stores several regional rental market statistics after bids are matched by clearing the market (such as HPI, HPA)
         regionalRentalMarketStats.postClearingRecord();
-        // Store regional household statistics after both regional markets have been cleared
-        regionalHouseholdStats.record();
     }
 
     //----- Getter/setter methods -----//

@@ -63,6 +63,8 @@ public class Geography {
         for (Region r : regions) r.stepHouseholds();
         // Update, for each region, its market statistics collectors and markets
         for (Region r : regions) r.stepMarkets();
+        // Update, for each region, its household statistics collectors, after all markets have been cleared
+        for (Region r : regions) r.regionalHouseholdStats.record();
     }
 
     //----- Getter/setter methods -----//
