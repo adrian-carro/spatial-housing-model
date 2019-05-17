@@ -30,6 +30,7 @@ public class Household implements IHouseOwner {
 
     private Geography                       geography;
     private Region                          jobRegion;
+    private Region                          homeRegion;
     private House                           home;
     private Map<House, PaymentAgreement>    housePayments = new TreeMap<>(); // Houses owned and their payment agreements
     private Map<House, RentalAgreement>     rentalContracts = new TreeMap<>(); // Houses rented out by this landlord and their payment agreements
@@ -39,7 +40,6 @@ public class Household implements IHouseOwner {
     private double                          bankBalance;
     private double                          annualGrossEmploymentIncome;
     private double                          monthlyGrossEmploymentIncome;
-    private double                          monthlyGrossRentalIncome; // Keeps track of monthly rental income, as only tenants keep a reference to the rental contract, not landlords
     private boolean                         isFirstTimeBuyer;
     private boolean                         isBankrupt;
 
@@ -58,6 +58,7 @@ public class Household implements IHouseOwner {
         this.age = age;
         this.geography = geography;
         this.jobRegion = jobRegion;
+        homeRegion = jobRegion; // Households are initially created at the region where they have a job
         home = null;
         isFirstTimeBuyer = true;
         isBankrupt = false;
@@ -323,7 +324,16 @@ public class Household implements IHouseOwner {
         } else {
             bankBalance -= mortgage.downPayment;
             housePayments.put(sale.getHouse(), mortgage);
-            if (home == null) { // move in to house
+            // If household doesn't have a home, then it moves in to the new house
+            if (home == null) {
+                // If new home is in a region different from the current home region...
+                if (sale.getHouse().region != homeRegion) {
+                    // ...then the household must first move to the new region...
+                    homeRegion.households.remove(this);
+                    homeRegion = sale.getHouse().region;
+                    homeRegion.households.add(this);
+                }
+                // ...and then move in to the house
                 home = sale.getHouse();
                 sale.getHouse().resident = this;
             } else if (sale.getHouse().resident == null) { // put empty buy-to-let house on rental market
@@ -429,7 +439,14 @@ public class Household implements IHouseOwner {
                 - config.TENANCY_LENGTH_EPSILON;
         // Add the rental agreement to the house payments object of the tenant household
         housePayments.put(sale.getHouse(), rent);
-        // Set the house as the tenant's home and the tenant as the house's resident
+        // If the tenant's new home is in a region different from its current home region...
+        if (sale.getHouse().region != homeRegion) {
+            // ...then first move the household to the new region...
+            homeRegion.households.remove(this);
+            homeRegion = sale.getHouse().region;
+            homeRegion.households.add(this);
+        }
+        // ...and then set the house as the tenant's home and the tenant as the house's resident
         home = sale.getHouse();
         sale.getHouse().resident = this;
         // Return the rental agreement for passing it to the landlord
@@ -635,6 +652,15 @@ public class Household implements IHouseOwner {
             if (isRenting()) {
                 endTenancy();                
             }
+            // If new home is in a region different from the current home region...
+            if (h.region != homeRegion) {
+                // ...then the household must first move to the new region (note that for death probability purposes,
+                // this change will only take effect in the next time step)...
+                homeRegion.households.remove(this);
+                homeRegion = h.region;
+                homeRegion.households.add(this);
+            }
+            // ...and then move in to the house
             home = h;
             h.resident = this;
         // If owning a home and having the BTL gene...
