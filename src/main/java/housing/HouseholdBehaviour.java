@@ -311,7 +311,7 @@ public class HouseholdBehaviour {
         // Declare and initialise variables for comparisons
         double cheapestTotalCost = Double.POSITIVE_INFINITY; // Dummy value, used only for 1st entry at if statement within for loop
         Region cheapestRegionForRenting = null;
-        // Find cheapest region for buying. To this end, for each region...
+        // Find cheapest region for renting. To this end, for each region...
         for (Region region : geography.getRegions()) {
             // ...find total rental cost including the household's commuting fees to this region
             double totalCost = region.regionalRentalMarketStats.getExpAvSalePriceForQuality(0)
@@ -322,7 +322,9 @@ public class HouseholdBehaviour {
                 cheapestRegionForRenting = region;
             }
         }
-        // Return container with cheapest rental region and desired rental price taking into account only commuting fees
+        // Return container with cheapest rental region and desired rental price taking into account only commuting
+        // fees. Note that this might lead to negative bid prices if the desired bid price is smaller than the monthly
+        // commuting fee
         return new RegionQualityPriceContainer(cheapestRegionForRenting, 0, cheapestTotalCost,
                 (getDesiredRentPrice(h.getMonthlyGrossEmploymentIncome())
                         - h.getMonthlyCommutingFee(cheapestRegionForRenting)));
@@ -351,7 +353,8 @@ public class HouseholdBehaviour {
             }
         }
         // Return container with cheapest rental region and desired rental price taking into account total commuting
-        // cost (time + fees)
+        // cost (time + fees). Note that this might lead to negative bid prices if the desired bid price is smaller than
+        // the monthly commuting cost
         return new RegionQualityPriceContainer(optimalRegionForRenting, quality, optimalMonthlyRentalCost,
                 (getDesiredRentPrice(h.getMonthlyGrossEmploymentIncome())
                         - h.getMonthlyCommutingCost(optimalRegionForRenting)));

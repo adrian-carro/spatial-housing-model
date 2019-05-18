@@ -137,36 +137,26 @@ public class Demographics {
     }
 
     /**
-     * Run through regions and, within each region, through a copy of the households implementing deaths according to
-     * the probability corresponding to the age band they belong to, organising also the inheritance of their
-     * belongings. As households die, death probabilities are updated such that no deaths above target are implemented.
-     * This will lead, on average, to a population slightly over the target. The creation of a copy of the households
-     * array for each region is intended to allow for safer removal of dead households and those moving to a different
-     * region due to inheritance
+     * First, run through regions and, within each region, through all households deciding who to kill according to
+     * probabilities corresponding to the age band each household belongs to. As households die, death probabilities are
+     * updated such that no deaths above target are implemented. This will lead, on average, to a population slightly
+     * over the target. Then, run again through regions and households to be killed removing them from their home
+     * regions. Finally, run a third time through regions and households to be killed implementing inheritance, which
+     * might mean moving some households between regions if they inherit a new home in a different region from the one
+     * they had so far been living at.
      */
     private void implementDeaths() {
-        // First, create a dummy copy of each region's ArrayList of households, so as to comfortably remove (dead) and
-        // move (inheriting) households while iterating through them
-        ArrayList<ArrayList<Household>> householdsCopies = new ArrayList<>();
+        // First, run through the regions deciding who to kill...
+        ArrayList<ArrayList<Household>> householdsToKill = new ArrayList<>();
         for (Region region: geography.getRegions()) {
-            householdsCopies.add(new ArrayList<>(region.households));
-        }
-        // Then we can safely iterate, for each region...
-        for (Region region: geography.getRegions()) {
-            // ...over the copy of the households created above
-            for (Household h : householdsCopies.get(region.getRegionID())) {
-                // Find age bin for the household
+            householdsToKill.add(new ArrayList<>());
+            // ...which implies running through the households at each region...
+            for (Household h : region.households) {
+                // ...finding the age bin for each household
                 int i = (int) ((h.getAge() - firstBinMin) / binWidth);
-                // Decide if killing
+                // ...and deciding if killing it
                 if (rand.nextDouble() < deathProbabilities[i]) {
-                    region.households.remove(h);
-                    // Implement inheritance with a randomly chosen heir within the same region (preventing
-                    // self-inheritance)
-                    Household beneficiary = region.households.get(rand.nextInt(region.households.size()));
-                    while (beneficiary == h) {
-                        beneficiary = region.households.get(rand.nextInt(region.households.size()));
-                    }
-                    h.transferAllWealthTo(beneficiary);
+                    householdsToKill.get(householdsToKill.size() - 1).add(h);
                     // Update the death probability for the corresponding age band. This prevents killing more than
                     // strictly necessary. Note that this will tend to underestimate the number of deaths and this, in
                     // its turn, lead to a slight overpopulation
@@ -175,6 +165,23 @@ public class Demographics {
                     deathProbabilities[i] = -(double) birthsAndDeaths[i] / householdsPerAgeBand[i];
                     totalPopulation--;
                 }
+            }
+        }
+        // Then, remove all households to be killed from their respective regions
+        for (Region region: geography.getRegions()) {
+            for (Household h : householdsToKill.get(region.getRegionID())) {
+                region.households.remove(h);
+            }
+        }
+        // And, finally, implement inheritance with a randomly chosen heir within the same region (preventing
+        // self-inheritance)
+        for (Region region: geography.getRegions()) {
+            for (Household h : householdsToKill.get(region.getRegionID())) {
+                Household beneficiary = region.households.get(rand.nextInt(region.households.size()));
+                while (beneficiary == h) {
+                    beneficiary = region.households.get(rand.nextInt(region.households.size()));
+                }
+                h.transferAllWealthTo(beneficiary);
             }
         }
     }
