@@ -1,7 +1,6 @@
 package housing;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 import org.apache.commons.math3.random.MersenneTwister;
 
@@ -13,13 +12,14 @@ public class Demographics {
 
     private Config	            config; // Private field to receive the Model's configuration parameters object
     private MersenneTwister     rand; // Private field to receive the Model's random number generator
+    private Random              altRand; // Alternative random number generator to use with Collections.shuffle()
     private Geography           geography;
     private int                 totalPopulation;
     private double              firstBinMin = data.Demographics.getMonthlyAgeDistributionMinimum();
     private double              binWidth = data.Demographics.getMonthlyAgeDistributionBinWidth();
+    private int                 ageDistSize = data.Demographics.getMonthlyAgeDistributionSize();
     private int []              householdsPerAgeBand = new int[data.Demographics.getMonthlyAgeDistributionSize()];
     private int []              birthsAndDeaths = new int[data.Demographics.getMonthlyAgeDistributionSize()];
-    private double []           deathProbabilities = new double[data.Demographics.getMonthlyAgeDistributionSize() + 1];
 
     //------------------------//
     //----- Constructors -----//
@@ -33,6 +33,7 @@ public class Demographics {
     public Demographics(Config config, MersenneTwister rand, Geography geography) {
         this.config = config;
         this.rand = rand;
+        this.altRand = new Random(this.rand.nextLong());
         this.geography = geography;
     }
 
@@ -59,8 +60,6 @@ public class Demographics {
         updateBirthsAndDeaths();
         // Implement births in each age bin by adding new households with random ages between the corresponding edges
         implementBirths();
-        // Update death probability for each age bin, with probability 1 for households beyond the maximum bin edge
-        updateDeathProbabilities();
         // Implement deaths according to the probabilities calculated above
         implementDeaths();
     }
@@ -122,67 +121,50 @@ public class Demographics {
     }
 
     /**
-     * Update the death probability for each age bin, including an extra bin with death probability 1 for households
-     * aging beyond the maximum bin edge
-     */
-    private void updateDeathProbabilities() {
-        for (int i = 0; i < deathProbabilities.length - 1; i++) {
-            if (birthsAndDeaths[i] < 0 && householdsPerAgeBand[i] > 0) {
-                deathProbabilities[i] = -(double) birthsAndDeaths[i] / householdsPerAgeBand[i];
-            } else {
-                deathProbabilities[i] = 0.0;
-            }
-        }
-        deathProbabilities[deathProbabilities.length - 1] = 1.0;
-    }
-
-    /**
-     * First, run through regions and, within each region, through all households deciding who to kill according to
-     * probabilities corresponding to the age band each household belongs to. As households die, death probabilities are
-     * updated such that no deaths above target are implemented. This will lead, on average, to a population slightly
-     * over the target. Then, run again through regions and households to be killed removing them from their home
-     * regions. Finally, run a third time through regions and households to be killed implementing inheritance, which
-     * might mean moving some households between regions if they inherit a new home in a different region from the one
-     * they had so far been living at.
+     * First, all households are collected in an ArrayList and shuffled so as to randomise deaths. Then, a run through
+     * these households is used to store for killing as many households per age band as needed according to the
+     * birthsAndDeaths array previously created. Thus, this method is not probabilistic and it rather kills the exact
+     * number of households per age band as needed to obtain the expected number of households per age band. Then, a
+     * first run through the households to kill is used to remove them from their home region and, finally, another run
+     * through the households to kill is used to implement inheritance, which might mean moving some households between
+     * regions if they inherit a new home in a different region from the one they had so far been living at.
      */
     private void implementDeaths() {
-        // First, run through the regions deciding who to kill...
-        ArrayList<ArrayList<Household>> householdsToKill = new ArrayList<>();
+        // First, run through the regions collecting all households in a single ArrayList...
+        ArrayList<Household> allHouseholds = new ArrayList<>();
         for (Region region: geography.getRegions()) {
-            householdsToKill.add(new ArrayList<>());
-            // ...which implies running through the households at each region...
-            for (Household h : region.households) {
-                // ...finding the age bin for each household
-                int i = (int) ((h.getAge() - firstBinMin) / binWidth);
-                // ...and deciding if killing it
-                if (rand.nextDouble() < deathProbabilities[i]) {
-                    householdsToKill.get(householdsToKill.size() - 1).add(h);
-                    // Update the death probability for the corresponding age band. This prevents killing more than
-                    // strictly necessary. Note that this will tend to underestimate the number of deaths and this, in
-                    // its turn, lead to a slight overpopulation
-                    birthsAndDeaths[i]++;
-                    householdsPerAgeBand[i]--;
-                    deathProbabilities[i] = -(double) birthsAndDeaths[i] / householdsPerAgeBand[i];
-                    totalPopulation--;
-                }
+            allHouseholds.addAll(region.households);
+        }
+        // ...and shuffle this new ArrayList to randomise deaths
+        Collections.shuffle(allHouseholds, altRand);
+        // Then, run through households...
+        ArrayList<Household> householdsToKill = new ArrayList<>();
+        for (Household h : allHouseholds) {
+            // ...finding, for each of them, its age bin...
+            int i = (int) ((h.getAge() - firstBinMin) / binWidth);
+            // ...and killing it if more deaths still to be implemented in this age bin (controlling for out of bounds)
+            if (i >= ageDistSize) {
+                householdsToKill.add(h);
+                totalPopulation--;
+            } else if (birthsAndDeaths[i] < 0) {
+                householdsToKill.add(h);
+                birthsAndDeaths[i]++;
+                householdsPerAgeBand[i]--;
+                totalPopulation--;
             }
         }
         // Then, remove all households to be killed from their respective regions
-        for (Region region: geography.getRegions()) {
-            for (Household h : householdsToKill.get(region.getRegionID())) {
-                region.households.remove(h);
-            }
+        for (Household h : householdsToKill) {
+            h.getHomeRegion().households.remove(h);
         }
         // And, finally, implement inheritance with a randomly chosen heir within the same region (preventing
         // self-inheritance)
-        for (Region region: geography.getRegions()) {
-            for (Household h : householdsToKill.get(region.getRegionID())) {
-                Household beneficiary = region.households.get(rand.nextInt(region.households.size()));
-                while (beneficiary == h) {
-                    beneficiary = region.households.get(rand.nextInt(region.households.size()));
-                }
-                h.transferAllWealthTo(beneficiary);
+        for (Household h : householdsToKill) {
+            Household beneficiary = h.getHomeRegion().households.get(rand.nextInt(h.getHomeRegion().households.size()));
+            while (beneficiary == h) {
+                beneficiary = h.getHomeRegion().households.get(rand.nextInt(h.getHomeRegion().households.size()));
             }
+            h.transferAllWealthTo(beneficiary);
         }
     }
 

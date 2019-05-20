@@ -763,4 +763,5 @@ public class Household implements IHouseOwner {
 
     public Region getJobRegion() { return jobRegion; }
 
+    public Region getHomeRegion() { return homeRegion; }
 }
