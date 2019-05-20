@@ -178,6 +178,7 @@ public class HouseholdBehaviour {
         double desiredPurchasePrice = 0.0; // Dummy value, never used
         int optimalQuality = -1; // Dummy value, it forces entering the if condition in the first iteration
         double optimalExpAvSalePrice = 0.0; // Dummy value, never used
+        double optimalDesiredPurchasePrice = 0.0; // Dummy value, never used
         Region optimalRegionForBuying = null;
         // Find optimal region for buying. To this end, for each region...
         for (Region region : geography.getRegions()) {
@@ -203,6 +204,7 @@ public class HouseholdBehaviour {
                 optimalQuality = maxQualityForBuying;
                 optimalExpAvSalePrice
                         = region.regionalHousingMarketStats.getExpAvSalePriceForQuality(maxQualityForBuying);
+                optimalDesiredPurchasePrice = desiredPurchasePrice;
                 optimalRegionForBuying = region;
             }
         }
@@ -210,7 +212,7 @@ public class HouseholdBehaviour {
             return null;
         } else {
             return new RegionQualityPriceContainer(optimalRegionForBuying, optimalQuality, optimalExpAvSalePrice,
-                    desiredPurchasePrice);
+                    optimalDesiredPurchasePrice);
         }
     }
 
