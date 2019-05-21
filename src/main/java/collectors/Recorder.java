@@ -322,9 +322,9 @@ public class Recorder {
                     region.regionalRentalMarketStats.getnSales() + ", " +
                     region.regionalRentalMarketStats.getExpAvFlowYield() + ", " +
                     // Commuting data
-                    Model.householdStats.getnCommuters() + ", " +
-                    Model.householdStats.getSumCommutingFees() + ", " +
-                    Model.householdStats.getSumCommutingCost());
+                    region.regionalHouseholdStats.getnCommuters() + ", " +
+                    region.regionalHouseholdStats.getSumCommutingFees() + ", " +
+                    region.regionalHouseholdStats.getSumCommutingCost());
             i++;
         }
 

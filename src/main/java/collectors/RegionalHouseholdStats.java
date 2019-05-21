@@ -153,13 +153,13 @@ public class RegionalHouseholdStats {
                 }
             }
             // Sum commuting fees and total commuting cost
-            if (!h.isInSocialHousing()) {
-                sumCommutingFees += h.getMonthlyCommutingFee(h.getHome().getRegion());
-                sumCommutingCost += h.getMonthlyCommutingCost(h.getHome().getRegion());
-                // If the household does not live in this region, add a commuter
-                if (h.getHome().getRegion() != region) {
-                    nCommuters++;
-                }
+//            sumCommutingFees += h.getMonthlyCommutingFee(h.getHome().getRegion());
+//            sumCommutingCost += h.getMonthlyCommutingCost(h.getHome().getRegion());
+            sumCommutingFees += h.getMonthlyCommutingFee(region);
+            sumCommutingCost += h.getMonthlyCommutingCost(region);
+            // If the household does not work at the same region where it lives, add a commuter
+            if (h.getJobRegion() != region) {
+                nCommuters++;
             }
         }
         // Annualise monthly income data
