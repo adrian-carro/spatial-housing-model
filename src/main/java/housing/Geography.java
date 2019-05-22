@@ -21,6 +21,7 @@ public class Geography {
     private static ArrayList<Region>        regions;
     private ArrayList<ArrayList<Double>>    commutingTimeMatrix;
     private ArrayList<ArrayList<Double>>    commutingFeeMatrix;
+    private Config	                        config = Model.config; // Passes the Model's configuration parameters object to a private field
 
     //------------------------//
     //----- Constructors -----//
@@ -72,10 +73,10 @@ public class Geography {
     public ArrayList<Region> getRegions() { return regions; }
 
     double getCommutingTimeBetween(Region region1, Region region2) {
-        return commutingTimeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
+        return config.COMMUTING_COSTS_MULTIPLIER*commutingTimeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
     }
 
     double getCommutingFeeBetween(Region region1, Region region2) {
-        return commutingFeeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
+        return config.COMMUTING_COSTS_MULTIPLIER*commutingFeeMatrix.get(region1.getRegionID()).get(region2.getRegionID());
     }
 }

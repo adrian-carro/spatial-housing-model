@@ -149,6 +149,7 @@ public class Config {
     public String DATA_COMMUTING_TIMES;             // Address for data on commuting times between regions
     public String DATA_COMMUTING_FEES;              // Address for data on commuting fees between regions
     public String DATA_REAL_POPULATION_PER_REGION;  // Address for data on real population per region
+    public double COMMUTING_COSTS_MULTIPLIER;
 
     /** Construction of objects to contain derived parameters and constants **/
 
